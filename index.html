@@ -1,0 +1,674 @@
+<!doctype html>
+<html lang="pt-PT">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="default">
+<meta name="apple-mobile-web-app-title" content="Dinheiro">
+<meta name="theme-color" content="#f2f2f7" media="(prefers-color-scheme: light)">
+<meta name="theme-color" content="#000000" media="(prefers-color-scheme: dark)">
+<link rel="apple-touch-icon" href="icon-180.png">
+<link rel="icon" href="icon-192.png">
+<link rel="manifest" href="manifest.webmanifest">
+<title>Dinheiro</title>
+<style>
+:root {
+  --bg: #f2f2f7; --cel: #fff; --sep: rgba(60,60,67,.2); --txt: #000;
+  --sec: rgba(60,60,67,.6); --ter: rgba(60,60,67,.3);
+  --acc: #1a8f4c; --verde: #248a3d; --verm: #d70015;
+  --fill: rgba(118,118,128,.12); --seg-on: #fff; --prem: rgba(0,0,0,.06);
+  --barra: rgba(249,249,249,.86); --acoes: rgba(255,255,255,.92);
+  color-scheme: light dark;
+}
+@media (prefers-color-scheme: dark) {
+  :root {
+    --bg: #000; --cel: #1c1c1e; --sep: rgba(84,84,88,.6); --txt: #fff;
+    --sec: rgba(235,235,245,.6); --ter: rgba(235,235,245,.3);
+    --acc: #30d158; --verde: #30d158; --verm: #ff453a;
+    --fill: rgba(118,118,128,.24); --seg-on: #636366; --prem: rgba(255,255,255,.08);
+    --barra: rgba(22,22,24,.86); --acoes: rgba(44,44,46,.94);
+  }
+}
+* { box-sizing: border-box; margin: 0; }
+html { -webkit-text-size-adjust: 100%; }
+html.travado { overflow: hidden; }
+body {
+  background: var(--bg); color: var(--txt);
+  font: 17px/1.3 -apple-system, BlinkMacSystemFont, "SF Pro Text", system-ui, sans-serif;
+  -webkit-tap-highlight-color: transparent; touch-action: manipulation; min-height: 100vh;
+}
+button { font: inherit; color: inherit; background: none; border: 0; padding: 0; cursor: pointer; text-align: left; }
+input, textarea { font: inherit; color: inherit; background: none; border: 0; outline: 0; width: 100%; min-width: 0; }
+svg { fill: none; stroke: currentColor; stroke-width: 1.8; stroke-linecap: round; stroke-linejoin: round; }
+
+.pagina { max-width: 640px; margin: 0 auto; padding: calc(env(safe-area-inset-top) + 4px) 16px calc(100px + env(safe-area-inset-bottom)); }
+.barra { display: flex; justify-content: space-between; align-items: center; min-height: 44px; }
+.acoes { display: flex; gap: 4px; align-items: center; }
+.icbtn { width: 40px; height: 40px; display: grid; place-items: center; color: var(--acc); border-radius: 20px; }
+.icbtn svg { width: 24px; height: 24px; }
+.icbtn.peq { width: 30px; height: 30px; }
+.icbtn.peq svg { width: 20px; height: 20px; }
+.txtbtn { color: var(--acc); padding: 8px 6px; }
+.forte { font-weight: 600; }
+.voltar { display: flex; align-items: center; color: var(--acc); margin-left: -8px; padding: 8px 0; }
+.voltar svg { width: 24px; height: 24px; stroke-width: 2.2; }
+h1 { font-size: 34px; font-weight: 700; margin: 2px 0 14px; overflow-wrap: anywhere; }
+
+.lista { background: var(--cel); border-radius: 12px; overflow: hidden; margin-bottom: 22px; }
+.lista > * { position: relative; }
+.lista > * + *::before { content: ""; position: absolute; top: 0; left: 16px; right: 0; border-top: .5px solid var(--sep); }
+.linha { display: flex; align-items: center; gap: 10px; width: 100%; min-height: 46px; padding: 10px 16px; }
+button.linha:active, .grupo-acoes button:active, .cancelar-acoes:active { background: var(--prem); }
+.txt { flex: 1; min-width: 0; }
+.sub { font-size: 13px; color: var(--sec); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; margin-top: 2px; }
+.val { font-variant-numeric: tabular-nums; white-space: nowrap; }
+.sec { color: var(--sec); }
+.ter { color: var(--ter); }
+.pos { color: var(--verde); }
+.neg { color: var(--verm); }
+.zero { color: var(--sec); }
+.chev { width: 14px; height: 14px; color: var(--ter); stroke-width: 2.6; flex: none; margin-right: -4px; }
+.acao { color: var(--acc); }
+.acao svg { width: 22px; height: 22px; flex: none; }
+.perigo { color: var(--verm) !important; }
+
+.cab-sec { display: flex; justify-content: space-between; align-items: center; gap: 8px; font-size: 13px; color: var(--sec); padding: 0 6px 6px 16px; margin-top: -4px; min-height: 30px; }
+.cab-sec > span:first-child { text-transform: uppercase; }
+.cab-sec .dir { display: flex; align-items: center; gap: 4px; font-variant-numeric: tabular-nums; }
+.cartao-total { padding: 16px; }
+.rot { font-size: 15px; color: var(--sec); }
+.grande { font: 700 40px/1.15 ui-rounded, -apple-system, system-ui, sans-serif; font-variant-numeric: tabular-nums; margin: 2px 0; overflow-wrap: anywhere; }
+.leg { font-size: 13px; color: var(--sec); }
+.rodape { font-size: 13px; color: var(--sec); padding: 0 16px; margin: -14px 0 22px; }
+.total-rodape { display: flex; justify-content: space-between; font-weight: 600; padding: 0 16px; margin-top: -12px; font-variant-numeric: tabular-nums; }
+.mini { width: 38px; height: 32px; border-radius: 8px; background: var(--fill); color: var(--acc); text-align: center; font-size: 17px; }
+.mini:disabled { opacity: .3; }
+textarea.nota { display: block; padding: 12px 16px; resize: none; min-height: 46px; }
+
+.tabs {
+  position: fixed; left: 0; right: 0; bottom: 0; z-index: 5; display: flex; justify-content: center;
+  padding: 6px 8px calc(env(safe-area-inset-bottom) + 6px);
+  background: var(--barra); -webkit-backdrop-filter: saturate(180%) blur(20px); backdrop-filter: saturate(180%) blur(20px);
+  border-top: .5px solid var(--sep);
+}
+.tabs button { flex: 1; max-width: 130px; display: flex; flex-direction: column; align-items: center; gap: 2px; font-size: 10px; font-weight: 500; color: var(--sec); padding: 2px 0; }
+.tabs svg { width: 26px; height: 26px; }
+.tabs .on { color: var(--acc); }
+
+.entra { animation: entra .3s cubic-bezier(.2,.8,.2,1); }
+.volta { animation: volta .3s cubic-bezier(.2,.8,.2,1); }
+@keyframes entra { from { transform: translateX(28%); opacity: 0; } }
+@keyframes volta { from { transform: translateX(-18%); opacity: 0; } }
+
+#camada .fundo { position: fixed; inset: 0; z-index: 10; background: rgba(0,0,0,.38); animation: aparece .25s; }
+.folha {
+  position: fixed; left: 0; right: 0; bottom: 0; top: calc(env(safe-area-inset-top) + 12px); z-index: 11;
+  max-width: 640px; margin: 0 auto; background: var(--bg); border-radius: 14px 14px 0 0;
+  display: flex; flex-direction: column; animation: sobe .34s cubic-bezier(.2,.8,.2,1);
+}
+.folha-barra { display: flex; justify-content: space-between; align-items: center; gap: 8px; padding: 6px 10px; min-height: 54px; }
+.folha-barra strong { flex: 1; text-align: center; font-weight: 600; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.folha-corpo { flex: 1; overflow: auto; padding: 8px 16px 40px; }
+.campo-val span { color: var(--sec); font-size: 20px; }
+.valor-grande { font-size: 28px; font-weight: 600; font-variant-numeric: tabular-nums; }
+input[type=date] { width: auto; text-align: right; color: var(--acc); }
+.seg { display: flex; background: var(--fill); border-radius: 9px; padding: 2px; margin-bottom: 16px; }
+.seg button { flex: 1; text-align: center; padding: 8px 4px; border-radius: 7px; font-size: 15px; font-weight: 500; }
+.seg .on { background: var(--seg-on); box-shadow: 0 1px 4px rgba(0,0,0,.14); }
+.interruptor { appearance: none; -webkit-appearance: none; flex: none; width: 51px; height: 31px; border-radius: 16px; background: var(--fill); position: relative; transition: background .2s; }
+.interruptor::after { content: ""; position: absolute; top: 2px; left: 2px; width: 27px; height: 27px; border-radius: 50%; background: #fff; box-shadow: 0 2px 5px rgba(0,0,0,.22); transition: transform .2s; }
+.interruptor:checked { background: #34c759; }
+.interruptor:checked::after { transform: translateX(20px); }
+
+.folha-acoes { position: fixed; left: 8px; right: 8px; bottom: calc(env(safe-area-inset-bottom) + 8px); z-index: 11; max-width: 480px; margin: 0 auto; animation: sobe .3s cubic-bezier(.2,.8,.2,1); }
+.grupo-acoes { background: var(--acoes); -webkit-backdrop-filter: blur(20px); backdrop-filter: blur(20px); border-radius: 14px; overflow: hidden; margin-bottom: 8px; }
+.grupo-acoes > * + * { border-top: .5px solid var(--sep); }
+.grupo-acoes button, .cancelar-acoes { display: block; width: 100%; text-align: center; padding: 17px; font-size: 19px; color: var(--acc); }
+.titulo-acoes { font-size: 13px; color: var(--sec); text-align: center; padding: 14px 16px; }
+.cancelar-acoes { background: var(--cel); border-radius: 14px; font-weight: 600; }
+#camada.saindo .folha, #camada.saindo .folha-acoes { animation: desce .25s forwards; }
+#camada.saindo .fundo { animation: some .25s forwards; }
+@keyframes sobe { from { transform: translateY(100%); } }
+@keyframes desce { to { transform: translateY(110%); } }
+@keyframes aparece { from { opacity: 0; } }
+@keyframes some { to { opacity: 0; } }
+.abanar { animation: abanar .3s; }
+@keyframes abanar { 25% { transform: translateX(-6px); } 75% { transform: translateX(6px); } }
+
+#toast {
+  position: fixed; left: 50%; bottom: calc(100px + env(safe-area-inset-bottom)); z-index: 20;
+  transform: translate(-50%, 16px); opacity: 0; pointer-events: none; transition: .25s;
+  background: rgba(0,0,0,.82); color: #fff; padding: 10px 18px; border-radius: 20px; font-size: 15px;
+}
+#toast.on { opacity: 1; transform: translate(-50%, 0); }
+@media (prefers-reduced-motion: reduce) { *, *::before, *::after { animation: none !important; transition: none !important; } }
+</style>
+</head>
+<body>
+<div id="app"></div>
+<div id="camada"></div>
+<div id="toast" role="status"></div>
+<script>
+'use strict';
+
+/* ---------- utilitários ---------- */
+const CHAVE = 'dinheiro.v1';
+const $ = s => document.querySelector(s);
+const esc = s => String(s ?? '').replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
+const uid = () => Date.now().toString(36) + Math.random().toString(36).slice(2, 7);
+const hoje = () => {
+  const d = new Date();
+  return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
+};
+const dataPT = iso => new Date(iso + 'T12:00').toLocaleDateString('pt-PT', { day: 'numeric', month: 'short', year: 'numeric' });
+
+// Todos os valores são guardados em cêntimos (inteiros) para não haver erros de arredondamento.
+const fmtEuro = new Intl.NumberFormat('pt-PT', { style: 'currency', currency: 'EUR' });
+const euro = c => fmtEuro.format(c / 100);
+const euroSinal = c => c > 0 ? '+' + euro(c) : c < 0 ? '−' + euro(-c) : euro(0);
+const numero = c => {
+  const a = Math.abs(c);
+  return (a / 100).toLocaleString('pt-PT', { minimumFractionDigits: a % 100 ? 2 : 0, maximumFractionDigits: 2, useGrouping: false });
+};
+const numSinal = c => (c < 0 ? '-' : '') + numero(c);
+const cor = c => c > 0 ? 'pos' : c < 0 ? 'neg' : 'zero';
+
+/** Lê "15,32", "1.044,50", "2 543,49 €" ou somas como "115,82 + 4,60 - 60". Devolve cêntimos ou null. */
+function lerValor(texto) {
+  let s = String(texto).replace(/−/g, '-').replace(/[^0-9,.+\-]/g, '');
+  if (s.includes(',') && s.includes('.')) s = s.replace(/\./g, '');
+  s = s.replace(/,/g, '.');
+  if (!s) return null;
+  const termos = [];
+  let atual = '';
+  for (const ch of s) {
+    if ((ch === '+' || ch === '-') && atual && atual !== '+' && atual !== '-') { termos.push(atual); atual = ch; }
+    else atual += ch;
+  }
+  termos.push(atual);
+  let total = 0;
+  for (const t of termos) {
+    if (!/^[+-]?(\d+\.?\d*|\.\d+)$/.test(t)) return null;
+    total += Math.round(parseFloat(t) * 100);
+  }
+  return total;
+}
+
+/* ---------- dados ---------- */
+// Começa vazia. Os dados pessoais entram pelo botão "Repor cópia de segurança" e ficam só no iPhone.
+function dadosIniciais() {
+  return {
+    versao: 1,
+    contas: [],
+    grupos: [
+      { id: uid(), nome: 'Pais', tipo: 'dividas', fichas: [] },
+      { id: uid(), nome: 'Amigos', tipo: 'dividas', fichas: [] },
+      { id: uid(), nome: 'Viagens', tipo: 'gastos', fichas: [] },
+    ],
+  };
+}
+
+function carregar() {
+  try { const s = localStorage.getItem(CHAVE); if (s) return JSON.parse(s); } catch {}
+  return null;
+}
+function guardar() {
+  try { localStorage.setItem(CHAVE, JSON.stringify(db)); } catch { toast('Não foi possível guardar'); }
+}
+
+let db = carregar();
+if (!db) { db = dadosIniciais(); guardar(); }
+
+const totalFicha = f => f.movimentos.reduce((s, m) => s + m.valor, 0);
+const totalGrupo = g => g.fichas.reduce((s, f) => s + totalFicha(f), 0);
+const gruposDe = tipo => db.grupos.filter(g => g.tipo === tipo);
+const totalContas = () => db.contas.filter(c => c.noTotal).reduce((s, c) => s + c.valor, 0);
+const totalDividas = () => gruposDe('dividas').reduce((s, g) => s + totalGrupo(g), 0);
+const movOrdenados = f => f.movimentos
+  .map((m, i) => [m, i])
+  .sort((a, b) => a[0].data < b[0].data ? -1 : a[0].data > b[0].data ? 1 : a[1] - b[1])
+  .map(x => x[0]);
+/** A conta escrita como na nota: "115,82 tricount + 4,60 pré casa − 2,50 fino ibar" */
+const expressao = f => movOrdenados(f)
+  .map((m, i) => (m.valor < 0 ? '− ' : i ? '+ ' : '') + numero(m.valor) + (m.desc ? ' ' + m.desc : ''))
+  .join(' ');
+function acharFicha(id) {
+  for (const g of db.grupos) { const f = g.fichas.find(f => f.id === id); if (f) return [g, f]; }
+  return [null, null];
+}
+function mover(lista, id, d) {
+  const i = lista.findIndex(x => x.id === id), j = i + d;
+  if (i < 0 || j < 0 || j >= lista.length) return;
+  [lista[i], lista[j]] = [lista[j], lista[i]];
+}
+
+/* ---------- ícones ---------- */
+const ic = {
+  resumo: '<svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="9.5"/><path d="M15.6 8.7a4.3 4.3 0 1 0 0 6.6M7.6 10.9h6.2M7.6 13.3h6.2"/></svg>',
+  contas: '<svg viewBox="0 0 24 24"><rect x="2.5" y="6" width="19" height="12" rx="2.5"/><circle cx="12" cy="12" r="2.6"/><path d="M6 9.6v4.8M18 9.6v4.8"/></svg>',
+  dividas: '<svg viewBox="0 0 24 24"><circle cx="9" cy="8.5" r="3.2"/><path d="M3 19.2c.6-3.3 3-5.1 6-5.1s5.4 1.8 6 5.1"/><circle cx="16.6" cy="9" r="2.6"/><path d="M16.8 13.7c2.3 0 4 1.4 4.5 4"/></svg>',
+  gastos: '<svg viewBox="0 0 24 24"><path d="M2.5 4h2.6l2.3 10.6h10.4l2-7.6H6.3"/><circle cx="9" cy="19" r="1.5"/><circle cx="17" cy="19" r="1.5"/></svg>',
+  chev: '<svg class="chev" viewBox="0 0 24 24"><path d="M9 5l7 7-7 7"/></svg>',
+  voltar: '<svg viewBox="0 0 24 24"><path d="M15 4l-8 8 8 8"/></svg>',
+  mais: '<svg viewBox="0 0 24 24"><path d="M12 5v14M5 12h14"/></svg>',
+  maisCirc: '<svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="9.5"/><path d="M12 8v8M8 12h8"/></svg>',
+  opcoes: '<svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="9.5"/><path d="M7.9 12h.01M12 12h.01M16.1 12h.01" stroke-width="2.6"/></svg>',
+  pasta: '<svg viewBox="0 0 24 24"><path d="M3 7v11a1.5 1.5 0 0 0 1.5 1.5h15A1.5 1.5 0 0 0 21 18V9a1.5 1.5 0 0 0-1.5-1.5H12L10 5H4.5A1.5 1.5 0 0 0 3 6.5z"/><path d="M12 10.5v6M9 13.5h6"/></svg>',
+  certo: '<svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="9.5"/><path d="M8 12.3l2.7 2.7L16 9.6"/></svg>',
+};
+
+/* ---------- estado do ecrã ---------- */
+const ui = {
+  tab: (() => { try { return localStorage.getItem('dinheiro.tab') || 'resumo'; } catch { return 'resumo'; } })(),
+  ficha: { dividas: null, gastos: null },
+  scroll: {},
+  ordenar: false,
+  anim: '',
+};
+let camada = null; // folha ou menu aberto
+
+/* ---------- vistas ---------- */
+function cab(titulo, { voltar = '', acoes = '' } = {}) {
+  return `<div class="barra">${voltar ? `<button class="voltar" data-a="voltar">${ic.voltar}${esc(voltar)}</button>` : '<span></span>'}<div class="acoes">${acoes}</div></div><h1>${esc(titulo)}</h1>`;
+}
+const cabSec = t => `<div class="cab-sec"><span>${esc(t)}</span></div>`;
+
+function linha(titulo, valor, o = {}) {
+  const tag = o.a ? 'button' : 'div';
+  const attrs = o.a ? ` data-a="${o.a}" data-id="${esc(o.id ?? '')}"` : '';
+  return `<${tag} class="linha"${attrs}><div class="txt"><div class="${o.tituloCls || ''}">${esc(titulo)}</div>${o.sub ? `<div class="sub">${esc(o.sub)}</div>` : ''}</div><div class="val ${o.cls || ''}">${valor}</div>${o.a && o.chev !== false ? ic.chev : ''}</${tag}>`;
+}
+function linhaOrdenar(nome, a, id, i, n) {
+  return `<div class="linha"><div class="txt">${esc(nome)}</div>
+    <button class="mini" data-a="${a}" data-id="${id}" data-d="-1" ${i === 0 ? 'disabled' : ''} aria-label="Subir">↑</button>
+    <button class="mini" data-a="${a}" data-id="${id}" data-d="1" ${i === n - 1 ? 'disabled' : ''} aria-label="Descer">↓</button></div>`;
+}
+const btnOrdenar = () => `<button class="txtbtn${ui.ordenar ? ' forte' : ''}" data-a="ordenar">${ui.ordenar ? 'OK' : 'Ordenar'}</button>`;
+
+function vResumo() {
+  const tc = totalContas(), td = totalDividas();
+  const fora = db.contas.filter(c => !c.noTotal);
+  const gastos = gruposDe('gastos').flatMap(g => g.fichas);
+  const vazio = !db.contas.length && db.grupos.every(g => !g.fichas.length);
+  return cab('Dinheiro') + (vazio ? `<div class="lista"><button class="linha acao" data-a="repor">${ic.maisCirc} Importar os meus dados</button></div>
+    <p class="rodape">Primeira vez? Escolhe o ficheiro <b>dinheiro-dados-iniciais.json</b> que te enviei.</p>` : '') + `
+    <div class="lista"><div class="cartao-total">
+      <div class="rot">Total</div>
+      <div class="grande">${euro(tc + td)}</div>
+      <div class="leg">contas + dívidas a receber</div>
+    </div></div>
+    <div class="lista">
+      ${linha('Contas', euro(tc), { a: 'tab', id: 'contas' })}
+      ${gruposDe('dividas').map(g => linha('Dívidas ' + g.nome.toLowerCase(), euro(totalGrupo(g)), { a: 'tab', id: 'dividas' })).join('')}
+    </div>
+    ${fora.length ? cabSec('Fora do total') + `<div class="lista">${fora.map(c => linha(c.nome, euro(c.valor), { cls: 'sec' })).join('')}</div>` : ''}
+    ${gastos.length ? cabSec('Gastos') + `<div class="lista">${gastos.map(f => linha(f.nome, euro(totalFicha(f)), { a: 'tab', id: 'gastos' })).join('')}</div>` : ''}
+    ${cabSec('Partilhar e cópias')}
+    <div class="lista">
+      <button class="linha acao" data-a="exportar">Exportar em texto</button>
+      <button class="linha acao" data-a="backup">Guardar cópia de segurança</button>
+      <button class="linha acao" data-a="repor">Repor cópia de segurança</button>
+    </div>
+    <p class="rodape">Os dados ficam só neste iPhone. Guarda uma cópia de segurança de vez em quando (por exemplo em Ficheiros → iCloud Drive).</p>`;
+}
+
+function vContas() {
+  const acoes = btnOrdenar() + `<button class="icbtn" data-a="nova-conta" aria-label="Nova conta">${ic.mais}</button>`;
+  const n = db.contas.length;
+  const linhas = db.contas.map((c, i) => ui.ordenar
+    ? linhaOrdenar(c.nome, 'mover-conta', c.id, i, n)
+    : linha(c.nome, euro(c.valor), {
+        a: 'conta', id: c.id, cls: c.noTotal ? '' : 'sec',
+        sub: [c.nota, c.noTotal ? '' : 'fora do total'].filter(Boolean).join(' · '),
+      })).join('');
+  return cab('Contas', { acoes }) +
+    `<div class="lista">${linhas || '<div class="linha sec">Sem contas</div>'}</div>
+     <div class="total-rodape"><span>Total</span><span>${euro(totalContas())}</span></div>`;
+}
+
+function linhaFicha(f, div) {
+  const t = totalFicha(f), tem = f.movimentos.length > 0;
+  return linha(f.nome, tem ? euro(t) : '—', {
+    a: 'ficha', id: f.id,
+    sub: [expressao(f), f.nota].filter(Boolean).join(' · '),
+    cls: tem ? (div ? cor(t) : '') : 'ter',
+  });
+}
+
+function vGrupos(tipo) {
+  const div = tipo === 'dividas', gs = gruposDe(tipo);
+  const total = gs.reduce((s, g) => s + totalGrupo(g), 0);
+  const acoes = btnOrdenar() + `<button class="icbtn" data-a="novo-grupo" aria-label="Novo grupo">${ic.pasta}</button>`;
+  let h = cab(div ? 'Dívidas' : 'Gastos', { acoes });
+  h += `<div class="lista">${linha(div ? 'A receber' : 'Total gasto', euro(total), { cls: div ? cor(total) : '', tituloCls: 'forte' })}</div>`;
+  for (const g of gs) {
+    const n = g.fichas.length;
+    h += `<div class="cab-sec"><span>${esc(g.nome)}</span><span class="dir">${euro(totalGrupo(g))}
+      <button class="icbtn peq" data-a="menu-grupo" data-id="${g.id}" aria-label="Opções de ${esc(g.nome)}">${ic.opcoes}</button></span></div>`;
+    h += `<div class="lista">` +
+      g.fichas.map((f, i) => ui.ordenar ? linhaOrdenar(f.nome, 'mover-ficha', f.id, i, n) : linhaFicha(f, div)).join('') +
+      `<button class="linha acao" data-a="nova-ficha" data-id="${g.id}">${ic.maisCirc} Adicionar ${div ? 'pessoa' : 'item'}</button></div>`;
+  }
+  if (!gs.length) h += `<p class="rodape" style="margin-top:0">Ainda não há grupos. Cria um com o botão em cima.</p>`;
+  return h;
+}
+
+function vFicha(tipo) {
+  const [, f] = acharFicha(ui.ficha[tipo]);
+  const div = tipo === 'dividas', t = totalFicha(f);
+  const legenda = !div ? 'gasto total' : t > 0 ? `${f.nome} deve-te` : t < 0 ? `deves a ${f.nome}` : 'contas saldadas';
+  const acoes = `<button class="icbtn" data-a="menu-ficha" aria-label="Opções">${ic.opcoes}</button>
+                 <button class="icbtn" data-a="novo-mov" aria-label="Adicionar movimento">${ic.mais}</button>`;
+  let h = cab(f.nome, { voltar: div ? 'Dívidas' : 'Gastos', acoes });
+  h += `<div class="lista"><div class="cartao-total"><div class="grande ${div ? cor(t) : ''}">${euro(t)}</div><div class="leg">${esc(legenda)}</div></div></div>`;
+  h += cabSec('Movimentos') + `<div class="lista">` +
+    movOrdenados(f).map(m => linha(m.desc || '—', euroSinal(m.valor), {
+      a: 'mov', id: m.id, sub: dataPT(m.data), cls: m.valor < 0 ? 'neg' : '', chev: false, tituloCls: m.desc ? '' : 'sec',
+    })).join('') +
+    `<button class="linha acao" data-a="novo-mov">${ic.maisCirc} Adicionar</button></div>`;
+  h += cabSec('Nota') + `<div class="lista"><textarea class="nota" data-campo="nota" rows="2" placeholder="${div ? 'Ex.: deve-me um brasão' : 'Notas'}">${esc(f.nota)}</textarea></div>`;
+  if (div && t !== 0) {
+    h += `<div class="lista"><button class="linha acao" data-a="saldar">${ic.certo} ${t > 0 ? `Pagou-me tudo (${euro(t)})` : `Paguei tudo (${euro(-t)})`}</button></div>
+          <p class="rodape">Acrescenta um movimento que deixa a conta a zero.</p>`;
+  }
+  return h;
+}
+
+function vTabs() {
+  const tabs = [['resumo', 'Resumo'], ['contas', 'Contas'], ['dividas', 'Dívidas'], ['gastos', 'Gastos']];
+  return `<nav class="tabs">${tabs.map(([id, nome]) =>
+    `<button data-a="tab" data-id="${id}" class="${ui.tab === id ? 'on' : ''}">${ic[id]}<span>${nome}</span></button>`).join('')}</nav>`;
+}
+
+function render() {
+  const t = ui.tab;
+  let html;
+  if (t === 'resumo') html = vResumo();
+  else if (t === 'contas') html = vContas();
+  else if (ui.ficha[t] && acharFicha(ui.ficha[t])[1]) html = vFicha(t);
+  else { ui.ficha[t] = null; html = vGrupos(t); }
+  $('#app').innerHTML = `<main class="pagina ${ui.anim}">${html}</main>${vTabs()}`;
+  ui.anim = '';
+}
+
+/* ---------- folhas e menus ---------- */
+function abrir(c) {
+  camada = c;
+  const el = $('#camada');
+  el.className = '';
+  el.innerHTML = '<div class="fundo" data-a="fechar"></div>' + (c.tipo === 'acoes' ? vAcoes(c) : vFolha(c));
+  document.documentElement.classList.add('travado');
+  const foco = el.querySelector('[autofocus]');
+  if (foco) { foco.focus(); if (foco.value) foco.select(); }
+  c.depois?.();
+}
+function fechar() {
+  const aFechar = camada, el = $('#camada');
+  if (!aFechar) return;
+  el.classList.add('saindo');
+  document.activeElement?.blur();
+  setTimeout(() => {
+    if (camada !== aFechar) return; // entretanto abriu-se outra
+    camada = null; el.innerHTML = ''; el.className = '';
+    document.documentElement.classList.remove('travado');
+  }, 240);
+}
+function vFolha(c) {
+  return `<div class="folha" role="dialog" aria-label="${esc(c.titulo)}">
+    <div class="folha-barra"><button class="txtbtn" data-a="fechar">Cancelar</button><strong>${esc(c.titulo)}</strong>
+    <button class="txtbtn forte" data-a="guardar-folha">${c.ok || 'Guardar'}</button></div>
+    <div class="folha-corpo">${c.corpo}</div></div>`;
+}
+function vAcoes(c) {
+  return `<div class="folha-acoes" role="dialog"><div class="grupo-acoes">
+    ${c.titulo ? `<div class="titulo-acoes">${esc(c.titulo)}</div>` : ''}
+    ${c.botoes.map((b, i) => `<button data-a="acao" data-id="${i}" class="${b.perigo ? 'perigo' : ''}">${esc(b.texto)}</button>`).join('')}
+    </div><button class="cancelar-acoes" data-a="fechar">Cancelar</button></div>`;
+}
+const acoes = (titulo, botoes) => abrir({ tipo: 'acoes', titulo, botoes });
+const confirmar = (titulo, texto, fn) => acoes(titulo, [{ texto, perigo: true, fn }]);
+function erro(sel) {
+  const el = $(sel); el.closest('.lista')?.classList.remove('abanar');
+  void el.offsetWidth; el.closest('.lista')?.classList.add('abanar'); el.focus();
+  return false;
+}
+
+function pedirNome(titulo, valor, ok) {
+  abrir({
+    tipo: 'folha', titulo, ok: 'OK',
+    corpo: `<div class="lista"><div class="linha"><input id="f-nome" placeholder="Nome" value="${esc(valor)}" autocomplete="off" autofocus></div></div>`,
+    guardar: () => { const n = $('#f-nome').value.trim(); if (!n) return erro('#f-nome'); ok(n); return true; },
+  });
+}
+
+function folhaConta(id) {
+  const c = db.contas.find(c => c.id === id);
+  abrir({
+    tipo: 'folha', titulo: c ? 'Editar conta' : 'Nova conta',
+    corpo: `<div class="lista">
+        <div class="linha"><input id="f-nome" placeholder="Nome" value="${esc(c?.nome)}" autocomplete="off" ${c ? '' : 'autofocus'}></div>
+        <div class="linha campo-val"><input id="f-valor" class="valor-grande" inputmode="decimal" placeholder="0" value="${c ? numSinal(c.valor) : ''}" autocomplete="off" ${c ? 'autofocus' : ''}><span>€</span></div>
+        <label class="linha"><span class="txt">Contar no total</span><input type="checkbox" class="interruptor" id="f-total" ${!c || c.noTotal ? 'checked' : ''}></label>
+        <div class="linha"><input id="f-nota" placeholder="Nota (ex.: interrail)" value="${esc(c?.nota)}" autocomplete="off"></div>
+      </div>
+      ${c ? `<div class="lista"><button class="linha acao perigo" data-a="apagar-conta" data-id="${c.id}">Apagar conta</button></div>` : ''}`,
+    guardar: () => {
+      const nome = $('#f-nome').value.trim(), v = lerValor($('#f-valor').value);
+      if (!nome) return erro('#f-nome');
+      if (v === null) return erro('#f-valor');
+      let alvo = c;
+      if (!alvo) { alvo = { id: uid() }; db.contas.push(alvo); }
+      Object.assign(alvo, { nome, valor: v, noTotal: $('#f-total').checked, nota: $('#f-nota').value.trim() });
+      return true;
+    },
+  });
+}
+
+function folhaMov(movId) {
+  const [g, f] = acharFicha(ui.ficha[ui.tab]);
+  const m = f.movimentos.find(m => m.id === movId), div = g.tipo === 'dividas';
+  const neg = m ? m.valor < 0 : false;
+  abrir({
+    tipo: 'folha', titulo: m ? 'Editar' : f.nome, sinal: neg, nome: f.nome, div,
+    corpo: `<div class="seg" id="f-sinal">
+        <button data-a="sinal" data-id="0" class="${neg ? '' : 'on'}">${div ? 'Deve-me  +' : 'Gasto  +'}</button>
+        <button data-a="sinal" data-id="1" class="${neg ? 'on' : ''}">${div ? 'Desconto  −' : 'Reembolso  −'}</button>
+      </div>
+      <div class="lista">
+        <div class="linha campo-val"><input id="f-valor" class="valor-grande" inputmode="decimal" placeholder="0,00" value="${m ? numero(m.valor) : ''}" autocomplete="off" autofocus><span>€</span></div>
+        <div class="linha"><input id="f-desc" placeholder="${div ? 'Descrição (ex.: jogo padle)' : 'Descrição'}" value="${esc(m?.desc)}" autocomplete="off"></div>
+        <label class="linha"><span class="txt">Data</span><input type="date" id="f-data" value="${m?.data || hoje()}"></label>
+      </div>
+      ${div ? '<p class="rodape" id="f-ajuda"></p>' : ''}
+      ${m ? `<div class="lista"><button class="linha acao perigo" data-a="apagar-mov" data-id="${m.id}">Apagar movimento</button></div>` : ''}`,
+    depois: ajudaSinal,
+    guardar: () => {
+      const v = lerValor($('#f-valor').value);
+      if (v === null) return erro('#f-valor');
+      const dados = { valor: camada.sinal ? -Math.abs(v) : v, desc: $('#f-desc').value.trim(), data: $('#f-data').value || hoje() };
+      if (m) Object.assign(m, dados); else f.movimentos.push({ id: uid(), ...dados });
+      return true;
+    },
+  });
+}
+function ajudaSinal() {
+  const el = $('#f-ajuda');
+  if (el) el.textContent = camada.sinal
+    ? `Desconta ao que ${camada.nome} te deve (pagou-te, ou pagou algo por ti).`
+    : `Soma ao que ${camada.nome} te deve.`;
+}
+
+/* ---------- exportar e cópias ---------- */
+function textoExportar() {
+  const L = ['Dinheiro — ' + new Date().toLocaleDateString('pt-PT', { day: 'numeric', month: 'long', year: 'numeric' }), ''];
+  for (const c of db.contas) L.push(`${c.nome}: ${numSinal(c.valor)}${c.nota ? ` (${c.nota})` : ''}${c.noTotal ? '' : ' [fora do total]'}`);
+  const tc = totalContas(), td = totalDividas();
+  L.push(`Total contas: ${euro(tc)}`);
+  for (const g of db.grupos) {
+    L.push('', (g.tipo === 'dividas' ? 'DÍVIDAS ' : 'GASTOS ') + g.nome.toUpperCase());
+    for (const f of g.fichas) {
+      let l = `${f.nome}:`;
+      if (f.movimentos.length) { l += ' ' + expressao(f); if (f.movimentos.length > 1) l += ' = ' + numSinal(totalFicha(f)); }
+      if (f.nota) l += ` (${f.nota})`;
+      L.push(l);
+    }
+    L.push(`Total ${g.nome.toLowerCase()}: ${euro(totalGrupo(g))}`);
+  }
+  L.push('', `TOTAL: ${euro(tc)} + ${euro(td)} = ${euro(tc + td)}`);
+  return L.join('\n');
+}
+async function exportar() {
+  const t = textoExportar();
+  if (navigator.share) { try { await navigator.share({ text: t }); return; } catch (e) { if (e.name === 'AbortError') return; } }
+  try { await navigator.clipboard.writeText(t); toast('Texto copiado'); } catch { toast('Não foi possível copiar'); }
+}
+async function backup() {
+  const nome = `dinheiro-${hoje()}.json`;
+  const blob = new Blob([JSON.stringify(db, null, 2)], { type: 'application/json' });
+  const ficheiro = new File([blob], nome, { type: 'application/json' });
+  if (navigator.canShare?.({ files: [ficheiro] })) {
+    try { await navigator.share({ files: [ficheiro] }); return; } catch (e) { if (e.name === 'AbortError') return; }
+  }
+  const a = document.createElement('a');
+  a.href = URL.createObjectURL(blob); a.download = nome; a.click();
+  setTimeout(() => URL.revokeObjectURL(a.href), 2000);
+}
+function repor() {
+  const i = document.createElement('input');
+  i.type = 'file'; i.accept = '.json,application/json';
+  i.onchange = async () => {
+    try {
+      const d = JSON.parse(await i.files[0].text());
+      if (!Array.isArray(d.contas) || !Array.isArray(d.grupos)) throw new Error();
+      confirmar('Substituir todos os dados atuais por esta cópia?', 'Substituir', () => {
+        db = d; ui.ficha = { dividas: null, gastos: null }; toast('Cópia reposta');
+      });
+    } catch { toast('Ficheiro inválido'); }
+  };
+  i.click();
+}
+function toast(t) {
+  const el = $('#toast');
+  el.textContent = t; el.classList.add('on');
+  clearTimeout(toast.t); toast.t = setTimeout(() => el.classList.remove('on'), 1800);
+}
+
+/* ---------- ações ---------- */
+function irPara(tab) {
+  try { localStorage.setItem('dinheiro.tab', tab); } catch {}
+  ui.tab = tab; ui.ordenar = false;
+}
+
+document.addEventListener('click', e => {
+  const b = e.target.closest('[data-a]');
+  if (!b || b.disabled) return;
+  const a = b.dataset.a, id = b.dataset.id;
+  const naFicha = () => acharFicha(ui.ficha[ui.tab]);
+
+  switch (a) {
+    case 'tab':
+      if (id === ui.tab && ui.ficha[id]) { ui.ficha[id] = null; ui.anim = 'volta'; }
+      else if (id === ui.tab) { scrollTo({ top: 0, behavior: 'smooth' }); return; }
+      else irPara(id);
+      render(); scrollTo(0, 0); return;
+    case 'voltar':
+      ui.ficha[ui.tab] = null; ui.anim = 'volta';
+      render(); scrollTo(0, ui.scroll[ui.tab] || 0); return;
+    case 'ficha':
+      ui.scroll[ui.tab] = scrollY; ui.ficha[ui.tab] = id; ui.anim = 'entra';
+      render(); scrollTo(0, 0); return;
+    case 'ordenar': ui.ordenar = !ui.ordenar; render(); return;
+    case 'mover-conta': mover(db.contas, id, +b.dataset.d); break;
+    case 'mover-ficha': { const g = db.grupos.find(g => g.fichas.some(f => f.id === id)); if (g) mover(g.fichas, id, +b.dataset.d); break; }
+
+    case 'conta': folhaConta(id); return;
+    case 'nova-conta': folhaConta(null); return;
+    case 'apagar-conta': {
+      const c = db.contas.find(c => c.id === id);
+      confirmar(`Apagar a conta "${c.nome}"?`, 'Apagar', () => { db.contas = db.contas.filter(x => x !== c); });
+      return;
+    }
+
+    case 'novo-grupo':
+      pedirNome('Novo grupo', '', n => db.grupos.push({ id: uid(), nome: n, tipo: ui.tab, fichas: [] }));
+      return;
+    case 'nova-ficha': {
+      const g = db.grupos.find(g => g.id === id);
+      pedirNome(ui.tab === 'dividas' ? `Nova pessoa em ${g.nome}` : `Novo item em ${g.nome}`, '',
+        n => g.fichas.push({ id: uid(), nome: n, nota: '', movimentos: [] }));
+      return;
+    }
+    case 'menu-grupo': {
+      const g = db.grupos.find(g => g.id === id);
+      acoes(g.nome, [
+        { texto: 'Mudar nome', fn: () => pedirNome('Mudar nome', g.nome, n => { g.nome = n; }) },
+        { texto: 'Apagar grupo', perigo: true, fn: () => confirmar(`Apagar "${g.nome}" e tudo o que tem dentro?`, 'Apagar', () => { db.grupos = db.grupos.filter(x => x !== g); }) },
+      ]);
+      return;
+    }
+    case 'menu-ficha': {
+      const [g, f] = naFicha();
+      const botoes = [{ texto: 'Mudar nome', fn: () => pedirNome('Mudar nome', f.nome, n => { f.nome = n; }) }];
+      if (f.movimentos.length) botoes.push({ texto: 'Apagar todos os movimentos', perigo: true,
+        fn: () => confirmar(`Apagar todos os movimentos de ${f.nome}?`, 'Apagar', () => { f.movimentos = []; }) });
+      botoes.push({ texto: g.tipo === 'dividas' ? 'Apagar pessoa' : 'Apagar item', perigo: true,
+        fn: () => confirmar(`Apagar ${f.nome} e os seus movimentos?`, 'Apagar', () => { g.fichas = g.fichas.filter(x => x !== f); ui.ficha[ui.tab] = null; }) });
+      acoes(f.nome, botoes);
+      return;
+    }
+
+    case 'novo-mov': folhaMov(null); return;
+    case 'mov': folhaMov(id); return;
+    case 'apagar-mov': { const [, f] = naFicha(); f.movimentos = f.movimentos.filter(m => m.id !== id); guardar(); fechar(); render(); return; }
+    case 'sinal':
+      camada.sinal = id === '1';
+      document.querySelectorAll('#f-sinal button').forEach(x => x.classList.toggle('on', x.dataset.id === id));
+      ajudaSinal(); return;
+    case 'saldar': {
+      const [, f] = naFicha(), t = totalFicha(f);
+      f.movimentos.push({ id: uid(), valor: -t, desc: t > 0 ? 'pagou' : 'paguei', data: hoje() });
+      toast('Conta saldada');
+      break;
+    }
+
+    case 'fechar': fechar(); return;
+    case 'guardar-folha': if (camada?.guardar() === true) { guardar(); fechar(); render(); } return;
+    case 'acao': {
+      const botao = camada.botoes[+id];
+      camada = null; $('#camada').innerHTML = ''; document.documentElement.classList.remove('travado');
+      botao.fn(); guardar(); render(); return;
+    }
+
+    case 'exportar': exportar(); return;
+    case 'backup': backup(); return;
+    case 'repor': repor(); return;
+    default: return;
+  }
+  guardar(); render();
+});
+
+// Os botões do seletor +/− não tiram o foco ao campo do valor (o teclado não fecha).
+document.addEventListener('mousedown', e => { if (e.target.closest('.seg')) e.preventDefault(); });
+
+document.addEventListener('input', e => {
+  if (e.target.dataset.campo !== 'nota') return;
+  const [, f] = acharFicha(ui.ficha[ui.tab]);
+  if (f) { f.nota = e.target.value; guardar(); }
+});
+
+document.addEventListener('keydown', e => {
+  if (!camada) return;
+  if (e.key === 'Escape') fechar();
+  if (e.key === 'Enter' && camada.guardar && e.target.matches('#camada input')) {
+    e.preventDefault(); $('[data-a="guardar-folha"]').click();
+  }
+});
+
+render();
+navigator.storage?.persist?.();
+if ('serviceWorker' in navigator) navigator.serviceWorker.register('sw.js').catch(() => {});
+</script>
+</body>
+</html>
