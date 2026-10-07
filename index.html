@@ -197,7 +197,7 @@ function lerValor(texto) {
 }
 
 /* ---------- dados ---------- */
-// Começa vazia. Os dados pessoais entram pelo botão "Repor cópia de segurança" e ficam só no iPhone.
+// Começa vazia. Os dados pessoais entram por "Colar os meus dados" ou por ficheiro, e ficam só no iPhone.
 function dadosIniciais() {
   return {
     versao: 1,
@@ -292,8 +292,10 @@ function vResumo() {
   const fora = db.contas.filter(c => !c.noTotal);
   const gastos = gruposDe('gastos').flatMap(g => g.fichas);
   const vazio = !db.contas.length && db.grupos.every(g => !g.fichas.length);
-  return cab('Dinheiro') + (vazio ? `<div class="lista"><button class="linha acao" data-a="repor">${ic.maisCirc} Importar os meus dados</button></div>
-    <p class="rodape">Primeira vez? Escolhe o ficheiro <b>dinheiro-dados-iniciais.json</b> que te enviei.</p>` : '') + `
+  return cab('Dinheiro') + (vazio ? `<div class="lista">
+      <button class="linha acao" data-a="colar">${ic.maisCirc} Colar os meus dados</button>
+      <button class="linha acao" data-a="repor">${ic.maisCirc} Importar de um ficheiro</button></div>
+    <p class="rodape">Primeira vez? Cola o texto que copiei no teu Mac, ou escolhe o ficheiro <b>dinheiro-dados-iniciais.json</b>.</p>` : '') + `
     <div class="lista"><div class="cartao-total">
       <div class="rot">Total</div>
       <div class="grande">${euro(tc + td)}</div>
@@ -309,7 +311,8 @@ function vResumo() {
     <div class="lista">
       <button class="linha acao" data-a="exportar">Exportar em texto</button>
       <button class="linha acao" data-a="backup">Guardar cópia de segurança</button>
-      <button class="linha acao" data-a="repor">Repor cópia de segurança</button>
+      <button class="linha acao" data-a="repor">Repor cópia de um ficheiro</button>
+      <button class="linha acao" data-a="colar">Repor cópia colando texto</button>
     </div>
     <p class="rodape">Os dados ficam só neste iPhone. Guarda uma cópia de segurança de vez em quando (por exemplo em Ficheiros → iCloud Drive).</p>`;
 }
@@ -535,19 +538,44 @@ async function backup() {
   a.href = URL.createObjectURL(blob); a.download = nome; a.click();
   setTimeout(() => URL.revokeObjectURL(a.href), 2000);
 }
+function importar(texto) {
+  try {
+    const d = JSON.parse(String(texto).trim());
+    if (!Array.isArray(d.contas) || !Array.isArray(d.grupos) ||
+        !d.grupos.every(g => Array.isArray(g.fichas) && g.fichas.every(f => Array.isArray(f.movimentos)))) throw new Error();
+    confirmar('Substituir todos os dados atuais por estes?', 'Substituir', () => {
+      db = d; ui.ficha = { dividas: null, gastos: null }; toast('Dados importados');
+    });
+    return true;
+  } catch {
+    toast('Estes dados não são válidos');
+    return false;
+  }
+}
 function repor() {
+  // Sem filtro de tipo: no iPhone o filtro .json costuma deixar os ficheiros a cinzento.
   const i = document.createElement('input');
-  i.type = 'file'; i.accept = '.json,application/json';
+  i.type = 'file'; i.style.display = 'none';
+  document.body.appendChild(i);
   i.onchange = async () => {
-    try {
-      const d = JSON.parse(await i.files[0].text());
-      if (!Array.isArray(d.contas) || !Array.isArray(d.grupos)) throw new Error();
-      confirmar('Substituir todos os dados atuais por esta cópia?', 'Substituir', () => {
-        db = d; ui.ficha = { dividas: null, gastos: null }; toast('Cópia reposta');
-      });
-    } catch { toast('Ficheiro inválido'); }
+    const f = i.files[0]; i.remove();
+    if (f) importar(await f.text());
   };
   i.click();
+}
+function colar() {
+  abrir({
+    tipo: 'folha', titulo: 'Colar dados', ok: 'Importar',
+    corpo: `<div class="lista"><textarea id="f-dados" class="nota" rows="8" placeholder="Toca aqui, mantém o dedo e escolhe Colar" autocomplete="off" autocorrect="off" spellcheck="false"></textarea></div>
+      <p class="rodape" style="margin-top:-14px">Copia o texto da cópia de segurança (por exemplo, no Mac) e cola-o aqui.</p>`,
+    guardar: () => {
+      const t = $('#f-dados').value;
+      if (!t.trim()) return erro('#f-dados');
+      camada = null; $('#camada').innerHTML = ''; document.documentElement.classList.remove('travado');
+      importar(t);
+      return false;
+    },
+  });
 }
 function toast(t) {
   const el = $('#toast');
@@ -644,6 +672,7 @@ document.addEventListener('click', e => {
     case 'exportar': exportar(); return;
     case 'backup': backup(); return;
     case 'repor': repor(); return;
+    case 'colar': colar(); return;
     default: return;
   }
   guardar(); render();
