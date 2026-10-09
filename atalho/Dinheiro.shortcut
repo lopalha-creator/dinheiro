@@ -23,7 +23,7 @@
 				<key>CustomOutputName</key>
 				<string>textoPessoas</string>
 				<key>UUID</key>
-				<string>5d6d3c0f-ace9-4f90-bf25-035dc6cf52a8</string>
+				<string>6f93c812-cd3e-4783-943e-c014cd886957</string>
 				<key>WFTextActionText</key>
 				<string>Pai
 Mãe
@@ -49,7 +49,7 @@ Mité</string>
 				<key>Show-text</key>
 				<true/>
 				<key>UUID</key>
-				<string>1e64bbe0-919b-43cc-b3de-a913817ab94c</string>
+				<string>7bbde3c2-a34e-4bbe-9d92-b4d298a01e88</string>
 				<key>WFTextSeparator</key>
 				<string>New Lines</string>
 				<key>text</key>
@@ -63,7 +63,7 @@ Mité</string>
 								<key>OutputName</key>
 								<string>textoPessoas</string>
 								<key>OutputUUID</key>
-								<string>5d6d3c0f-ace9-4f90-bf25-035dc6cf52a8</string>
+								<string>6f93c812-cd3e-4783-943e-c014cd886957</string>
 								<key>Type</key>
 								<string>ActionOutput</string>
 							</dict>
@@ -93,7 +93,7 @@ Mité</string>
 				<key>CustomOutputName</key>
 				<string>textoContas</string>
 				<key>UUID</key>
-				<string>56dff58a-cc66-4f01-8820-6d59843564c7</string>
+				<string>28621c66-1e51-4216-9610-744227467a3d</string>
 				<key>WFTextActionText</key>
 				<string>Revolut
 Carteira
@@ -110,7 +110,7 @@ Conta corrente</string>
 				<key>Show-text</key>
 				<true/>
 				<key>UUID</key>
-				<string>ee78bb39-e6fe-4ac5-9bfa-eb5d2a3b6beb</string>
+				<string>51b29ac3-cc54-4b9c-82a7-f01b00ce2ea9</string>
 				<key>WFTextSeparator</key>
 				<string>New Lines</string>
 				<key>text</key>
@@ -124,7 +124,7 @@ Conta corrente</string>
 								<key>OutputName</key>
 								<string>textoContas</string>
 								<key>OutputUUID</key>
-								<string>56dff58a-cc66-4f01-8820-6d59843564c7</string>
+								<string>28621c66-1e51-4216-9610-744227467a3d</string>
 								<key>Type</key>
 								<string>ActionOutput</string>
 							</dict>
@@ -145,7 +145,7 @@ Conta corrente</string>
 				<key>CustomOutputName</key>
 				<string>Text</string>
 				<key>UUID</key>
-				<string>847255ff-ce56-46e0-bd79-4406fec1b3a5</string>
+				<string>4802e338-2217-4dcd-846d-3cf7af119894</string>
 				<key>WFTextActionText</key>
 				<string></string>
 			</dict>
@@ -162,7 +162,7 @@ Conta corrente</string>
 						<key>OutputName</key>
 						<string>Text</string>
 						<key>OutputUUID</key>
-						<string>847255ff-ce56-46e0-bd79-4406fec1b3a5</string>
+						<string>4802e338-2217-4dcd-846d-3cf7af119894</string>
 						<key>Type</key>
 						<string>ActionOutput</string>
 					</dict>
@@ -183,7 +183,7 @@ Conta corrente</string>
 				<key>CustomOutputName</key>
 				<string>Text 1</string>
 				<key>UUID</key>
-				<string>f0977650-04fa-417d-a995-639a2c25ea82</string>
+				<string>23e36b76-af98-4e32-8468-d6b345791125</string>
 				<key>WFTextActionText</key>
 				<string></string>
 			</dict>
@@ -200,7 +200,7 @@ Conta corrente</string>
 						<key>OutputName</key>
 						<string>Text 1</string>
 						<key>OutputUUID</key>
-						<string>f0977650-04fa-417d-a995-639a2c25ea82</string>
+						<string>23e36b76-af98-4e32-8468-d6b345791125</string>
 						<key>Type</key>
 						<string>ActionOutput</string>
 					</dict>
@@ -221,7 +221,7 @@ Conta corrente</string>
 				<key>CustomOutputName</key>
 				<string>Text 2</string>
 				<key>UUID</key>
-				<string>01db030f-94f2-4fbb-a5a3-86a1c723d3f9</string>
+				<string>dc37d4a0-d62a-4955-b144-fd225fcd6648</string>
 				<key>WFTextActionText</key>
 				<string></string>
 			</dict>
@@ -238,7 +238,7 @@ Conta corrente</string>
 						<key>OutputName</key>
 						<string>Text 2</string>
 						<key>OutputUUID</key>
-						<string>01db030f-94f2-4fbb-a5a3-86a1c723d3f9</string>
+						<string>dc37d4a0-d62a-4955-b144-fd225fcd6648</string>
 						<key>Type</key>
 						<string>ActionOutput</string>
 					</dict>
@@ -257,7 +257,7 @@ Conta corrente</string>
 			<key>WFWorkflowActionParameters</key>
 			<dict>
 				<key>GroupingIdentifier</key>
-				<string>6b3b1744-1642-4c59-bffc-721e8da766fd</string>
+				<string>8ec4842b-771e-4c5c-ac10-19661863127c</string>
 				<key>WFControlFlowMode</key>
 				<integer>0</integer>
 				<key>WFMenuItems</key>
@@ -281,7 +281,7 @@ Conta corrente</string>
 			<key>WFWorkflowActionParameters</key>
 			<dict>
 				<key>GroupingIdentifier</key>
-				<string>6b3b1744-1642-4c59-bffc-721e8da766fd</string>
+				<string>8ec4842b-771e-4c5c-ac10-19661863127c</string>
 				<key>WFControlFlowMode</key>
 				<integer>1</integer>
 				<key>WFMenuItemAttributedTitle</key>
@@ -298,7 +298,7 @@ Conta corrente</string>
 				<key>CustomOutputName</key>
 				<string>quem</string>
 				<key>UUID</key>
-				<string>e8fa5c6f-aa06-4e0c-ae72-64aaa07ffce3</string>
+				<string>09ff3fdf-ddad-4048-a967-203fb4ef0d8e</string>
 				<key>WFChooseFromListActionPrompt</key>
 				<string>Quem?</string>
 				<key>WFInput</key>
@@ -308,7 +308,7 @@ Conta corrente</string>
 						<key>OutputName</key>
 						<string>listaPessoas</string>
 						<key>OutputUUID</key>
-						<string>1e64bbe0-919b-43cc-b3de-a913817ab94c</string>
+						<string>7bbde3c2-a34e-4bbe-9d92-b4d298a01e88</string>
 						<key>Type</key>
 						<string>ActionOutput</string>
 					</dict>
@@ -329,7 +329,7 @@ Conta corrente</string>
 				<key>CustomOutputName</key>
 				<string>quantiaDivida</string>
 				<key>UUID</key>
-				<string>b02a2fe6-5d2b-4806-bfec-c2afcba247d1</string>
+				<string>f66eebd0-a30b-48dd-bec3-c08e354c0d9c</string>
 				<key>WFAskActionPrompt</key>
 				<string>Quantia</string>
 				<key>WFInputType</key>
@@ -342,7 +342,7 @@ Conta corrente</string>
 			<key>WFWorkflowActionParameters</key>
 			<dict>
 				<key>GroupingIdentifier</key>
-				<string>7632ffcf-205d-4e03-b62f-1ebd34157316</string>
+				<string>9dd5a1ab-de4f-4e9a-9db9-1c71e1624f29</string>
 				<key>WFControlFlowMode</key>
 				<integer>0</integer>
 				<key>WFMenuItems</key>
@@ -366,7 +366,7 @@ Conta corrente</string>
 			<key>WFWorkflowActionParameters</key>
 			<dict>
 				<key>GroupingIdentifier</key>
-				<string>7632ffcf-205d-4e03-b62f-1ebd34157316</string>
+				<string>9dd5a1ab-de4f-4e9a-9db9-1c71e1624f29</string>
 				<key>WFControlFlowMode</key>
 				<integer>1</integer>
 				<key>WFMenuItemAttributedTitle</key>
@@ -383,7 +383,7 @@ Conta corrente</string>
 				<key>CustomOutputName</key>
 				<string>Text 3</string>
 				<key>UUID</key>
-				<string>413aa59d-4eb5-4296-929c-a0792f8436f7</string>
+				<string>03b6fbdc-3610-4493-ab8d-ea2de24c8a81</string>
 				<key>WFTextActionText</key>
 				<string>mais</string>
 			</dict>
@@ -400,7 +400,7 @@ Conta corrente</string>
 						<key>OutputName</key>
 						<string>Text 3</string>
 						<key>OutputUUID</key>
-						<string>413aa59d-4eb5-4296-929c-a0792f8436f7</string>
+						<string>03b6fbdc-3610-4493-ab8d-ea2de24c8a81</string>
 						<key>Type</key>
 						<string>ActionOutput</string>
 					</dict>
@@ -423,7 +423,7 @@ Conta corrente</string>
 			<key>WFWorkflowActionParameters</key>
 			<dict>
 				<key>GroupingIdentifier</key>
-				<string>7632ffcf-205d-4e03-b62f-1ebd34157316</string>
+				<string>9dd5a1ab-de4f-4e9a-9db9-1c71e1624f29</string>
 				<key>WFControlFlowMode</key>
 				<integer>1</integer>
 				<key>WFMenuItemAttributedTitle</key>
@@ -440,7 +440,7 @@ Conta corrente</string>
 				<key>CustomOutputName</key>
 				<string>Text 4</string>
 				<key>UUID</key>
-				<string>c1e6b324-43df-4e68-913a-c8d22474d5ee</string>
+				<string>b44b968b-f5da-4cc4-9f12-16f7848e73cf</string>
 				<key>WFTextActionText</key>
 				<string>menos</string>
 			</dict>
@@ -457,7 +457,7 @@ Conta corrente</string>
 						<key>OutputName</key>
 						<string>Text 4</string>
 						<key>OutputUUID</key>
-						<string>c1e6b324-43df-4e68-913a-c8d22474d5ee</string>
+						<string>b44b968b-f5da-4cc4-9f12-16f7848e73cf</string>
 						<key>Type</key>
 						<string>ActionOutput</string>
 					</dict>
@@ -480,9 +480,9 @@ Conta corrente</string>
 			<key>WFWorkflowActionParameters</key>
 			<dict>
 				<key>GroupingIdentifier</key>
-				<string>7632ffcf-205d-4e03-b62f-1ebd34157316</string>
+				<string>9dd5a1ab-de4f-4e9a-9db9-1c71e1624f29</string>
 				<key>UUID</key>
-				<string>2c621faa-3966-4117-9697-45223f85a245</string>
+				<string>1abfdb65-a4f8-4330-a28b-fba180322038</string>
 				<key>WFControlFlowMode</key>
 				<integer>2</integer>
 			</dict>
@@ -499,7 +499,7 @@ Conta corrente</string>
 				<key>CustomOutputName</key>
 				<string>Text 5</string>
 				<key>UUID</key>
-				<string>72d1fcab-f38f-43a3-9d3a-b802a8134811</string>
+				<string>d81c9bdb-3233-4cce-a2eb-c839c08f8c88</string>
 				<key>WFTextActionText</key>
 				<dict>
 					<key>Value</key>
@@ -511,7 +511,7 @@ Conta corrente</string>
 								<key>OutputName</key>
 								<string>quem</string>
 								<key>OutputUUID</key>
-								<string>e8fa5c6f-aa06-4e0c-ae72-64aaa07ffce3</string>
+								<string>09ff3fdf-ddad-4048-a967-203fb4ef0d8e</string>
 								<key>Type</key>
 								<string>ActionOutput</string>
 							</dict>
@@ -536,7 +536,7 @@ Conta corrente</string>
 						<key>OutputName</key>
 						<string>Text 5</string>
 						<key>OutputUUID</key>
-						<string>72d1fcab-f38f-43a3-9d3a-b802a8134811</string>
+						<string>d81c9bdb-3233-4cce-a2eb-c839c08f8c88</string>
 						<key>Type</key>
 						<string>ActionOutput</string>
 					</dict>
@@ -557,7 +557,7 @@ Conta corrente</string>
 				<key>CustomOutputName</key>
 				<string>Text 6</string>
 				<key>UUID</key>
-				<string>d164ce4a-f73e-4cec-9d2e-e6d3587b655a</string>
+				<string>5822f81c-aff5-470c-9b77-c672f9395046</string>
 				<key>WFTextActionText</key>
 				<dict>
 					<key>Value</key>
@@ -569,7 +569,7 @@ Conta corrente</string>
 								<key>OutputName</key>
 								<string>quantiaDivida</string>
 								<key>OutputUUID</key>
-								<string>b02a2fe6-5d2b-4806-bfec-c2afcba247d1</string>
+								<string>f66eebd0-a30b-48dd-bec3-c08e354c0d9c</string>
 								<key>Type</key>
 								<string>ActionOutput</string>
 							</dict>
@@ -594,7 +594,7 @@ Conta corrente</string>
 						<key>OutputName</key>
 						<string>Text 6</string>
 						<key>OutputUUID</key>
-						<string>d164ce4a-f73e-4cec-9d2e-e6d3587b655a</string>
+						<string>5822f81c-aff5-470c-9b77-c672f9395046</string>
 						<key>Type</key>
 						<string>ActionOutput</string>
 					</dict>
@@ -617,7 +617,7 @@ Conta corrente</string>
 			<key>WFWorkflowActionParameters</key>
 			<dict>
 				<key>GroupingIdentifier</key>
-				<string>6b3b1744-1642-4c59-bffc-721e8da766fd</string>
+				<string>8ec4842b-771e-4c5c-ac10-19661863127c</string>
 				<key>WFControlFlowMode</key>
 				<integer>1</integer>
 				<key>WFMenuItemAttributedTitle</key>
@@ -634,7 +634,7 @@ Conta corrente</string>
 				<key>CustomOutputName</key>
 				<string>conta</string>
 				<key>UUID</key>
-				<string>7d3b91a1-7d1f-4a70-8114-ef6600c00ace</string>
+				<string>1f5acb91-f3dd-4aac-9e8a-7baea8d41c39</string>
 				<key>WFChooseFromListActionPrompt</key>
 				<string>De onde?</string>
 				<key>WFInput</key>
@@ -644,7 +644,7 @@ Conta corrente</string>
 						<key>OutputName</key>
 						<string>listaContas</string>
 						<key>OutputUUID</key>
-						<string>ee78bb39-e6fe-4ac5-9bfa-eb5d2a3b6beb</string>
+						<string>51b29ac3-cc54-4b9c-82a7-f01b00ce2ea9</string>
 						<key>Type</key>
 						<string>ActionOutput</string>
 					</dict>
@@ -665,7 +665,7 @@ Conta corrente</string>
 				<key>CustomOutputName</key>
 				<string>quantiaGasto</string>
 				<key>UUID</key>
-				<string>32eece6f-f8a7-4d6e-a956-427faf0256ef</string>
+				<string>f22cb20d-b54e-4c73-8d0d-6a2e9a15dd8a</string>
 				<key>WFAskActionPrompt</key>
 				<string>Quantia</string>
 				<key>WFInputType</key>
@@ -680,7 +680,7 @@ Conta corrente</string>
 				<key>CustomOutputName</key>
 				<string>Text 7</string>
 				<key>UUID</key>
-				<string>132ba1f9-3e0b-4ee6-bdda-7f9457f2c08c</string>
+				<string>ebda3eb9-a7da-4afb-8cb0-58ecc0af1c67</string>
 				<key>WFTextActionText</key>
 				<string>gasto</string>
 			</dict>
@@ -697,7 +697,7 @@ Conta corrente</string>
 						<key>OutputName</key>
 						<string>Text 7</string>
 						<key>OutputUUID</key>
-						<string>132ba1f9-3e0b-4ee6-bdda-7f9457f2c08c</string>
+						<string>ebda3eb9-a7da-4afb-8cb0-58ecc0af1c67</string>
 						<key>Type</key>
 						<string>ActionOutput</string>
 					</dict>
@@ -718,7 +718,7 @@ Conta corrente</string>
 				<key>CustomOutputName</key>
 				<string>Text 8</string>
 				<key>UUID</key>
-				<string>5a394dac-acf9-4717-b558-e35eb5799fb8</string>
+				<string>9150c698-77da-41bc-a0e9-051277b10ffd</string>
 				<key>WFTextActionText</key>
 				<dict>
 					<key>Value</key>
@@ -730,7 +730,7 @@ Conta corrente</string>
 								<key>OutputName</key>
 								<string>conta</string>
 								<key>OutputUUID</key>
-								<string>7d3b91a1-7d1f-4a70-8114-ef6600c00ace</string>
+								<string>1f5acb91-f3dd-4aac-9e8a-7baea8d41c39</string>
 								<key>Type</key>
 								<string>ActionOutput</string>
 							</dict>
@@ -755,7 +755,7 @@ Conta corrente</string>
 						<key>OutputName</key>
 						<string>Text 8</string>
 						<key>OutputUUID</key>
-						<string>5a394dac-acf9-4717-b558-e35eb5799fb8</string>
+						<string>9150c698-77da-41bc-a0e9-051277b10ffd</string>
 						<key>Type</key>
 						<string>ActionOutput</string>
 					</dict>
@@ -776,7 +776,7 @@ Conta corrente</string>
 				<key>CustomOutputName</key>
 				<string>Text 9</string>
 				<key>UUID</key>
-				<string>d8af53ac-e3b0-451d-95cb-1c01e7afa722</string>
+				<string>f8e25775-47df-4603-a73f-48b85b3fb8a6</string>
 				<key>WFTextActionText</key>
 				<dict>
 					<key>Value</key>
@@ -788,7 +788,7 @@ Conta corrente</string>
 								<key>OutputName</key>
 								<string>quantiaGasto</string>
 								<key>OutputUUID</key>
-								<string>32eece6f-f8a7-4d6e-a956-427faf0256ef</string>
+								<string>f22cb20d-b54e-4c73-8d0d-6a2e9a15dd8a</string>
 								<key>Type</key>
 								<string>ActionOutput</string>
 							</dict>
@@ -813,7 +813,7 @@ Conta corrente</string>
 						<key>OutputName</key>
 						<string>Text 9</string>
 						<key>OutputUUID</key>
-						<string>d8af53ac-e3b0-451d-95cb-1c01e7afa722</string>
+						<string>f8e25775-47df-4603-a73f-48b85b3fb8a6</string>
 						<key>Type</key>
 						<string>ActionOutput</string>
 					</dict>
@@ -836,9 +836,9 @@ Conta corrente</string>
 			<key>WFWorkflowActionParameters</key>
 			<dict>
 				<key>GroupingIdentifier</key>
-				<string>6b3b1744-1642-4c59-bffc-721e8da766fd</string>
+				<string>8ec4842b-771e-4c5c-ac10-19661863127c</string>
 				<key>UUID</key>
-				<string>265aa46f-66be-4d8c-81aa-c109803fec25</string>
+				<string>13b31fea-24c9-44f9-abdf-8b3e314f7414</string>
 				<key>WFControlFlowMode</key>
 				<integer>2</integer>
 			</dict>
@@ -859,7 +859,7 @@ Conta corrente</string>
 				<key>CustomOutputName</key>
 				<string>descricao</string>
 				<key>UUID</key>
-				<string>5f589cc4-4b44-46ef-9b53-466bce14668b</string>
+				<string>bab47359-fe44-4c8c-8ef5-d4611aa8498f</string>
 				<key>WFAllowsMultilineText</key>
 				<false/>
 				<key>WFAskActionDefaultAnswer</key>
@@ -878,7 +878,7 @@ Conta corrente</string>
 				<key>CustomOutputName</key>
 				<string>agora</string>
 				<key>UUID</key>
-				<string>865f1689-4040-403f-bd88-4585b0301b66</string>
+				<string>6d5ce9f4-0ac8-4bf6-a930-bb8f388d9312</string>
 				<key>WFDateActionMode</key>
 				<string>Current Date</string>
 			</dict>
@@ -891,7 +891,7 @@ Conta corrente</string>
 				<key>CustomOutputName</key>
 				<string>data</string>
 				<key>UUID</key>
-				<string>85de642e-6616-41ad-8f08-24d1c926edf4</string>
+				<string>3491dd69-fd2f-48ac-a3fd-0ff7fbd50a9d</string>
 				<key>WFDate</key>
 				<dict>
 					<key>Value</key>
@@ -903,7 +903,7 @@ Conta corrente</string>
 								<key>OutputName</key>
 								<string>agora</string>
 								<key>OutputUUID</key>
-								<string>865f1689-4040-403f-bd88-4585b0301b66</string>
+								<string>6d5ce9f4-0ac8-4bf6-a930-bb8f388d9312</string>
 								<key>Type</key>
 								<string>ActionOutput</string>
 							</dict>
@@ -930,7 +930,7 @@ Conta corrente</string>
 				<key>CustomOutputName</key>
 				<string>linha</string>
 				<key>UUID</key>
-				<string>6494c2b8-71dd-435c-a828-a47c560be7ad</string>
+				<string>892d8ed2-591f-4d08-b71c-ba325702c910</string>
 				<key>WFTextActionText</key>
 				<dict>
 					<key>Value</key>
@@ -942,7 +942,7 @@ Conta corrente</string>
 								<key>OutputName</key>
 								<string>data</string>
 								<key>OutputUUID</key>
-								<string>85de642e-6616-41ad-8f08-24d1c926edf4</string>
+								<string>3491dd69-fd2f-48ac-a3fd-0ff7fbd50a9d</string>
 								<key>Type</key>
 								<string>ActionOutput</string>
 							</dict>
@@ -972,7 +972,7 @@ Conta corrente</string>
 								<key>OutputName</key>
 								<string>descricao</string>
 								<key>OutputUUID</key>
-								<string>5f589cc4-4b44-46ef-9b53-466bce14668b</string>
+								<string>bab47359-fe44-4c8c-8ef5-d4611aa8498f</string>
 								<key>Type</key>
 								<string>ActionOutput</string>
 							</dict>
@@ -1001,7 +1001,7 @@ Conta corrente</string>
 						<key>OutputName</key>
 						<string>linha</string>
 						<key>OutputUUID</key>
-						<string>6494c2b8-71dd-435c-a828-a47c560be7ad</string>
+						<string>892d8ed2-591f-4d08-b71c-ba325702c910</string>
 						<key>Type</key>
 						<string>ActionOutput</string>
 					</dict>
@@ -1018,7 +1018,7 @@ Conta corrente</string>
 				<key>CustomOutputName</key>
 				<string>ficheiro</string>
 				<key>UUID</key>
-				<string>c67f8a6f-4672-4cb2-8172-9ee0e7ff5d1b</string>
+				<string>4835c01f-7d76-48c1-8692-1e266718e3b5</string>
 				<key>WFGetFilePath</key>
 				<string>Dinheiro/atalho.txt</string>
 				<key>WFShowFilePicker</key>
@@ -1033,7 +1033,7 @@ Conta corrente</string>
 				<key>CustomOutputName</key>
 				<string>todos</string>
 				<key>UUID</key>
-				<string>84d77aba-8e74-4811-bef7-3f526b826690</string>
+				<string>55daffb7-774c-45e2-b5ae-cebc253bbcc6</string>
 				<key>WFInput</key>
 				<dict>
 					<key>Value</key>
@@ -1041,7 +1041,7 @@ Conta corrente</string>
 						<key>OutputName</key>
 						<string>ficheiro</string>
 						<key>OutputUUID</key>
-						<string>c67f8a6f-4672-4cb2-8172-9ee0e7ff5d1b</string>
+						<string>4835c01f-7d76-48c1-8692-1e266718e3b5</string>
 						<key>Type</key>
 						<string>ActionOutput</string>
 					</dict>
@@ -1062,7 +1062,7 @@ Conta corrente</string>
 						<key>OutputName</key>
 						<string>todos</string>
 						<key>OutputUUID</key>
-						<string>84d77aba-8e74-4811-bef7-3f526b826690</string>
+						<string>55daffb7-774c-45e2-b5ae-cebc253bbcc6</string>
 						<key>Type</key>
 						<string>ActionOutput</string>
 					</dict>
@@ -1077,7 +1077,7 @@ Conta corrente</string>
 			<key>WFWorkflowActionParameters</key>
 			<dict>
 				<key>WFNotificationActionBody</key>
-				<string>Abre a app: ao primeiro toque, toca em Colar.</string>
+				<string>Abre a app e escolhe atalho.txt.</string>
 				<key>WFNotificationActionTitle</key>
 				<dict>
 					<key>Value</key>
