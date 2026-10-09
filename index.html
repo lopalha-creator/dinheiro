@@ -20,6 +20,8 @@
   --acc: #1a8f4c; --verde: #248a3d; --verm: #d70015;
   --fill: rgba(118,118,128,.12); --seg-on: #fff; --prem: rgba(0,0,0,.06);
   --barra: rgba(249,249,249,.86); --acoes: rgba(255,255,255,.92);
+  /* cores dos gráficos de distribuição, por esta ordem (validadas para daltonismo em claro e escuro) */
+  --c1: #2a78d6; --c2: #eb6834; --c3: #1baf7a; --c4: #eda100; --c5: #e87ba4; --c6: #008300; --c7: #4a3aa7; --c8: #e34948; --c0: #8e8e93;
   color-scheme: light dark;
 }
 @media (prefers-color-scheme: dark) {
@@ -29,6 +31,7 @@
     --acc: #30d158; --verde: #30d158; --verm: #ff453a;
     --fill: rgba(118,118,128,.24); --seg-on: #636366; --prem: rgba(255,255,255,.08);
     --barra: rgba(22,22,24,.86); --acoes: rgba(44,44,46,.94);
+    --c1: #3987e5; --c2: #d95926; --c3: #199e70; --c4: #c98500; --c5: #d55181; --c6: #008300; --c7: #9085e9; --c8: #e66767; --c0: #636366;
   }
 }
 * { box-sizing: border-box; margin: 0; }
@@ -86,6 +89,31 @@ button.linha:active, .grupo-acoes button:active, .cancelar-acoes:active { backgr
 .mini { width: 38px; height: 32px; border-radius: 8px; background: var(--fill); color: var(--acc); text-align: center; font-size: 17px; }
 .mini:disabled { opacity: .3; }
 textarea.nota { display: block; padding: 12px 16px; resize: none; min-height: 46px; }
+.ponto { width: 10px; height: 10px; border-radius: 3px; flex: none; }
+
+/* gráficos */
+.graf { position: relative; margin-top: 14px; touch-action: pan-y; -webkit-user-select: none; user-select: none; outline: 0; border-radius: 6px; }
+.graf:focus-visible { box-shadow: 0 0 0 2px var(--acc); }
+.graf svg { display: block; overflow: visible; stroke: none; }
+.graf text { fill: var(--sec); font-size: 11px; font-variant-numeric: tabular-nums; }
+.graf .grelha { stroke: var(--sep); stroke-width: 1; }
+.graf .eixo0 { stroke: var(--ter); stroke-width: 1; }
+.graf .traco { fill: none; stroke: var(--acc); stroke-width: 2; stroke-linejoin: round; stroke-linecap: round; }
+.graf .area { fill: var(--acc); opacity: .12; }
+.graf .marca { fill: var(--acc); stroke: var(--cel); stroke-width: 2; }
+.graf .mira, .graf .cursor { visibility: hidden; }
+.graf .mira { stroke: var(--sec); stroke-width: 1; }
+.graf.ativo .mira, .graf.ativo .cursor { visibility: visible; }
+.graf .coluna { fill: var(--acc); transition: opacity .15s; }
+.graf.ativo .coluna:not(.on) { opacity: .35; }
+.seg.peq { margin: 14px 0 0; }
+.seg.peq button { font-size: 13px; padding: 5px 2px; }
+.comp-bloco { padding: 16px; }
+.comp { display: flex; gap: 2px; height: 12px; border-radius: 4px; overflow: hidden; }
+.comp span { min-width: 3px; }
+
+/* ocultar valores (para mostrar o ecrã a alguém) */
+.oculto :is(.val, .grande, .leg, .sub, .graf text, .cab-sec .dir, .total-rodape) { filter: blur(8px); }
 
 .tabs {
   position: fixed; left: 0; right: 0; bottom: 0; z-index: 5; display: flex; justify-content: center;
@@ -143,6 +171,8 @@ input[type=date] { width: auto; text-align: right; color: var(--acc); }
   background: rgba(0,0,0,.82); color: #fff; padding: 10px 18px; border-radius: 20px; font-size: 15px;
 }
 #toast.on { opacity: 1; transform: translate(-50%, 0); }
+#toast.com-acao { pointer-events: auto; white-space: nowrap; }
+#toast button { color: #30d158; font-weight: 600; margin-left: 12px; padding: 4px 0; }
 @media (prefers-reduced-motion: reduce) { *, *::before, *::after { animation: none !important; transition: none !important; } }
 </style>
 </head>
@@ -162,7 +192,10 @@ const hoje = () => {
   const d = new Date();
   return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
 };
-const dataPT = iso => new Date(iso + 'T12:00').toLocaleDateString('pt-PT', { day: 'numeric', month: 'short', year: 'numeric' });
+const MESES = ['jan', 'fev', 'mar', 'abr', 'mai', 'jun', 'jul', 'ago', 'set', 'out', 'nov', 'dez'];
+const MESES_LONGOS = ['janeiro', 'fevereiro', 'março', 'abril', 'maio', 'junho', 'julho', 'agosto', 'setembro', 'outubro', 'novembro', 'dezembro'];
+/** "2026-10-08" → "8 out 2026" */
+const dataPT = iso => { const [a, m, d] = iso.split('-'); return `${+d} ${MESES[m - 1]} ${a}`; };
 
 // Todos os valores são guardados em cêntimos (inteiros) para não haver erros de arredondamento.
 const fmtEuro = new Intl.NumberFormat('pt-PT', { style: 'currency', currency: 'EUR' });
@@ -200,7 +233,7 @@ function lerValor(texto) {
 // Começa vazia. Os dados pessoais entram por "Colar os meus dados" ou por ficheiro, e ficam só no iPhone.
 function dadosIniciais() {
   return {
-    versao: 1,
+    versao: 2,
     contas: [],
     grupos: [
       { id: uid(), nome: 'Pais', tipo: 'dividas', fichas: [] },
@@ -218,8 +251,24 @@ function guardar() {
   try { localStorage.setItem(CHAVE, JSON.stringify(db)); } catch { toast('Não foi possível guardar'); }
 }
 
+/** Cada conta tem um histórico de valores [{ data, valor }] por ordem de data; o valor atual é o último. */
+function ordenarHist(c) {
+  c.hist.sort((a, b) => a.data < b.data ? -1 : a.data > b.data ? 1 : 0);
+  c.valor = c.hist[c.hist.length - 1].valor;
+}
+/** Acrescenta a dados antigos o que as versões novas precisam (o histórico das contas começa hoje). */
+function migrar(d) {
+  for (const c of d.contas) {
+    if (!Array.isArray(c.hist) || !c.hist.length) c.hist = [{ data: hoje(), valor: c.valor }];
+    ordenarHist(c);
+  }
+  d.versao = 2;
+  return d;
+}
+
 let db = carregar();
-if (!db) { db = dadosIniciais(); guardar(); }
+db = db ? migrar(db) : dadosIniciais();
+guardar();
 
 const totalFicha = f => f.movimentos.reduce((s, m) => s + m.valor, 0);
 const totalGrupo = g => g.fichas.reduce((s, f) => s + totalFicha(f), 0);
@@ -257,17 +306,266 @@ const ic = {
   opcoes: '<svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="9.5"/><path d="M7.9 12h.01M12 12h.01M16.1 12h.01" stroke-width="2.6"/></svg>',
   pasta: '<svg viewBox="0 0 24 24"><path d="M3 7v11a1.5 1.5 0 0 0 1.5 1.5h15A1.5 1.5 0 0 0 21 18V9a1.5 1.5 0 0 0-1.5-1.5H12L10 5H4.5A1.5 1.5 0 0 0 3 6.5z"/><path d="M12 10.5v6M9 13.5h6"/></svg>',
   certo: '<svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="9.5"/><path d="M8 12.3l2.7 2.7L16 9.6"/></svg>',
+  olho: '<svg viewBox="0 0 24 24"><path d="M2.5 12S6 5.5 12 5.5 21.5 12 21.5 12 18 18.5 12 18.5 2.5 12 2.5 12z"/><circle cx="12" cy="12" r="3"/></svg>',
+  olhoFechado: '<svg viewBox="0 0 24 24"><path d="M2.5 12S6 5.5 12 5.5 21.5 12 21.5 12 18 18.5 12 18.5 2.5 12 2.5 12z"/><circle cx="12" cy="12" r="3"/><path d="M4 4l16 16"/></svg>',
 };
 
 /* ---------- estado do ecrã ---------- */
+const lerPref = (k, def) => { try { return localStorage.getItem('dinheiro.' + k) ?? def; } catch { return def; } };
+const gravarPref = (k, v) => { try { localStorage.setItem('dinheiro.' + k, v); } catch {} };
 const ui = {
-  tab: (() => { try { return localStorage.getItem('dinheiro.tab') || 'resumo'; } catch { return 'resumo'; } })(),
-  ficha: { dividas: null, gastos: null },
+  tab: lerPref('tab', 'resumo'),
+  ficha: { contas: null, dividas: null, gastos: null }, // conta ou ficha aberta em cada separador
   scroll: {},
   ordenar: false,
   anim: '',
+  periodo: lerPref('periodo', 'Tudo'),
+  oculto: lerPref('oculto', '') === '1',
 };
 let camada = null; // folha ou menu aberto
+
+/* ---------- séries no tempo ---------- */
+// Nos gráficos os dias são inteiros (dias desde 1970), para as contas com datas serem simples.
+const DIA = 864e5;
+const diaDe = iso => Math.round(Date.parse(iso + 'T00:00Z') / DIA);
+const isoDe = n => new Date(n * DIA).toISOString().slice(0, 10);
+const PERIODOS = [['1M', 'no último mês', 30], ['3M', 'nos últimos 3 meses', 91], ['1A', 'no último ano', 365], ['Tudo', '', Infinity]];
+const fmtCompacto = new Intl.NumberFormat('pt-PT', { notation: 'compact', maximumFractionDigits: 1 });
+const fmtPct = new Intl.NumberFormat('pt-PT', { style: 'percent', maximumFractionDigits: 1 });
+
+/** Junta variações [dia, delta] numa série em escada [dia, valor], com um ponto por dia em que houve mudança. */
+function acumular(eventos) {
+  const pts = [];
+  let total = 0;
+  for (const [d, v] of [...eventos].sort((a, b) => a[0] - b[0])) {
+    total += v;
+    if (pts.length && pts[pts.length - 1][0] === d) pts[pts.length - 1][1] = total; else pts.push([d, total]);
+  }
+  return pts;
+}
+function valorEm(pts, d) {
+  let v = 0;
+  for (const p of pts) { if (p[0] > d) break; v = p[1]; }
+  return v;
+}
+/** Os pontos entre os dias "de" e "ate", a começar pelo valor que havia no dia "de". */
+const recortar = (pts, de, ate) => [[de, valorEm(pts, de)], ...pts.filter(p => p[0] > de && p[0] <= ate)];
+
+const eventosFicha = f => f.movimentos.map(m => [diaDe(m.data), m.valor]);
+const eventosDividas = () => gruposDe('dividas').flatMap(g => g.fichas.flatMap(eventosFicha));
+function eventosConta(c) {
+  let antes = 0;
+  return c.hist.map(h => { const e = [diaDe(h.data), h.valor - antes]; antes = h.valor; return e; });
+}
+/**
+ * Contas no total + dívidas, a partir do primeiro registo de uma conta (antes disso não se sabe o total).
+ * Antes do primeiro registo de cada conta conta-se com esse primeiro valor, que é o melhor que se sabe:
+ * assim, registar o passado de uma só conta não faz parecer que as outras apareceram do nada.
+ */
+function serieTotal() {
+  const contas = db.contas.filter(c => c.noTotal);
+  const inicio = contas.length ? Math.min(...contas.map(c => diaDe(c.hist[0].data))) : null;
+  const ev = contas.flatMap(c => eventosConta(c).map((e, i) => i ? e : [inicio, e[1]]));
+  const pts = acumular([...ev, ...eventosDividas()]);
+  return { pts, inicio: inicio ?? (pts.length ? pts[0][0] : null) };
+}
+
+/* ---------- gráficos ---------- */
+// Desenhados em SVG à mão (sem bibliotecas, para a app continuar a funcionar sem internet).
+// Ao arrastar o dedo, o valor e a data aparecem no cartão por cima, como na app Bolsa.
+const graficos = []; // um registo por gráfico no ecrã, refeito a cada render()
+const larguraGraf = () => Math.max(200, Math.min(document.documentElement.clientWidth, 640) - 64);
+const r1 = n => Math.round(n * 10) / 10;
+const rotuloY = c => fmtCompacto.format(c / 100);
+
+function bonito(x) {
+  const p = 10 ** Math.floor(Math.log10(x)), f = x / p;
+  return (f <= 1 ? 1 : f <= 2 ? 2 : f <= 2.5 ? 2.5 : f <= 5 ? 5 : 10) * p;
+}
+/** Limites redondos do eixo vertical e as linhas da grelha (em cêntimos). */
+function escala(lo, hi) {
+  if (lo > 0 && lo < hi / 2) lo = 0;
+  if (hi < 0 && hi > lo / 2) hi = 0;
+  if (lo === hi) { lo = Math.min(0, lo); hi = Math.max(0, hi) || 100; }
+  const passo = Math.max(1, bonito((hi - lo) / 3));
+  lo = Math.floor(lo / passo) * passo; hi = Math.ceil(hi / passo) * passo;
+  const linhas = [];
+  for (let i = 0; lo + i * passo <= hi; i++) linhas.push(lo + i * passo);
+  return { lo, hi, linhas };
+}
+function grelha(e, pw, W, py, zeroForte) {
+  return e.linhas.map(t => {
+    const y = r1(py(t));
+    return `<line class="${t === 0 && zeroForte ? 'eixo0' : 'grelha'}" x1="0" x2="${r1(pw)}" y1="${y}" y2="${y}"/>` +
+      `<text x="${W}" y="${y + 4}" text-anchor="end">${rotuloY(t)}</text>`;
+  }).join('');
+}
+const margemY = e => Math.max(...e.linhas.map(t => rotuloY(t).length)) * 6.5 + 8;
+function rotuloDia(d, span) {
+  const x = new Date(d * DIA), m = MESES[x.getUTCMonth()];
+  return span <= 120 ? `${x.getUTCDate()} ${m}` : span <= 300 ? m : `${m} ${String(x.getUTCFullYear()).slice(2)}`;
+}
+
+/** Linha em escada: o valor mantém-se até à mudança seguinte. "pts" começa no dia "de". */
+function grafLinha(pts, de, ate, o = {}) {
+  const W = larguraGraf(), H = 150, topo = 8;
+  const vals = pts.map(p => p[1]);
+  const e = escala(Math.min(...vals), Math.max(...vals));
+  const pw = W - margemY(e), ph = H - topo, span = ate - de;
+  const px = d => (d - de) / span * pw;
+  const py = v => topo + (e.hi - v) / (e.hi - e.lo) * ph;
+  let traco = `M0 ${r1(py(vals[0]))}`;
+  for (let i = 1; i < pts.length; i++) traco += `H${r1(px(pts[i][0]))}V${r1(py(pts[i][1]))}`;
+  traco += `H${r1(pw)}`;
+  const base = Math.min(e.hi, Math.max(e.lo, 0));
+  let svg = grelha(e, pw, W, py, e.lo < 0) +
+    `<path class="area" d="${traco}V${r1(py(base))}H0Z"/><path class="traco" d="${traco}"/>`;
+  const n = Math.min(pw < 300 ? 3 : 4, span + 1);
+  for (let i = 0; i < n; i++) {
+    const d = Math.round(de + i * span / (n - 1));
+    svg += `<text x="${r1(px(d))}" y="${H + 16}" text-anchor="${i === 0 ? 'start' : i === n - 1 ? 'end' : 'middle'}">${rotuloDia(d, span)}</text>`;
+  }
+  svg += `<line class="mira" x1="0" x2="0" y1="${topo}" y2="${H}"/>` +
+    `<circle class="marca" cx="${r1(pw)}" cy="${r1(py(vals[vals.length - 1]))}" r="4"/><circle class="marca cursor" r="4"/>`;
+  const i = graficos.push({ tipo: 'linha', pts, de, ate, px, py, pw, cor: !!o.cor }) - 1;
+  const desc = `${o.rotulo}: ${euro(vals[0])} em ${dataPT(isoDe(de))}, ${euro(vals[vals.length - 1])} em ${dataPT(isoDe(ate))}`;
+  return `<div class="graf" data-g="${i}" tabindex="0" role="img" aria-label="${esc(desc)}"><svg width="${W}" height="${H + 22}" aria-hidden="true">${svg}</svg></div>`;
+}
+
+/** Colunas (uma por mês). A ponta é arredondada, a base é direita. */
+function grafColunas(barras, o = {}) {
+  const W = larguraGraf(), H = 150, topo = 8;
+  const vals = barras.map(b => b.valor);
+  const e = escala(Math.min(0, ...vals), Math.max(0, ...vals));
+  const pw = W - margemY(e), ph = H - topo;
+  const banda = pw / barras.length, larg = Math.min(24, banda * .62);
+  const py = v => topo + (e.hi - v) / (e.hi - e.lo) * ph, y0 = py(0);
+  const salto = Math.ceil(26 / banda); // rótulos de x em meses alternados se não couberem
+  let svg = grelha(e, pw, W, py, true);
+  barras.forEach((b, i) => {
+    const x = i * banda + (banda - larg) / 2, y1 = py(b.valor), h = Math.abs(y1 - y0);
+    const r = Math.min(4, larg / 2, h), s = y1 < y0 ? 1 : -1;
+    const d = h < .5 ? 'M0 0' : `M${r1(x)} ${r1(y0)}V${r1(y1 + s * r)}Q${r1(x)} ${r1(y1)} ${r1(x + r)} ${r1(y1)}H${r1(x + larg - r)}Q${r1(x + larg)} ${r1(y1)} ${r1(x + larg)} ${r1(y1 + s * r)}V${r1(y0)}Z`;
+    svg += `<path class="coluna" d="${d}"/>`;
+    if ((barras.length - 1 - i) % salto === 0) svg += `<text x="${r1(x + larg / 2)}" y="${H + 16}" text-anchor="middle">${esc(b.rot)}</text>`;
+  });
+  const i = graficos.push({ tipo: 'colunas', barras, banda }) - 1;
+  const desc = `${o.rotulo}: ` + barras.map(b => `${b.nome} ${euro(b.valor)}`).join(', ');
+  return `<div class="graf" data-g="${i}" tabindex="0" role="img" aria-label="${esc(desc)}"><svg width="${W}" height="${H + 22}" aria-hidden="true">${svg}</svg></div>`;
+}
+
+/** Mostra no cartão o valor do gráfico na posição x (em píxeis, a partir da esquerda do gráfico). */
+function mostrar(el, x) {
+  const g = graficos[+el.dataset.g];
+  if (!g) return;
+  let valor, leg;
+  if (g.tipo === 'linha') {
+    const d = Math.max(g.de, Math.min(g.ate, Math.round(g.de + x / g.pw * (g.ate - g.de))));
+    valor = valorEm(g.pts, d); leg = dataPT(isoDe(d)); g.atual = d;
+    el.querySelector('.mira').setAttribute('transform', `translate(${r1(g.px(d))} 0)`);
+    const c = el.querySelector('.cursor');
+    c.setAttribute('cx', r1(g.px(d))); c.setAttribute('cy', r1(g.py(valor)));
+  } else {
+    const i = Math.max(0, Math.min(g.barras.length - 1, Math.floor(x / g.banda)));
+    valor = g.barras[i].valor; leg = g.barras[i].nome; g.atual = i;
+    el.querySelectorAll('.coluna').forEach((c, j) => c.classList.toggle('on', i === j));
+  }
+  const cartao = el.closest('.cartao-total');
+  const v = cartao.querySelector('[data-ler="valor"]'), l = cartao.querySelector('[data-ler="leg"]');
+  if (!g.orig) g.orig = [v.innerHTML, v.className, l.innerHTML];
+  v.textContent = euro(valor);
+  if (g.cor) v.className = 'grande ' + cor(valor);
+  l.textContent = leg;
+  el.classList.add('ativo');
+}
+function esconder(el) {
+  const g = graficos[+el.dataset.g];
+  if (!g?.orig) return;
+  const cartao = el.closest('.cartao-total');
+  const v = cartao.querySelector('[data-ler="valor"]'), l = cartao.querySelector('[data-ler="leg"]');
+  [v.innerHTML, v.className, l.innerHTML] = g.orig;
+  g.orig = null; g.atual = null;
+  el.classList.remove('ativo');
+}
+/** Setas do teclado: salta para a mudança (ou coluna) seguinte. */
+function passoGraf(el, sentido) {
+  const g = graficos[+el.dataset.g];
+  if (g.tipo === 'linha') {
+    const dias = [...new Set([g.de, ...g.pts.map(p => p[0]), g.ate])];
+    const atual = g.atual ?? (sentido > 0 ? g.de - 1 : g.ate + 1);
+    const d = sentido > 0 ? dias.find(x => x > atual) : dias.findLast(x => x < atual);
+    if (d != null) mostrar(el, g.px(d));
+  } else {
+    const i = (g.atual ?? (sentido > 0 ? -1 : g.barras.length)) + sentido;
+    mostrar(el, (Math.max(0, Math.min(g.barras.length - 1, i)) + .5) * g.banda);
+  }
+}
+
+/**
+ * Evolução até hoje, recortada pelo período escolhido (1M, 3M, 1A, Tudo).
+ * Devolve o gráfico com o seletor e a legenda com a variação, ou null se ainda não há história.
+ */
+function evolucao(pts, inicio, o = {}) {
+  if (inicio == null) return null;
+  const ate = Math.max(diaDe(hoje()), pts.length ? pts[pts.length - 1][0] : 0);
+  const [, texto, dias] = PERIODOS.find(p => p[0] === ui.periodo) || PERIODOS[3];
+  const de = Math.max(inicio, ate - dias);
+  if (de >= ate) return null;
+  const r = recortar(pts, de, ate);
+  const v0 = r[0][1], dv = r[r.length - 1][1] - v0;
+  const quando = de === ate - dias ? texto : 'desde ' + dataPT(isoDe(de));
+  const pct = v0 > 0 && dv ? ` (${fmtPct.format(Math.abs(dv) / v0)})` : '';
+  const seta = dv > 0 ? '▲' : dv < 0 ? '▼' : '=';
+  return {
+    leg: `<span class="${cor(dv)}">${seta} ${euro(Math.abs(dv))}${pct}</span> ${esc(quando)}`,
+    graf: grafLinha(r, de, ate, o) + `<div class="seg peq">${PERIODOS.map(([id]) =>
+      `<button data-a="periodo" data-id="${id}" class="${ui.periodo === id ? 'on' : ''}">${id}</button>`).join('')}</div>`,
+  };
+}
+/** Evolução de uma pessoa (até hoje) ou de um gasto (do primeiro ao último movimento). */
+function grafFicha(f, div) {
+  const pts = acumular(eventosFicha(f));
+  if (!pts.length) return '';
+  const de = pts[0][0], ate = div ? Math.max(diaDe(hoje()), pts[pts.length - 1][0]) : pts[pts.length - 1][0];
+  return de < ate ? grafLinha(recortar(pts, de, ate), de, ate, { cor: div, rotulo: div ? 'Saldo ao longo do tempo' : 'Gasto acumulado' }) : '';
+}
+/** Gastos de todos os grupos, somados por mês (até 12 meses). */
+function grafGastosMes() {
+  const porMes = new Map();
+  for (const g of gruposDe('gastos')) for (const f of g.fichas) for (const m of f.movimentos) {
+    const k = m.data.slice(0, 7);
+    porMes.set(k, (porMes.get(k) || 0) + m.valor);
+  }
+  if (!porMes.size) return '';
+  const chaves = [...porMes.keys()].sort();
+  let [a, m] = chaves[0].split('-').map(Number);
+  const [af, mf] = (chaves[chaves.length - 1] > hoje() ? chaves[chaves.length - 1] : hoje().slice(0, 7)).split('-').map(Number);
+  const barras = [];
+  while (a < af || (a === af && m <= mf)) {
+    const k = `${a}-${String(m).padStart(2, '0')}`;
+    barras.push({ rot: MESES[m - 1], nome: `${MESES_LONGOS[m - 1]} de ${a}`, valor: porMes.get(k) || 0 });
+    if (++m > 12) { m = 1; a++; }
+  }
+  return barras.length < 2 ? '' : grafColunas(barras.slice(-12), { rotulo: 'Gastos por mês' });
+}
+
+/**
+ * Barra de distribuição (parte do todo) das partes com valor positivo. As linhas por baixo servem de legenda:
+ * cor(i) dá a cor do quadrado de cada linha e pct(i) a percentagem. A cor segue a posição da parte na lista.
+ */
+function distribuicao(partes) {
+  const n = partes.length, corDe = i => n > 8 && i >= 7 ? 'var(--c0)' : `var(--c${i + 1})`;
+  const vis = partes.map((p, i) => ({ ...p, i })).filter(p => p.valor > 0);
+  if (vis.length < 2) return { barra: '', cor: () => '', pct: () => '' };
+  const total = vis.reduce((s, p) => s + p.valor, 0), pct = v => fmtPct.format(v / total);
+  const desc = 'Distribuição: ' + vis.map(p => `${p.nome} ${pct(p.valor)}`).join(', ');
+  return {
+    barra: `<div class="comp-bloco"><div class="comp" role="img" aria-label="${esc(desc)}">${vis.map(p =>
+      `<span style="flex:${p.valor} 1 0;background:${corDe(p.i)}" title="${esc(p.nome)}: ${euro(p.valor)} (${pct(p.valor)})"></span>`).join('')}</div></div>`,
+    cor: i => partes[i].valor > 0 ? corDe(i) : 'transparent',
+    pct: i => partes[i].valor > 0 ? pct(partes[i].valor) : '',
+  };
+}
 
 /* ---------- vistas ---------- */
 function cab(titulo, { voltar = '', acoes = '' } = {}) {
@@ -278,7 +576,8 @@ const cabSec = t => `<div class="cab-sec"><span>${esc(t)}</span></div>`;
 function linha(titulo, valor, o = {}) {
   const tag = o.a ? 'button' : 'div';
   const attrs = o.a ? ` data-a="${o.a}" data-id="${esc(o.id ?? '')}"` : '';
-  return `<${tag} class="linha"${attrs}><div class="txt"><div class="${o.tituloCls || ''}">${esc(titulo)}</div>${o.sub ? `<div class="sub">${esc(o.sub)}</div>` : ''}</div><div class="val ${o.cls || ''}">${valor}</div>${o.a && o.chev !== false ? ic.chev : ''}</${tag}>`;
+  const ponto = o.ponto ? `<span class="ponto" style="background:${o.ponto}"></span>` : '';
+  return `<${tag} class="linha"${attrs}>${ponto}<div class="txt"><div class="${o.tituloCls || ''}">${esc(titulo)}</div>${o.sub ? `<div class="sub">${esc(o.sub)}</div>` : ''}</div><div class="val ${o.cls || ''}">${valor}</div>${o.a && o.chev !== false ? ic.chev : ''}</${tag}>`;
 }
 function linhaOrdenar(nome, a, id, i, n) {
   return `<div class="linha"><div class="txt">${esc(nome)}</div>
@@ -287,23 +586,38 @@ function linhaOrdenar(nome, a, id, i, n) {
 }
 const btnOrdenar = () => `<button class="txtbtn${ui.ordenar ? ' forte' : ''}" data-a="ordenar">${ui.ordenar ? 'OK' : 'Ordenar'}</button>`;
 
+/** Cartão com o valor em grande, uma legenda e o gráfico (que, ao ser tocado, escreve no valor e na legenda). */
+function cartao({ rot = '', valor, cls = '', leg = '', graf = '' }) {
+  return `<div class="lista"><div class="cartao-total">${rot ? `<div class="rot">${esc(rot)}</div>` : ''}
+    <div class="grande ${cls}" data-ler="valor">${valor}</div><div class="leg" data-ler="leg">${leg}</div>${graf}</div></div>`;
+}
+
+function textoCopia() {
+  const d = lerPref('copia', null);
+  if (!d) return '<b>Ainda não guardaste nenhuma cópia de segurança.</b>';
+  const n = diaDe(hoje()) - diaDe(d), quando = n <= 0 ? 'hoje' : n === 1 ? 'ontem' : `há ${n} dias`;
+  return n > 30 ? `<b>A última cópia de segurança foi ${quando}.</b>` : `Última cópia de segurança: ${quando}.`;
+}
+
 function vResumo() {
   const tc = totalContas(), td = totalDividas();
   const fora = db.contas.filter(c => !c.noTotal);
   const gastos = gruposDe('gastos').flatMap(g => g.fichas);
   const vazio = !db.contas.length && db.grupos.every(g => !g.fichas.length);
-  return cab('Dinheiro') + (vazio ? `<div class="lista">
+  const s = serieTotal(), ev = evolucao(s.pts, s.inicio, { rotulo: 'Evolução do total' });
+  const leg = ev ? ev.leg : s.inicio != null && !vazio
+    ? 'O gráfico da evolução aparece à medida que atualizas as contas.' : 'contas + dívidas a receber';
+  const partes = [{ nome: 'Contas', valor: tc, id: 'contas' },
+    ...gruposDe('dividas').map(g => ({ nome: 'Dívidas ' + g.nome.toLowerCase(), valor: totalGrupo(g), id: 'dividas' }))];
+  const dist = distribuicao(partes);
+  const olho = `<button class="icbtn" data-a="ocultar" aria-label="${ui.oculto ? 'Mostrar valores' : 'Ocultar valores'}">${ui.oculto ? ic.olhoFechado : ic.olho}</button>`;
+  return cab('Dinheiro', { acoes: olho }) + (vazio ? `<div class="lista">
       <button class="linha acao" data-a="colar">${ic.maisCirc} Colar os meus dados</button>
       <button class="linha acao" data-a="repor">${ic.maisCirc} Importar de um ficheiro</button></div>
     <p class="rodape">Primeira vez? Cola o texto que copiei no teu Mac, ou escolhe o ficheiro <b>dinheiro-dados-iniciais.json</b>.</p>` : '') + `
-    <div class="lista"><div class="cartao-total">
-      <div class="rot">Total</div>
-      <div class="grande">${euro(tc + td)}</div>
-      <div class="leg">contas + dívidas a receber</div>
-    </div></div>
-    <div class="lista">
-      ${linha('Contas', euro(tc), { a: 'tab', id: 'contas' })}
-      ${gruposDe('dividas').map(g => linha('Dívidas ' + g.nome.toLowerCase(), euro(totalGrupo(g)), { a: 'tab', id: 'dividas' })).join('')}
+    ${cartao({ rot: 'Total', valor: euro(tc + td), leg, graf: ev?.graf })}
+    <div class="lista">${dist.barra}
+      ${partes.map((p, i) => linha(p.nome, euro(p.valor), { a: 'tab', id: p.id, ponto: dist.cor(i), sub: dist.pct(i) })).join('')}
     </div>
     ${fora.length ? cabSec('Fora do total') + `<div class="lista">${fora.map(c => linha(c.nome, euro(c.valor), { cls: 'sec' })).join('')}</div>` : ''}
     ${gastos.length ? cabSec('Gastos') + `<div class="lista">${gastos.map(f => linha(f.nome, euro(totalFicha(f)), { a: 'tab', id: 'gastos' })).join('')}</div>` : ''}
@@ -314,21 +628,47 @@ function vResumo() {
       <button class="linha acao" data-a="repor">Repor cópia de um ficheiro</button>
       <button class="linha acao" data-a="colar">Repor cópia colando texto</button>
     </div>
-    <p class="rodape">Os dados ficam só neste iPhone. Guarda uma cópia de segurança de vez em quando (por exemplo em Ficheiros → iCloud Drive).</p>`;
+    <p class="rodape">Os dados ficam só neste iPhone. ${vazio ? '' : textoCopia()} Guarda uma cópia de segurança de vez em quando (por exemplo em Ficheiros → iCloud Drive).</p>`;
 }
 
 function vContas() {
   const acoes = btnOrdenar() + `<button class="icbtn" data-a="nova-conta" aria-label="Nova conta">${ic.mais}</button>`;
-  const n = db.contas.length;
-  const linhas = db.contas.map((c, i) => ui.ordenar
-    ? linhaOrdenar(c.nome, 'mover-conta', c.id, i, n)
-    : linha(c.nome, euro(c.valor), {
-        a: 'conta', id: c.id, cls: c.noTotal ? '' : 'sec',
-        sub: [c.nota, c.noTotal ? '' : 'fora do total'].filter(Boolean).join(' · '),
-      })).join('');
+  const n = db.contas.length, noTotal = db.contas.filter(c => c.noTotal);
+  const dist = distribuicao(noTotal);
+  const linhas = db.contas.map((c, i) => {
+    if (ui.ordenar) return linhaOrdenar(c.nome, 'mover-conta', c.id, i, n);
+    const j = noTotal.indexOf(c);
+    return linha(c.nome, euro(c.valor), {
+      a: 'ficha', id: c.id, cls: c.noTotal ? '' : 'sec',
+      ponto: dist.barra && (j < 0 ? 'transparent' : dist.cor(j)),
+      sub: [c.nota, j < 0 ? 'fora do total' : dist.pct(j)].filter(Boolean).join(' · '),
+    });
+  }).join('');
   return cab('Contas', { acoes }) +
-    `<div class="lista">${linhas || '<div class="linha sec">Sem contas</div>'}</div>
+    `<div class="lista">${ui.ordenar ? '' : dist.barra}${linhas || '<div class="linha sec">Sem contas</div>'}</div>
      <div class="total-rodape"><span>Total</span><span>${euro(totalContas())}</span></div>`;
+}
+
+function vConta() {
+  const c = db.contas.find(c => c.id === ui.ficha.contas);
+  const acoes = `<button class="icbtn" data-a="menu-conta" aria-label="Opções">${ic.opcoes}</button>
+                 <button class="icbtn" data-a="novo-hist" aria-label="Atualizar valor">${ic.mais}</button>`;
+  const ev = evolucao(acumular(eventosConta(c)), diaDe(c.hist[0].data), { rotulo: 'Evolução de ' + c.nome });
+  let h = cab(c.nome, { voltar: 'Contas', acoes });
+  h += cartao({
+    rot: [c.nota, c.noTotal ? '' : 'Fora do total'].filter(Boolean).join(' · '), valor: euro(c.valor),
+    leg: ev ? ev.leg : 'Atualiza o valor de vez em quando para veres aqui a evolução.', graf: ev?.graf,
+  });
+  h += cabSec('Histórico') + `<div class="lista">` +
+    c.hist.map((x, i) => {
+      const dif = i ? x.valor - c.hist[i - 1].valor : null;
+      return linha(dataPT(x.data), euro(x.valor), {
+        a: 'hist', id: i, chev: false, sub: dif === null ? 'valor inicial' : dif ? euroSinal(dif) : 'sem alteração',
+      });
+    }).reverse().join('') +
+    `<button class="linha acao" data-a="novo-hist">${ic.maisCirc} Atualizar valor</button></div>
+    <p class="rodape">Cada vez que atualizas o valor, fica um registo com a data. É daqui que vem o gráfico.</p>`;
+  return h;
 }
 
 function linhaFicha(f, div) {
@@ -345,7 +685,14 @@ function vGrupos(tipo) {
   const total = gs.reduce((s, g) => s + totalGrupo(g), 0);
   const acoes = btnOrdenar() + `<button class="icbtn" data-a="novo-grupo" aria-label="Novo grupo">${ic.pasta}</button>`;
   let h = cab(div ? 'Dívidas' : 'Gastos', { acoes });
-  h += `<div class="lista">${linha(div ? 'A receber' : 'Total gasto', euro(total), { cls: div ? cor(total) : '', tituloCls: 'forte' })}</div>`;
+  if (div) {
+    const pts = acumular(eventosDividas());
+    const ev = evolucao(pts, pts.length ? pts[0][0] : null, { cor: true, rotulo: 'Evolução do que tens a receber' });
+    h += cartao({ rot: 'A receber', valor: euro(total), cls: cor(total), leg: ev?.leg, graf: ev?.graf });
+  } else {
+    const graf = grafGastosMes();
+    h += cartao({ rot: 'Total gasto', valor: euro(total), leg: graf ? 'gastos por mês no gráfico' : '', graf });
+  }
   for (const g of gs) {
     const n = g.fichas.length;
     h += `<div class="cab-sec"><span>${esc(g.nome)}</span><span class="dir">${euro(totalGrupo(g))}
@@ -365,7 +712,7 @@ function vFicha(tipo) {
   const acoes = `<button class="icbtn" data-a="menu-ficha" aria-label="Opções">${ic.opcoes}</button>
                  <button class="icbtn" data-a="novo-mov" aria-label="Adicionar movimento">${ic.mais}</button>`;
   let h = cab(f.nome, { voltar: div ? 'Dívidas' : 'Gastos', acoes });
-  h += `<div class="lista"><div class="cartao-total"><div class="grande ${div ? cor(t) : ''}">${euro(t)}</div><div class="leg">${esc(legenda)}</div></div></div>`;
+  h += cartao({ valor: euro(t), cls: div ? cor(t) : '', leg: esc(legenda), graf: grafFicha(f, div) });
   h += cabSec('Movimentos') + `<div class="lista">` +
     movOrdenados(f).map(m => linha(m.desc || '—', euroSinal(m.valor), {
       a: 'mov', id: m.id, sub: dataPT(m.data), cls: m.valor < 0 ? 'neg' : '', chev: false, tituloCls: m.desc ? '' : 'sec',
@@ -388,8 +735,12 @@ function vTabs() {
 function render() {
   const t = ui.tab;
   let html;
+  graficos.length = 0;
   if (t === 'resumo') html = vResumo();
-  else if (t === 'contas') html = vContas();
+  else if (t === 'contas') {
+    if (!db.contas.some(c => c.id === ui.ficha.contas)) ui.ficha.contas = null;
+    html = ui.ficha.contas ? vConta() : vContas();
+  }
   else if (ui.ficha[t] && acharFicha(ui.ficha[t])[1]) html = vFicha(t);
   else { ui.ficha[t] = null; html = vGrupos(t); }
   $('#app').innerHTML = `<main class="pagina ${ui.anim}">${html}</main>${vTabs()}`;
@@ -431,7 +782,13 @@ function vAcoes(c) {
     </div><button class="cancelar-acoes" data-a="fechar">Cancelar</button></div>`;
 }
 const acoes = (titulo, botoes) => abrir({ tipo: 'acoes', titulo, botoes });
-const confirmar = (titulo, texto, fn) => acoes(titulo, [{ texto, perigo: true, fn }]);
+/** Pede confirmação; depois de feito, o aviso em baixo tem "Desfazer". */
+const confirmar = (titulo, texto, fn, desfazer = 'Apagado') => acoes(titulo, [{ texto, perigo: true, fn, desfazer }]);
+/** Guarda o estado atual e devolve uma função que o repõe (para o botão "Desfazer"). */
+function pontoDeRetorno() {
+  const antes = JSON.stringify(db);
+  return () => { db = JSON.parse(antes); };
+}
 function erro(sel) {
   const el = $(sel); el.closest('.lista')?.classList.remove('abanar');
   void el.offsetWidth; el.closest('.lista')?.classList.add('abanar'); el.focus();
@@ -446,24 +803,49 @@ function pedirNome(titulo, valor, ok) {
   });
 }
 
+// O valor de uma conta que já existe muda-se em "Atualizar valor" (folhaHist), para ficar no histórico.
 function folhaConta(id) {
   const c = db.contas.find(c => c.id === id);
   abrir({
     tipo: 'folha', titulo: c ? 'Editar conta' : 'Nova conta',
     corpo: `<div class="lista">
-        <div class="linha"><input id="f-nome" placeholder="Nome" value="${esc(c?.nome)}" autocomplete="off" ${c ? '' : 'autofocus'}></div>
-        <div class="linha campo-val"><input id="f-valor" class="valor-grande" inputmode="decimal" placeholder="0" value="${c ? numSinal(c.valor) : ''}" autocomplete="off" ${c ? 'autofocus' : ''}><span>€</span></div>
+        <div class="linha"><input id="f-nome" placeholder="Nome" value="${esc(c?.nome)}" autocomplete="off" autofocus></div>
+        ${c ? '' : '<div class="linha campo-val"><input id="f-valor" class="valor-grande" inputmode="decimal" placeholder="0" autocomplete="off"><span>€</span></div>'}
         <label class="linha"><span class="txt">Contar no total</span><input type="checkbox" class="interruptor" id="f-total" ${!c || c.noTotal ? 'checked' : ''}></label>
         <div class="linha"><input id="f-nota" placeholder="Nota (ex.: interrail)" value="${esc(c?.nota)}" autocomplete="off"></div>
       </div>
       ${c ? `<div class="lista"><button class="linha acao perigo" data-a="apagar-conta" data-id="${c.id}">Apagar conta</button></div>` : ''}`,
     guardar: () => {
-      const nome = $('#f-nome').value.trim(), v = lerValor($('#f-valor').value);
+      const nome = $('#f-nome').value.trim(), v = c ? c.valor : lerValor($('#f-valor').value);
       if (!nome) return erro('#f-nome');
       if (v === null) return erro('#f-valor');
       let alvo = c;
-      if (!alvo) { alvo = { id: uid() }; db.contas.push(alvo); }
-      Object.assign(alvo, { nome, valor: v, noTotal: $('#f-total').checked, nota: $('#f-nota').value.trim() });
+      if (!alvo) { alvo = { id: uid(), valor: v, hist: [{ data: hoje(), valor: v }] }; db.contas.push(alvo); }
+      Object.assign(alvo, { nome, noTotal: $('#f-total').checked, nota: $('#f-nota').value.trim() });
+      return true;
+    },
+  });
+}
+
+/** Regista o valor da conta aberta numa data (i = null) ou edita o registo i do histórico. Um registo por dia. */
+function folhaHist(i) {
+  const c = db.contas.find(c => c.id === ui.ficha.contas), h = i == null ? null : c.hist[i];
+  abrir({
+    tipo: 'folha', titulo: h ? 'Editar registo' : c.nome,
+    corpo: `<div class="lista">
+        <div class="linha campo-val"><input id="f-valor" class="valor-grande" inputmode="decimal" placeholder="0" value="${numSinal(h ? h.valor : c.valor)}" autocomplete="off" autofocus><span>€</span></div>
+        <label class="linha"><span class="txt">Data</span><input type="date" id="f-data" value="${h?.data || hoje()}"></label>
+      </div>
+      ${h ? '' : '<p class="rodape">O valor que a conta tem nesta data. Podes escrever contas, como “1200 + 50”.</p>'}
+      ${h && c.hist.length > 1 ? `<div class="lista"><button class="linha acao perigo" data-a="apagar-hist" data-id="${i}">Apagar registo</button></div>` : ''}`,
+    guardar: () => {
+      const v = lerValor($('#f-valor').value), data = $('#f-data').value || hoje();
+      if (v === null) return erro('#f-valor');
+      let alvo = h || c.hist.find(x => x.data === data);
+      if (!alvo) c.hist.push(alvo = {});
+      Object.assign(alvo, { data, valor: v });
+      c.hist = c.hist.filter(x => x === alvo || x.data !== data);
+      ordenarHist(c);
       return true;
     },
   });
@@ -531,21 +913,23 @@ async function backup() {
   const nome = `dinheiro-${hoje()}.json`;
   const blob = new Blob([JSON.stringify(db, null, 2)], { type: 'application/json' });
   const ficheiro = new File([blob], nome, { type: 'application/json' });
+  const feito = () => { gravarPref('copia', hoje()); render(); };
   if (navigator.canShare?.({ files: [ficheiro] })) {
-    try { await navigator.share({ files: [ficheiro] }); return; } catch (e) { if (e.name === 'AbortError') return; }
+    try { await navigator.share({ files: [ficheiro] }); feito(); return; } catch (e) { if (e.name === 'AbortError') return; }
   }
   const a = document.createElement('a');
   a.href = URL.createObjectURL(blob); a.download = nome; a.click();
   setTimeout(() => URL.revokeObjectURL(a.href), 2000);
+  feito();
 }
 function importar(texto) {
   try {
     const d = JSON.parse(String(texto).trim());
-    if (!Array.isArray(d.contas) || !Array.isArray(d.grupos) ||
+    if (!Array.isArray(d.contas) || !Array.isArray(d.grupos) || !d.contas.every(c => Number.isFinite(c.valor)) ||
         !d.grupos.every(g => Array.isArray(g.fichas) && g.fichas.every(f => Array.isArray(f.movimentos)))) throw new Error();
     confirmar('Substituir todos os dados atuais por estes?', 'Substituir', () => {
-      db = d; ui.ficha = { dividas: null, gastos: null }; toast('Dados importados');
-    });
+      db = migrar(d); ui.ficha = { contas: null, dividas: null, gastos: null };
+    }, 'Dados importados');
     return true;
   } catch {
     toast('Estes dados não são válidos');
@@ -577,15 +961,20 @@ function colar() {
     },
   });
 }
-function toast(t) {
+/** Aviso curto em baixo. Com "desfazer" (uma função), fica mais tempo e tem o botão Desfazer. */
+function toast(t, desfazer) {
   const el = $('#toast');
-  el.textContent = t; el.classList.add('on');
-  clearTimeout(toast.t); toast.t = setTimeout(() => el.classList.remove('on'), 1800);
+  el.innerHTML = esc(t) + (desfazer ? '<button data-a="desfazer">Desfazer</button>' : '');
+  el.classList.toggle('com-acao', !!desfazer);
+  el.classList.add('on');
+  toast.desfazer = desfazer;
+  clearTimeout(toast.t);
+  toast.t = setTimeout(() => { el.classList.remove('on', 'com-acao'); toast.desfazer = null; }, desfazer ? 5000 : 1800);
 }
 
 /* ---------- ações ---------- */
 function irPara(tab) {
-  try { localStorage.setItem('dinheiro.tab', tab); } catch {}
+  gravarPref('tab', tab);
   ui.tab = tab; ui.ordenar = false;
 }
 
@@ -611,8 +1000,22 @@ document.addEventListener('click', e => {
     case 'mover-conta': mover(db.contas, id, +b.dataset.d); break;
     case 'mover-ficha': { const g = db.grupos.find(g => g.fichas.some(f => f.id === id)); if (g) mover(g.fichas, id, +b.dataset.d); break; }
 
-    case 'conta': folhaConta(id); return;
     case 'nova-conta': folhaConta(null); return;
+    case 'menu-conta': {
+      const c = db.contas.find(c => c.id === ui.ficha.contas);
+      acoes(c.nome, [
+        { texto: 'Editar conta', fn: () => folhaConta(c.id) },
+        { texto: 'Apagar conta', perigo: true, fn: () => confirmar(`Apagar a conta "${c.nome}" e o seu histórico?`, 'Apagar', () => { db.contas = db.contas.filter(x => x !== c); }) },
+      ]);
+      return;
+    }
+    case 'novo-hist': folhaHist(null); return;
+    case 'hist': folhaHist(+id); return;
+    case 'apagar-hist': {
+      const c = db.contas.find(c => c.id === ui.ficha.contas), desfaz = pontoDeRetorno();
+      c.hist.splice(+id, 1); ordenarHist(c);
+      guardar(); fechar(); render(); toast('Registo apagado', desfaz); return;
+    }
     case 'apagar-conta': {
       const c = db.contas.find(c => c.id === id);
       confirmar(`Apagar a conta "${c.nome}"?`, 'Apagar', () => { db.contas = db.contas.filter(x => x !== c); });
@@ -649,25 +1052,41 @@ document.addEventListener('click', e => {
 
     case 'novo-mov': folhaMov(null); return;
     case 'mov': folhaMov(id); return;
-    case 'apagar-mov': { const [, f] = naFicha(); f.movimentos = f.movimentos.filter(m => m.id !== id); guardar(); fechar(); render(); return; }
+    case 'apagar-mov': {
+      const [, f] = naFicha(), desfaz = pontoDeRetorno();
+      f.movimentos = f.movimentos.filter(m => m.id !== id);
+      guardar(); fechar(); render(); toast('Movimento apagado', desfaz); return;
+    }
     case 'sinal':
       camada.sinal = id === '1';
       document.querySelectorAll('#f-sinal button').forEach(x => x.classList.toggle('on', x.dataset.id === id));
       ajudaSinal(); return;
     case 'saldar': {
-      const [, f] = naFicha(), t = totalFicha(f);
+      const [, f] = naFicha(), t = totalFicha(f), desfaz = pontoDeRetorno();
       f.movimentos.push({ id: uid(), valor: -t, desc: t > 0 ? 'pagou' : 'paguei', data: hoje() });
-      toast('Conta saldada');
+      toast('Conta saldada', desfaz);
       break;
     }
 
     case 'fechar': fechar(); return;
     case 'guardar-folha': if (camada?.guardar() === true) { guardar(); fechar(); render(); } return;
     case 'acao': {
-      const botao = camada.botoes[+id];
+      const botao = camada.botoes[+id], desfaz = botao.desfazer && pontoDeRetorno();
       camada = null; $('#camada').innerHTML = ''; document.documentElement.classList.remove('travado');
-      botao.fn(); guardar(); render(); return;
+      botao.fn(); guardar(); render();
+      if (desfaz) toast(botao.desfazer, desfaz);
+      return;
     }
+    case 'desfazer':
+      if (!toast.desfazer) return;
+      toast.desfazer(); toast('Desfeito');
+      break;
+
+    case 'periodo': ui.periodo = id; gravarPref('periodo', id); render(); return;
+    case 'ocultar':
+      ui.oculto = !ui.oculto; gravarPref('oculto', ui.oculto ? '1' : '');
+      document.documentElement.classList.toggle('oculto', ui.oculto);
+      render(); return;
 
     case 'exportar': exportar(); return;
     case 'backup': backup(); return;
@@ -688,6 +1107,8 @@ document.addEventListener('input', e => {
 });
 
 document.addEventListener('keydown', e => {
+  const graf = e.target.closest?.('.graf');
+  if (graf && (e.key === 'ArrowLeft' || e.key === 'ArrowRight')) { e.preventDefault(); passoGraf(graf, e.key === 'ArrowRight' ? 1 : -1); return; }
   if (!camada) return;
   if (e.key === 'Escape') fechar();
   if (e.key === 'Enter' && camada.guardar && e.target.matches('#camada input')) {
@@ -695,6 +1116,21 @@ document.addEventListener('keydown', e => {
   }
 });
 
+// Gráficos: arrastar o dedo (ou passar o rato) mostra o valor em cada data.
+const grafEm = e => e.target.closest?.('.graf');
+const mostrarEm = (el, e) => mostrar(el, e.clientX - el.getBoundingClientRect().left);
+document.addEventListener('pointerdown', e => { const el = grafEm(e); if (el) mostrarEm(el, e); });
+document.addEventListener('pointermove', e => { const el = grafEm(e); if (el) mostrarEm(el, e); });
+document.addEventListener('pointerup', e => { if (e.pointerType !== 'mouse') document.querySelectorAll('.graf.ativo').forEach(esconder); });
+document.addEventListener('pointercancel', () => document.querySelectorAll('.graf.ativo').forEach(esconder));
+document.addEventListener('pointerout', e => { const el = grafEm(e); if (el && e.pointerType === 'mouse' && !el.contains(e.relatedTarget)) esconder(el); });
+document.addEventListener('focusout', e => { if (e.target.matches?.('.graf')) esconder(e.target); });
+
+// Ao rodar o iPhone (ou mudar a largura da janela), os gráficos são redesenhados com a nova largura.
+let larguraAntes = innerWidth;
+addEventListener('resize', () => { if (innerWidth !== larguraAntes) { larguraAntes = innerWidth; render(); } });
+
+document.documentElement.classList.toggle('oculto', ui.oculto);
 render();
 navigator.storage?.persist?.();
 if ('serviceWorker' in navigator) navigator.serviceWorker.register('sw.js').catch(() => {});
