@@ -15,6 +15,18 @@
 #define name Dinheiro
 #define color blue
 #define glyph euroSign
+// Só no iPhone (e na pesquisa): no Apple Watch não há iCloud Drive para escrever o atalho.txt.
+#define from search
+
+// Obter ficheiro pelo caminho, sem abrir o seletor (o getFile normal abre-o).
+action 'documentpicker.open' lerFicheiro(text path: 'WFGetFilePath') {
+    "WFShowFilePicker": false
+}
+// Pedir texto numa só linha (o Enter confirma).
+action 'ask' pedirLinha(text prompt: 'WFAskActionPrompt') {
+    "WFInputType": "Text",
+    "WFAllowsMultilineText": false
+}
 
 comment('Pessoas das dívidas, uma por linha, com os nomes como estão na app Dinheiro (Mais → Atalho do iPhone → Copiar).')
 const textoPessoas = text("Pai\nMãe\nMafalda\nMiga\nCosta\nDuda\nMonti\nFranci\nGodinho\nLuigi\nCardoso\nMité")
@@ -49,12 +61,12 @@ menu "Dinheiro" {
 }
 
 nothing()
-const descricao = prompt("Descrição", "Text", "", "false")
+const descricao = pedirLinha("Descrição")
 const agora = currentDate()
 const data = formatDate(agora, "Custom", "yyyy-MM-dd'T'HH:mm:ss")
 const linha = text("{data};{@tipo};{@nome};{@quantia};{descricao}")
 appendToFile("Dinheiro/atalho.txt", linha)
-const ficheiro = getFile("Dinheiro/atalho.txt")
+const ficheiro = lerFicheiro("Dinheiro/atalho.txt")
 const todos = getText(ficheiro)
 setClipboard(todos)
 showNotification("Abre a app e escolhe atalho.txt.", "Guardado: {@nome} {@quantia} €")
