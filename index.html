@@ -139,6 +139,10 @@ button.linha:active, .grupo-acoes button:active, .cancelar-acoes:active { backgr
 .mini { width: 40px; height: 34px; border-radius: 12px; background: var(--fill); color: var(--acc); text-align: center; font-size: 17px; font-weight: 700; }
 .mini:disabled { opacity: .3; }
 textarea.nota { display: block; padding: 4px 16px 14px; resize: none; min-height: 46px; }
+.passos { padding: 0 16px 12px 38px; font-size: 15px; }
+.passos li { margin: 0 0 10px; padding-left: 2px; }
+.passos li::marker { font-weight: 800; color: var(--acc); }
+code { font: 700 14px/1.3 ui-monospace, Menlo, monospace; background: var(--fill); padding: 2px 6px; border-radius: 6px; overflow-wrap: anywhere; }
 
 /* gráficos */
 .leitura { padding: 0 16px; }
@@ -231,8 +235,9 @@ input[type=date] { width: auto; text-align: right; color: var(--acc); font-weigh
   background: var(--toast); color: #fff; padding: 12px 20px; border-radius: 999px; font-size: 15px; font-weight: 700;
 }
 #toast.on { opacity: 1; transform: translate(-50%, 0); }
-#toast.com-acao { pointer-events: auto; white-space: nowrap; }
-#toast button { color: #9db0ff; font-weight: 800; margin-left: 14px; padding: 4px 0; }
+#toast { width: max-content; max-width: calc(100vw - 32px); text-align: center; }
+#toast.com-acao { pointer-events: auto; display: flex; align-items: center; gap: 14px; text-align: left; }
+#toast button { flex: none; color: #9db0ff; font-weight: 800; padding: 4px 0; }
 @media (prefers-reduced-motion: reduce) { *, *::before, *::after { animation: none !important; transition: none !important; } }
 </style>
 </head>
@@ -748,6 +753,7 @@ function vResumo() {
       <button class="linha acao" data-a="colar">${avatarIcone(ic.mais)}Colar os meus dados</button>
       <button class="linha acao" data-a="repor">${avatarIcone(ic.ficheiro)}Importar de um ficheiro</button></section>`;
   } else {
+    if (lerPref('atalho', '') && lerPref('atalho', '') !== 'oculto') h += cartaoAtalho();
     h += ev ? cartaoEvolucao(ev) : cartaoTexto('Evolução', 'O gráfico aparece à medida que atualizas o valor das contas.');
   }
   if (db.contas.length) h += `<section class="cartao">${cabCartao('Contas', verTudo('contas', 'Ver todas'))}${blocoContas()}</section>`;
@@ -763,6 +769,7 @@ function vResumo() {
     const n = f.movimentos.length;
     return linha(f.nome, euro(totalFicha(f)), { a: 'abrir', tipo: 'gastos', id: f.id, avatar: avatar(f.nome), sub: `${n} ${n === 1 ? 'movimento' : 'movimentos'}` });
   }).join('') + '</section>';
+  if (!vazio && !lerPref('atalho', '')) h += cartaoAtalho();
   h += `<section class="cartao">${cabCartao('Cópia de segurança')}
     <p class="texto">Os dados ficam só neste iPhone. ${vazio ? '' : textoCopia()} Guarda uma cópia de vez em quando (por exemplo em Ficheiros → iCloud Drive).</p>
     <div class="botoes-linha"><button class="btn-pri" data-a="backup">Guardar cópia</button><button class="btn-sec" data-a="menu-copias">Mais opções</button></div></section>`;
@@ -1066,6 +1073,7 @@ function importar(texto) {
     return false;
   }
 }
+/** Escolher um ficheiro: uma cópia de segurança (JSON) substitui os dados; o ficheiro do atalho acrescenta movimentos. */
 function repor() {
   // Sem filtro de tipo: no iPhone o filtro .json costuma deixar os ficheiros a cinzento.
   const i = document.createElement('input');
@@ -1073,7 +1081,9 @@ function repor() {
   document.body.appendChild(i);
   i.onchange = async () => {
     const f = i.files[0]; i.remove();
-    if (f) importar(await f.text());
+    if (!f) return;
+    const t = await f.text();
+    if (t.trim().startsWith('{')) importar(t); else importarAtalho(t);
   };
   i.click();
 }
@@ -1091,6 +1101,117 @@ function colar() {
     },
   });
 }
+/* ---------- atalho do iPhone ---------- */
+// O atalho (app Atalhos) acrescenta uma linha por movimento a um ficheiro no iCloud Drive, por exemplo
+//   2026-10-09T10:30:15+01:00;mais;12,50 Mãe jantar
+// isto é: data; mais, menos ou gasto; valor, quem e o quê. Também aceita data;tipo;nome;valor;descrição.
+// A app não consegue ler o ficheiro sozinha: é escolhido em "Importar do atalho" e só entram as linhas novas.
+const norm = s => String(s).normalize('NFD').replace(/\p{M}/gu, '').toLowerCase().replace(/\s+/g, ' ').trim();
+
+/**
+ * Separa "12,50 Mãe jantar" em valor, nome e descrição. Procura primeiro um nome que já exista na app
+ * (o mais comprido, em qualquer posição, e pode ter números, como "Interrail 2026"); depois, o valor.
+ */
+function lerTextoAtalho(texto, nomes) {
+  const pal = texto.trim().split(/\s+/).filter(Boolean), conhecidos = new Set(nomes.map(norm));
+  let nome = '', resto = pal;
+  for (let n = pal.length; n > 0 && !nome; n--) {
+    for (let i = 0; i + n <= pal.length; i++) {
+      if (!conhecidos.has(norm(pal.slice(i, i + n).join(' ')))) continue;
+      nome = pal.slice(i, i + n).join(' ');
+      resto = [...pal.slice(0, i), ...pal.slice(i + n)];
+      break;
+    }
+  }
+  const iv = resto.findIndex(p => /\d/.test(p) && lerValor(p));
+  if (iv < 0) return null;
+  const valor = Math.abs(lerValor(resto[iv]));
+  resto = resto.filter((_, k) => k !== iv);
+  if (!nome) nome = resto.shift() || '';
+  return { valor, nome, desc: resto.join(' ') };
+}
+function lerLinhaAtalho(linha) {
+  const p = linha.split(';').map(x => x.trim());
+  if (p.length < 3) return null;
+  const t = norm(p[1]);
+  const tipo = t.includes('gast') ? 'gasto' : /^(menos|desc|-|−)/.test(t) ? 'menos' : 'mais';
+  const grupo = tipo === 'gasto' ? 'gastos' : 'dividas';
+  const r = p.length >= 5 && lerValor(p[3])
+    ? { valor: Math.abs(lerValor(p[3])), nome: p[2], desc: p.slice(4).join(';') }
+    : lerTextoAtalho(p.slice(2).join(';'), gruposDe(grupo).flatMap(g => g.fichas.map(f => f.nome)));
+  if (!r || !r.valor || !r.nome) return null;
+  return { ...r, tipo, grupo, data: /^\d{4}-\d{2}-\d{2}/.test(p[0]) ? p[0].slice(0, 10) : hoje() };
+}
+function importarAtalho(texto) {
+  const desfaz = pontoDeRetorno();
+  if (!Array.isArray(db.atalho)) db.atalho = []; // linhas já importadas (com o n.º da repetição, para linhas iguais)
+  const vistas = new Set(db.atalho), repeticoes = new Map();
+  let novos = 0, nomesNovos = 0, maus = 0, jaVistas = 0;
+  for (const bruta of String(texto).split(/\r?\n/)) {
+    const linha = bruta.trim();
+    if (!linha) continue;
+    const k = (repeticoes.get(linha) || 0) + 1;
+    repeticoes.set(linha, k);
+    const chave = `${linha}#${k}`;
+    if (vistas.has(chave)) { jaVistas++; continue; }
+    const m = lerLinhaAtalho(linha);
+    if (!m) { maus++; continue; }
+    let f = gruposDe(m.grupo).flatMap(g => g.fichas).find(f => norm(f.nome) === norm(m.nome));
+    if (!f) {
+      let g = gruposDe(m.grupo)[0];
+      if (!g) db.grupos.push(g = { id: uid(), nome: m.grupo === 'gastos' ? 'Gastos' : 'Pessoas', tipo: m.grupo, fichas: [] });
+      g.fichas.push(f = { id: uid(), nome: m.nome, nota: '', movimentos: [] });
+      nomesNovos++;
+    }
+    f.movimentos.push({ id: uid(), valor: m.tipo === 'menos' ? -m.valor : m.valor, desc: m.desc, data: m.data });
+    db.atalho.push(chave); vistas.add(chave); novos++;
+  }
+  if (!novos && !jaVistas && maus) { toast('Este ficheiro não parece ser do atalho'); return; }
+  gravarPref('atalho', hoje());
+  guardar(); render();
+  if (!novos) { toast(maus ? `Nada de novo · ${maus} ${maus === 1 ? 'linha que não percebi' : 'linhas que não percebi'}` : 'Não há movimentos novos'); return; }
+  toast([`${novos} ${novos === 1 ? 'movimento importado' : 'movimentos importados'}`,
+    nomesNovos ? `${nomesNovos} ${nomesNovos === 1 ? 'nome novo' : 'nomes novos'}` : '',
+    maus ? `${maus} ${maus === 1 ? 'linha que não percebi' : 'linhas que não percebi'}` : ''].filter(Boolean).join(' · '), desfaz);
+}
+
+function folhaAtalho() {
+  abrir({
+    tipo: 'folha', titulo: 'Atalho do iPhone', ok: 'Importar do atalho',
+    corpo: `<p class="texto" style="padding:0 2px 14px">Aponta dívidas e gastos sem abrir a app, até com o iPhone bloqueado. O atalho guarda cada movimento num ficheiro do iCloud Drive; depois, aqui, tocas em <b>Importar do atalho</b>.</p>
+      <section class="cartao">${cabCartao('1. Criar o atalho (só uma vez)')}<ol class="passos">
+        <li>Na app <b>Atalhos</b>, toca em <b>+</b> e chama-lhe <b>Dinheiro</b>.</li>
+        <li>Adiciona <b>Escolher do menu</b>. Na pergunta escreve «Dinheiro» e cria três opções: <b>Deve-me +</b>, <b>Desconto −</b> e <b>Gasto</b>.</li>
+        <li>Dentro de cada opção, adiciona uma ação <b>Texto</b> com, por esta ordem: <code>mais</code>, <code>menos</code> e <code>gasto</code>.</li>
+        <li>Depois de <b>Terminar menu</b>, adiciona <b>Pedir entrada</b> (tipo Texto) com a pergunta «Valor, quem e o quê».</li>
+        <li>Adiciona <b>Data atual</b> e depois <b>Formatar data</b>, com o formato <b>ISO 8601</b> e a hora incluída.</li>
+        <li>Adiciona <b>Texto</b> e põe as três variáveis separadas por ponto e vírgula, tocando em cada uma: <code>Data formatada;Resultado do menu;Entrada fornecida</code></li>
+        <li>Adiciona <b>Acrescentar ao ficheiro de texto</b> («Append to Text File»): o texto é o do passo anterior, o ficheiro é <code>Dinheiro/atalho.txt</code> e <b>Criar nova linha</b> fica ligado.</li>
+        <li>Se quiseres uma confirmação, junta <b>Mostrar notificação</b> com «Guardado».</li>
+      </ol><p class="texto">Os nomes das ações podem mudar um pouco com a versão do iOS: procura pela palavra principal.</p></section>
+      <section class="cartao">${cabCartao('2. Pôr no ecrã bloqueado')}<ol class="passos">
+        <li>No ecrã bloqueado, mantém o dedo e toca em <b>Personalizar</b> → <b>Ecrã bloqueado</b>.</li>
+        <li>Tira o botão da lanterna ou da câmara com <b>−</b>, toca em <b>+</b> e escolhe <b>Atalho</b> → <b>Dinheiro</b>.</li>
+        <li>Também o podes pôr no Centro de Controlo ou no botão de ação.</li>
+      </ol><p class="texto">Ao tocar no botão, as perguntas aparecem num cartão no topo do ecrã. Escreve, por exemplo, <b>12,50 Mãe jantar</b>: o valor, o nome como está na app e o que foi. Para guardar no ficheiro, o iPhone pode pedir o Face ID.</p></section>
+      <section class="cartao">${cabCartao('3. Passar para a app')}
+      <p class="texto">Toca em <b>Importar do atalho</b> e escolhe <b>atalho.txt</b> (iCloud Drive → Atalhos → Dinheiro). Podes escolher sempre o mesmo ficheiro: só entram os movimentos novos. Se o nome não existir na app, é criado.</p></section>`,
+    guardar: () => { fechar(); repor(); return false; },
+  });
+}
+/** No início: primeiro um convite para criar o atalho; depois de usado, o botão para importar. */
+function cartaoAtalho() {
+  const ult = lerPref('atalho', '');
+  if (ult === 'oculto') return '';
+  if (!ult) return `<section class="cartao">${cabCartao('Registar do ecrã bloqueado')}
+    <p class="texto">Com um atalho do iPhone, apontas dívidas e gastos sem abrir a app, até com o iPhone bloqueado.</p>
+    <div class="botoes-linha"><button class="btn-pri" data-a="atalho-ajuda">Ver como</button><button class="btn-sec" data-a="atalho-ocultar">Agora não</button></div></section>`;
+  const n = diaDe(hoje()) - diaDe(ult);
+  return `<section class="cartao">${cabCartao('Atalho do iPhone', '<button class="lig" data-a="atalho-ajuda">Ajuda</button>')}
+    <p class="texto">Última importação: ${n <= 0 ? 'hoje' : n === 1 ? 'ontem' : `há ${n} dias`}.</p>
+    <div class="botoes-linha"><button class="btn-pri" data-a="repor">Importar do atalho</button></div></section>`;
+}
+
 /** Aviso curto em baixo. Com "desfazer" (uma função), fica mais tempo e tem o botão Desfazer. */
 function toast(t, desfazer) {
   const el = $('#toast');
@@ -1233,7 +1354,9 @@ document.addEventListener('click', e => {
       return;
     }
     case 'menu-copias':
-      acoes('Cópias e partilha', [
+      acoes('Mais', [
+        { texto: 'Importar do atalho', fn: repor },
+        { texto: 'Atalho do iPhone', fn: folhaAtalho },
         { texto: 'Guardar cópia de segurança', fn: backup },
         { texto: 'Exportar em texto', fn: exportar },
         { texto: 'Repor cópia de um ficheiro', fn: repor },
@@ -1243,6 +1366,8 @@ document.addEventListener('click', e => {
     case 'exportar': exportar(); return;
     case 'backup': backup(); return;
     case 'repor': repor(); return;
+    case 'atalho-ajuda': folhaAtalho(); return;
+    case 'atalho-ocultar': gravarPref('atalho', 'oculto'); render(); toast('Fica em Mais → Atalho do iPhone'); return;
     case 'colar': colar(); return;
     default: return;
   }
