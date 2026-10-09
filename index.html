@@ -232,7 +232,7 @@ input[type=date] { width: auto; text-align: right; color: var(--acc); font-weigh
 #toast {
   position: fixed; left: 50%; bottom: calc(96px + env(safe-area-inset-bottom)); z-index: 20;
   transform: translate(-50%, 16px); opacity: 0; pointer-events: none; transition: .25s;
-  background: var(--toast); color: #fff; padding: 12px 20px; border-radius: 999px; font-size: 15px; font-weight: 700;
+  background: var(--toast); color: #fff; padding: 12px 20px; border-radius: 22px; font-size: 15px; font-weight: 700;
 }
 #toast.on { opacity: 1; transform: translate(-50%, 0); }
 #toast { width: max-content; max-width: calc(100vw - 32px); text-align: center; }
@@ -732,9 +732,14 @@ function recentes(n) {
   for (const g of db.grupos) for (const f of g.fichas) f.movimentos.forEach((m, i) => L.push({ m, f, g, i }));
   return L.sort((a, b) => a.m.data < b.m.data ? 1 : a.m.data > b.m.data ? -1 : b.i - a.i).slice(0, n);
 }
-const linhaRecente = ({ m, f, g }) => linha(m.desc || f.nome, euroSinal(m.valor), {
-  a: 'abrir', tipo: g.tipo, id: f.id, avatar: avatar(f.nome), cls: m.valor < 0 ? 'neg' : '', sub: `${f.nome} · ${dataPT(m.data)}`,
-});
+// Como num extrato: um gasto é dinheiro que sai (−) e um reembolso entra (+, a verde); nas dívidas, + é o que te devem.
+const linhaRecente = ({ m, f, g }) => {
+  const gasto = g.tipo === 'gastos', v = gasto ? -m.valor : m.valor;
+  return linha(m.desc || f.nome, euroSinal(v), {
+    a: 'abrir', tipo: g.tipo, id: f.id, avatar: avatar(f.nome), sub: `${f.nome} · ${dataPT(m.data)}`,
+    cls: gasto ? (v > 0 ? 'pos' : '') : v < 0 ? 'neg' : '',
+  });
+};
 
 function vResumo() {
   const tc = totalContas(), td = totalDividas();
@@ -1102,9 +1107,11 @@ function colar() {
   });
 }
 /* ---------- atalho do iPhone ---------- */
-// O atalho (app Atalhos) acrescenta uma linha por movimento a um ficheiro no iCloud Drive, por exemplo
-//   2026-10-09T10:30:15+01:00;mais;12,50 Mãe jantar
-// isto é: data; mais, menos ou gasto; valor, quem e o quê. Também aceita data;tipo;nome;valor;descrição.
+// O atalho (app Atalhos) acrescenta uma linha por movimento a um ficheiro no iCloud Drive:
+//   2026-10-09T10:30:15+01:00;mais;Mãe;12,5;jantar      (dívida: alguém fica a dever-te)
+//   2026-10-09T11:02:40+01:00;menos;João;5;café         (dívida negativa: desconta)
+//   2026-10-09T12:15:03+01:00;gasto;Revolut;23,4;gasolina (gasto: sai do saldo da conta)
+// isto é: data;tipo;quem ou de que conta;valor;descrição. Também aceita data;tipo;"12,50 Mãe jantar".
 // A app não consegue ler o ficheiro sozinha: é escolhido em "Importar do atalho" e só entram as linhas novas.
 const norm = s => String(s).normalize('NFD').replace(/\p{M}/gu, '').toLowerCase().replace(/\s+/g, ' ').trim();
 
@@ -1134,7 +1141,7 @@ function lerLinhaAtalho(linha) {
   const p = linha.split(';').map(x => x.trim());
   if (p.length < 3) return null;
   const t = norm(p[1]);
-  const tipo = t.includes('gast') ? 'gasto' : /^(menos|desc|-|−)/.test(t) ? 'menos' : 'mais';
+  const tipo = t.includes('gast') ? 'gasto' : t.includes('negativ') || /^(menos|desc|-|−)/.test(t) ? 'menos' : 'mais';
   const grupo = tipo === 'gasto' ? 'gastos' : 'dividas';
   const r = p.length >= 5 && lerValor(p[3])
     ? { valor: Math.abs(lerValor(p[3])), nome: p[2], desc: p.slice(4).join(';') }
@@ -1142,10 +1149,29 @@ function lerLinhaAtalho(linha) {
   if (!r || !r.valor || !r.nome) return null;
   return { ...r, tipo, grupo, data: /^\d{4}-\d{2}-\d{2}/.test(p[0]) ? p[0].slice(0, 10) : hoje() };
 }
+/**
+ * Tira um gasto ao saldo da conta, no histórico, na data do gasto. Os registos de datas posteriores ficam
+ * como estão: foram escritos à mão depois do gasto, por isso já o incluem.
+ */
+function descontar(c, valor, data) {
+  let h = c.hist.find(x => x.data === data);
+  if (!h) {
+    const antes = c.hist.filter(x => x.data < data);
+    c.hist.push(h = { data, valor: (antes.length ? antes[antes.length - 1] : c.hist[0]).valor });
+  }
+  h.valor -= valor;
+  ordenarHist(c);
+}
+/** O grupo deste tipo com este nome; se não existir, é criado no fim. */
+function grupoChamado(nome, tipo) {
+  let g = gruposDe(tipo).find(g => norm(g.nome) === norm(nome));
+  if (!g) db.grupos.push(g = { id: uid(), nome, tipo, fichas: [] });
+  return g;
+}
 function importarAtalho(texto) {
   const desfaz = pontoDeRetorno();
   if (!Array.isArray(db.atalho)) db.atalho = []; // linhas já importadas (com o n.º da repetição, para linhas iguais)
-  const vistas = new Set(db.atalho), repeticoes = new Map();
+  const vistas = new Set(db.atalho), repeticoes = new Map(), semConta = new Set();
   let novos = 0, nomesNovos = 0, maus = 0, jaVistas = 0;
   for (const bruta of String(texto).split(/\r?\n/)) {
     const linha = bruta.trim();
@@ -1157,10 +1183,13 @@ function importarAtalho(texto) {
     const m = lerLinhaAtalho(linha);
     if (!m) { maus++; continue; }
     let f = gruposDe(m.grupo).flatMap(g => g.fichas).find(f => norm(f.nome) === norm(m.nome));
-    if (!f) {
-      let g = gruposDe(m.grupo)[0];
-      if (!g) db.grupos.push(g = { id: uid(), nome: m.grupo === 'gastos' ? 'Gastos' : 'Pessoas', tipo: m.grupo, fichas: [] });
-      g.fichas.push(f = { id: uid(), nome: m.nome, nota: '', movimentos: [] });
+    if (m.grupo === 'gastos') {
+      const conta = db.contas.find(c => norm(c.nome) === norm(m.nome));
+      if (conta) descontar(conta, m.valor, m.data); else semConta.add(m.nome);
+      // o item em Gastos tem o nome da conta, escrito como está em Contas
+      if (!f) grupoChamado('Dia a dia', 'gastos').fichas.push(f = { id: uid(), nome: conta ? conta.nome : m.nome, nota: '', movimentos: [] });
+    } else if (!f) {
+      grupoChamado('Do atalho', 'dividas').fichas.push(f = { id: uid(), nome: m.nome, nota: '', movimentos: [] });
       nomesNovos++;
     }
     f.movimentos.push({ id: uid(), valor: m.tipo === 'menos' ? -m.valor : m.valor, desc: m.desc, data: m.data });
@@ -1171,21 +1200,35 @@ function importarAtalho(texto) {
   guardar(); render();
   if (!novos) { toast(maus ? `Nada de novo · ${maus} ${maus === 1 ? 'linha que não percebi' : 'linhas que não percebi'}` : 'Não há movimentos novos'); return; }
   toast([`${novos} ${novos === 1 ? 'movimento importado' : 'movimentos importados'}`,
-    nomesNovos ? `${nomesNovos} ${nomesNovos === 1 ? 'nome novo' : 'nomes novos'}` : '',
+    nomesNovos ? `${nomesNovos} ${nomesNovos === 1 ? 'pessoa nova' : 'pessoas novas'} em «Do atalho»` : '',
+    semConta.size ? `sem conta «${[...semConta].join('», «')}» em Contas` : '',
     maus ? `${maus} ${maus === 1 ? 'linha que não percebi' : 'linhas que não percebi'}` : ''].filter(Boolean).join(' · '), desfaz);
 }
 
+/** Os nomes que o atalho mostra: as pessoas das dívidas ou as contas. Um por linha, para colar numa ação Texto. */
+const nomesAtalho = tipo => [...new Set(tipo === 'contas' ? db.contas.map(c => c.nome) : gruposDe('dividas').flatMap(g => g.fichas.map(f => f.nome)))];
+
 function folhaAtalho() {
+  const lista = tipo => { const n = nomesAtalho(tipo); return n.length ? esc(n.join(' · ')) : 'Ainda não há nenhum.'; };
   abrir({
     tipo: 'folha', titulo: 'Atalho do iPhone', ok: 'Importar do atalho',
-    corpo: `<p class="texto" style="padding:0 2px 14px">Aponta dívidas e gastos sem abrir a app, até com o iPhone bloqueado. O atalho guarda cada movimento num ficheiro do iCloud Drive; depois, aqui, tocas em <b>Importar do atalho</b>.</p>
+    corpo: `<p class="texto" style="padding:0 2px 14px">Aponta dívidas e gastos sem abrir a app, até com o iPhone bloqueado. Tocas num botão, escolhes <b>Dívida</b>, <b>Dívida negativa</b> ou <b>Gasto</b>, depois quem (ou de que conta), o valor e a descrição. O atalho guarda tudo num ficheiro do iCloud Drive; aqui, tocas em <b>Importar do atalho</b>.</p>
+      <section class="cartao">${cabCartao('Pessoas', '<button class="lig" data-a="copiar-nomes" data-id="dividas">Copiar</button>')}<p class="texto">${lista('dividas')}</p></section>
+      <section class="cartao">${cabCartao('Contas', '<button class="lig" data-a="copiar-nomes" data-id="contas">Copiar</button>')}<p class="texto">${lista('contas')}</p></section>
       <section class="cartao">${cabCartao('1. Criar o atalho (só uma vez)')}<ol class="passos">
         <li>Na app <b>Atalhos</b>, toca em <b>+</b> e chama-lhe <b>Dinheiro</b>.</li>
-        <li>Adiciona <b>Escolher do menu</b>. Na pergunta escreve «Dinheiro» e cria três opções: <b>Deve-me +</b>, <b>Desconto −</b> e <b>Gasto</b>.</li>
-        <li>Dentro de cada opção, adiciona uma ação <b>Texto</b> com, por esta ordem: <code>mais</code>, <code>menos</code> e <code>gasto</code>.</li>
-        <li>Depois de <b>Terminar menu</b>, adiciona <b>Pedir entrada</b> (tipo Texto) com a pergunta «Valor, quem e o quê».</li>
+        <li>Adiciona <b>Escolher do menu</b>, com a pergunta «Dinheiro» e três opções: <b>Dívida</b>, <b>Dívida negativa</b> e <b>Gasto</b>.</li>
+        <li>Dentro de <b>Dívida</b>, adiciona por esta ordem:<br>
+          · <b>Texto</b>: cola as pessoas (botão <b>Copiar</b> em cima), uma por linha;<br>
+          · <b>Dividir texto</b>, por <b>Novas linhas</b>;<br>
+          · <b>Escolher da lista</b>, com a pergunta «Quem?»;<br>
+          · <b>Texto</b>: escreve <code>mais;</code> e junta a variável <b>Item escolhido</b>.</li>
+        <li>Dentro de <b>Dívida negativa</b>, faz o mesmo, mas o último Texto começa por <code>menos;</code>. Podes copiar as quatro ações da Dívida.</li>
+        <li>Dentro de <b>Gasto</b>, faz o mesmo com as contas (deixa só as que queres, como Revolut, Carteira e Conta corrente), a pergunta «De onde?» e o último Texto a começar por <code>gasto;</code>.</li>
+        <li>Depois de <b>Terminar menu</b>, adiciona <b>Pedir entrada</b> (tipo Número) com a pergunta «Valor» e, a seguir, <b>Definir variável</b> com o nome <b>Valor</b>.</li>
+        <li>Adiciona <b>Pedir entrada</b> (tipo Texto) com a pergunta «Descrição» e <b>Definir variável</b> com o nome <b>Descrição</b>.</li>
         <li>Adiciona <b>Data atual</b> e depois <b>Formatar data</b>, com o formato <b>ISO 8601</b> e a hora incluída.</li>
-        <li>Adiciona <b>Texto</b> e põe as três variáveis separadas por ponto e vírgula, tocando em cada uma: <code>Data formatada;Resultado do menu;Entrada fornecida</code></li>
+        <li>Adiciona <b>Texto</b> com as quatro variáveis separadas por ponto e vírgula, tocando em cada uma: <code>Data formatada;Resultado do menu;Valor;Descrição</code></li>
         <li>Adiciona <b>Acrescentar ao ficheiro de texto</b> («Append to Text File»): o texto é o do passo anterior, o ficheiro é <code>Dinheiro/atalho.txt</code> e <b>Criar nova linha</b> fica ligado.</li>
         <li>Se quiseres uma confirmação, junta <b>Mostrar notificação</b> com «Guardado».</li>
       </ol><p class="texto">Os nomes das ações podem mudar um pouco com a versão do iOS: procura pela palavra principal.</p></section>
@@ -1193,9 +1236,10 @@ function folhaAtalho() {
         <li>No ecrã bloqueado, mantém o dedo e toca em <b>Personalizar</b> → <b>Ecrã bloqueado</b>.</li>
         <li>Tira o botão da lanterna ou da câmara com <b>−</b>, toca em <b>+</b> e escolhe <b>Atalho</b> → <b>Dinheiro</b>.</li>
         <li>Também o podes pôr no Centro de Controlo ou no botão de ação.</li>
-      </ol><p class="texto">Ao tocar no botão, as perguntas aparecem num cartão no topo do ecrã. Escreve, por exemplo, <b>12,50 Mãe jantar</b>: o valor, o nome como está na app e o que foi. Para guardar no ficheiro, o iPhone pode pedir o Face ID.</p></section>
+      </ol><p class="texto">Ao tocar no botão, as perguntas aparecem num cartão no topo do ecrã. Para guardar no ficheiro, o iPhone pode pedir o Face ID.</p></section>
       <section class="cartao">${cabCartao('3. Passar para a app')}
-      <p class="texto">Toca em <b>Importar do atalho</b> e escolhe <b>atalho.txt</b> (iCloud Drive → Atalhos → Dinheiro). Podes escolher sempre o mesmo ficheiro: só entram os movimentos novos. Se o nome não existir na app, é criado.</p></section>`,
+      <p class="texto">Toca em <b>Importar do atalho</b> e escolhe <b>atalho.txt</b> (iCloud Drive → Atalhos → Dinheiro). Podes escolher sempre o mesmo ficheiro: só entram os movimentos novos.</p>
+      <p class="texto">As dívidas entram na pessoa com esse nome. Os gastos saem do saldo da conta com esse nome e aparecem em Gastos, no grupo «Dia a dia».</p></section>`,
     guardar: () => { fechar(); repor(); return false; },
   });
 }
@@ -1367,6 +1411,13 @@ document.addEventListener('click', e => {
     case 'backup': backup(); return;
     case 'repor': repor(); return;
     case 'atalho-ajuda': folhaAtalho(); return;
+    case 'copiar-nomes': {
+      const n = nomesAtalho(id);
+      if (!n.length) { toast(id === 'contas' ? 'Ainda não há contas' : 'Ainda não há pessoas'); return; }
+      navigator.clipboard.writeText(n.join('\n'))
+        .then(() => toast(id === 'contas' ? 'Contas copiadas' : 'Pessoas copiadas'), () => toast('Não foi possível copiar'));
+      return;
+    }
     case 'atalho-ocultar': gravarPref('atalho', 'oculto'); render(); toast('Fica em Mais → Atalho do iPhone'); return;
     case 'colar': colar(); return;
     default: return;
