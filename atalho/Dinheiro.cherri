@@ -2,12 +2,14 @@
  * Atalho da app Dinheiro (https://lopalha-creator.github.io/dinheiro/).
  * Dívida: quem → quantia → devem-me (+) ou devo eu (−) → descrição.
  * Gasto: de que conta → quantia → descrição.
- * Acrescenta uma linha a iCloud Drive/Atalhos/Dinheiro/atalho.txt, que a app lê em "Importar do atalho":
+ * Abre a app no Safari com o movimento no link (a app junta-o logo) e guarda também a linha em
+ * iCloud Drive/Atalhos/Dinheiro/atalho.txt, como cópia (a app lê-a em "Importar do atalho"):
  *   2026-10-09T10:30:15;mais;Mãe;12,5;jantar
  */
 
 #include 'actions/calendar'
 #include 'actions/documents'
+#include 'actions/web'
 
 #define name Dinheiro
 #define color blue
@@ -51,4 +53,5 @@ const agora = currentDate()
 const data = formatDate(agora, "Custom", "yyyy-MM-dd'T'HH:mm:ss")
 const linha = text("{data};{@tipo};{@nome};{@quantia};{descricao}")
 appendToFile("Dinheiro/atalho.txt", linha)
-showNotification("{@nome}: {@quantia} €", "Guardado")
+const codigo = urlEncode(linha)
+openURL("https://lopalha-creator.github.io/dinheiro/#atalho={codigo}")

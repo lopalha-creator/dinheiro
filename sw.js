@@ -1,5 +1,5 @@
 // Guarda a app em cache para abrir sem internet. Tenta sempre a rede primeiro, para receber atualizações.
-const CACHE = 'dinheiro-v4';
+const CACHE = 'dinheiro-v5';
 const FICHEIROS = ['./', './index.html', './manifest.webmanifest', './icon-180.png', './icon-192.png', './icon-512.png', './fonts/manrope.woff2'];
 
 self.addEventListener('install', e => {
