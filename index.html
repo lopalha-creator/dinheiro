@@ -7,31 +7,43 @@
 <meta name="mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-status-bar-style" content="default">
 <meta name="apple-mobile-web-app-title" content="Dinheiro">
-<meta name="theme-color" content="#f2f2f7" media="(prefers-color-scheme: light)">
+<meta name="theme-color" content="#f3f4f8" media="(prefers-color-scheme: light)">
 <meta name="theme-color" content="#000000" media="(prefers-color-scheme: dark)">
 <link rel="apple-touch-icon" href="icon-180.png">
 <link rel="icon" href="icon-192.png">
 <link rel="manifest" href="manifest.webmanifest">
+<link rel="preload" href="fonts/manrope.woff2" as="font" type="font/woff2" crossorigin>
 <title>Dinheiro</title>
 <style>
+/* Manrope (licença SIL OFL, ver fonts/OFL.txt), guardada com a app para funcionar sem internet. */
+@font-face { font-family: 'Manrope'; src: url(fonts/manrope.woff2) format('woff2'); font-weight: 400 800; font-display: swap; }
+
+/* Estilo de app de banco moderna (como a do Revolut): topo com gradiente e o saldo em grande,
+   botões de ação redondos, cartões muito arredondados sem linhas a separar e avatares com iniciais. */
 :root {
-  --bg: #f2f2f7; --cel: #fff; --sep: rgba(60,60,67,.2); --txt: #000;
-  --sec: rgba(60,60,67,.6); --ter: rgba(60,60,67,.3);
-  --acc: #1a8f4c; --verde: #248a3d; --verm: #d70015;
-  --fill: rgba(118,118,128,.12); --seg-on: #fff; --prem: rgba(0,0,0,.06);
-  --barra: rgba(249,249,249,.86); --acoes: rgba(255,255,255,.92);
-  /* cores dos gráficos de distribuição, por esta ordem (validadas para daltonismo em claro e escuro) */
+  --bg: #f3f4f8; --cel: #fff; --txt: #191c1f; --sec: #6f7380; --ter: #b4b7c1;
+  --sep: rgba(25,28,31,.08); --fill: rgba(25,28,31,.06); --prem: rgba(25,28,31,.05);
+  --acc: #2d5bff; --acc-forte: #2d5bff; --acc-suave: rgba(45,91,255,.18); --verde: #148043; --verm: #d1323c; --verm-suave: rgba(209,50,60,.12);
+  --barra: rgba(255,255,255,.86); --acoes: rgba(255,255,255,.96); --seg-on: #fff; --toast: rgba(25,28,31,.94);
+  --sombra: 0 1px 2px rgba(25,28,31,.04), 0 6px 20px rgba(25,28,31,.05);
+  /* gradiente do topo */
+  --h1: #3d63ff; --h2: #7b4dff; --h3: #ff6fae; --h0: #2f45d8;
+  /* cores da barra de distribuição e dos avatares, por esta ordem (validadas para daltonismo); --tN é o texto por cima de --cN */
   --c1: #2a78d6; --c2: #eb6834; --c3: #1baf7a; --c4: #eda100; --c5: #e87ba4; --c6: #008300; --c7: #4a3aa7; --c8: #e34948; --c0: #8e8e93;
+  --t1: #fff; --t2: #191c1f; --t3: #191c1f; --t4: #191c1f; --t5: #191c1f; --t6: #fff; --t7: #fff; --t8: #191c1f; --t0: #191c1f;
+  --fonte: Manrope, -apple-system, BlinkMacSystemFont, system-ui, sans-serif;
   color-scheme: light dark;
 }
 @media (prefers-color-scheme: dark) {
   :root {
-    --bg: #000; --cel: #1c1c1e; --sep: rgba(84,84,88,.6); --txt: #fff;
-    --sec: rgba(235,235,245,.6); --ter: rgba(235,235,245,.3);
-    --acc: #30d158; --verde: #30d158; --verm: #ff453a;
-    --fill: rgba(118,118,128,.24); --seg-on: #636366; --prem: rgba(255,255,255,.08);
-    --barra: rgba(22,22,24,.86); --acoes: rgba(44,44,46,.94);
+    --bg: #000; --cel: #16171b; --txt: #fff; --sec: #8b8e99; --ter: #4a4d57;
+    --sep: rgba(255,255,255,.08); --fill: rgba(255,255,255,.08); --prem: rgba(255,255,255,.06);
+    --acc: #6b8aff; --acc-forte: #4b6bff; --acc-suave: rgba(107,138,255,.22); --verde: #3ddc84; --verm: #ff6369; --verm-suave: rgba(255,99,105,.16);
+    --barra: rgba(18,19,22,.86); --acoes: rgba(32,33,38,.96); --seg-on: #34363d; --toast: rgba(44,46,52,.96);
+    --sombra: none;
+    --h1: #2442e0; --h2: #5a2fd6; --h3: #b2367a; --h0: #121a6b;
     --c1: #3987e5; --c2: #d95926; --c3: #199e70; --c4: #c98500; --c5: #d55181; --c6: #008300; --c7: #9085e9; --c8: #e66767; --c0: #636366;
+    --t1: #191c1f; --t2: #191c1f; --t3: #191c1f; --t4: #191c1f; --t5: #191c1f; --t6: #fff; --t7: #191c1f; --t8: #191c1f; --t0: #fff;
   }
 }
 * { box-sizing: border-box; margin: 0; }
@@ -39,123 +51,171 @@ html { -webkit-text-size-adjust: 100%; }
 html.travado { overflow: hidden; }
 body {
   background: var(--bg); color: var(--txt);
-  font: 17px/1.3 -apple-system, BlinkMacSystemFont, "SF Pro Text", system-ui, sans-serif;
+  font: 500 16px/1.35 var(--fonte); -webkit-font-smoothing: antialiased;
   -webkit-tap-highlight-color: transparent; touch-action: manipulation; min-height: 100vh;
 }
 button { font: inherit; color: inherit; background: none; border: 0; padding: 0; cursor: pointer; text-align: left; }
 input, textarea { font: inherit; color: inherit; background: none; border: 0; outline: 0; width: 100%; min-width: 0; }
+input::placeholder, textarea::placeholder { color: var(--ter); }
 svg { fill: none; stroke: currentColor; stroke-width: 1.8; stroke-linecap: round; stroke-linejoin: round; }
+button:focus-visible { outline: 2px solid var(--acc); outline-offset: 2px; }
 
 .pagina { max-width: 640px; margin: 0 auto; padding: calc(env(safe-area-inset-top) + 4px) 16px calc(100px + env(safe-area-inset-bottom)); }
-.barra { display: flex; justify-content: space-between; align-items: center; min-height: 44px; }
-.acoes { display: flex; gap: 4px; align-items: center; }
-.icbtn { width: 40px; height: 40px; display: grid; place-items: center; color: var(--acc); border-radius: 20px; }
-.icbtn svg { width: 24px; height: 24px; }
-.icbtn.peq { width: 30px; height: 30px; }
-.icbtn.peq svg { width: 20px; height: 20px; }
-.txtbtn { color: var(--acc); padding: 8px 6px; }
-.forte { font-weight: 600; }
-.voltar { display: flex; align-items: center; color: var(--acc); margin-left: -8px; padding: 8px 0; }
-.voltar svg { width: 24px; height: 24px; stroke-width: 2.2; }
-h1 { font-size: 34px; font-weight: 700; margin: 2px 0 14px; overflow-wrap: anywhere; }
+.barra { display: flex; justify-content: space-between; align-items: center; gap: 8px; min-height: 52px; }
+.acoes { display: flex; gap: 8px; align-items: center; }
+.icbtn { width: 40px; height: 40px; flex: none; display: grid; place-items: center; border-radius: 50%; background: var(--cel); color: var(--txt); box-shadow: var(--sombra); }
+.icbtn svg { width: 22px; height: 22px; stroke-width: 2; }
+.icbtn.peq { width: 32px; height: 32px; background: var(--fill); color: var(--sec); box-shadow: none; }
+.icbtn.peq svg { width: 18px; height: 18px; }
+.txtbtn { height: 40px; padding: 0 16px; border-radius: 999px; background: var(--cel); color: var(--acc); font-size: 15px; font-weight: 700; box-shadow: var(--sombra); }
+.marca { font-size: 19px; font-weight: 800; letter-spacing: -.02em; }
+h1 { font-size: 32px; font-weight: 800; letter-spacing: -.03em; line-height: 1.15; margin: 4px 0 6px; overflow-wrap: anywhere; text-wrap: balance; }
 
-.lista { background: var(--cel); border-radius: 12px; overflow: hidden; margin-bottom: 22px; }
-.lista > * { position: relative; }
-.lista > * + *::before { content: ""; position: absolute; top: 0; left: 16px; right: 0; border-top: .5px solid var(--sep); }
-.linha { display: flex; align-items: center; gap: 10px; width: 100%; min-height: 46px; padding: 10px 16px; }
+/* topo com gradiente */
+.heroi {
+  color: #fff; margin: calc(-4px - env(safe-area-inset-top)) -16px 18px; padding: calc(env(safe-area-inset-top) + 4px) 16px 24px;
+  border-radius: 0 0 32px 32px;
+  background:
+    radial-gradient(110% 80% at 0% 0%, var(--h1), transparent 62%),
+    radial-gradient(90% 75% at 100% 0%, var(--h2), transparent 66%),
+    radial-gradient(80% 70% at 75% 100%, var(--h3), transparent 70%),
+    var(--h0);
+}
+.heroi .icbtn, .heroi .pilula, .heroi .acao-red .circ { background: rgba(255,255,255,.2); color: #fff; box-shadow: none; -webkit-backdrop-filter: blur(12px); backdrop-filter: blur(12px); }
+.heroi-centro { text-align: center; padding: 16px 0 2px; }
+.heroi-rot { font-size: 14px; font-weight: 700; opacity: .85; }
+.valor-g { font-size: 44px; font-weight: 800; letter-spacing: -.035em; line-height: 1.1; margin: 4px 0 12px; overflow-wrap: anywhere; }
+.valor-g small, .valor-m small { font-size: .56em; font-weight: 800; letter-spacing: -.01em; }
+.pilula { display: inline-flex; align-items: center; gap: 6px; padding: 7px 14px; border-radius: 999px; font-size: 14px; font-weight: 700; }
+
+/* botões de ação redondos */
+.botoes-acao { display: flex; justify-content: center; gap: 4px; margin-top: 22px; }
+.acao-red { flex: 0 1 84px; min-width: 0; display: flex; flex-direction: column; align-items: center; gap: 7px; font-size: 13px; font-weight: 700; text-align: center; line-height: 1.2; }
+.acao-red .circ { width: 52px; height: 52px; border-radius: 50%; display: grid; place-items: center; background: var(--cel); color: var(--acc); box-shadow: var(--sombra); transition: transform .15s; }
+.acao-red .circ svg { width: 22px; height: 22px; stroke-width: 2.1; }
+.acao-red:active .circ { transform: scale(.92); }
+
+/* cartões e linhas */
+.cartao { background: var(--cel); border-radius: 24px; padding: 6px 0; margin-bottom: 16px; box-shadow: var(--sombra); overflow: hidden; }
+.cartao > * { position: relative; }
+.cartao-cab { display: flex; justify-content: space-between; align-items: center; gap: 8px; min-height: 48px; padding: 10px 16px 4px; }
+.cartao-cab h2 { font-size: 18px; font-weight: 800; letter-spacing: -.02em; overflow-wrap: anywhere; }
+.cartao-cab .dir { display: flex; align-items: center; gap: 8px; color: var(--sec); font-weight: 700; font-variant-numeric: tabular-nums; white-space: nowrap; }
+.lig { color: var(--acc); font-size: 15px; font-weight: 700; padding: 6px 0; }
+.linha { display: flex; align-items: center; gap: 12px; width: 100%; min-height: 62px; padding: 10px 16px; }
 button.linha:active, .grupo-acoes button:active, .cancelar-acoes:active { background: var(--prem); }
 .txt { flex: 1; min-width: 0; }
+.tit { font-weight: 700; overflow-wrap: anywhere; }
 .sub { font-size: 13px; color: var(--sec); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; margin-top: 2px; }
-.val { font-variant-numeric: tabular-nums; white-space: nowrap; }
+.val { font-weight: 700; font-variant-numeric: tabular-nums; white-space: nowrap; }
 .sec { color: var(--sec); }
 .ter { color: var(--ter); }
 .pos { color: var(--verde); }
 .neg { color: var(--verm); }
 .zero { color: var(--sec); }
-.chev { width: 14px; height: 14px; color: var(--ter); stroke-width: 2.6; flex: none; margin-right: -4px; }
-.acao { color: var(--acc); }
-.acao svg { width: 22px; height: 22px; flex: none; }
+.acao { color: var(--acc); font-weight: 700; }
 .perigo { color: var(--verm) !important; }
-
-.cab-sec { display: flex; justify-content: space-between; align-items: center; gap: 8px; font-size: 13px; color: var(--sec); padding: 0 6px 6px 16px; margin-top: -4px; min-height: 30px; }
-.cab-sec > span:first-child { text-transform: uppercase; }
-.cab-sec .dir { display: flex; align-items: center; gap: 4px; font-variant-numeric: tabular-nums; }
-.cartao-total { padding: 16px; }
-.rot { font-size: 15px; color: var(--sec); }
-.grande { font: 700 40px/1.15 ui-rounded, -apple-system, system-ui, sans-serif; font-variant-numeric: tabular-nums; margin: 2px 0; overflow-wrap: anywhere; }
-.leg { font-size: 13px; color: var(--sec); }
-.rodape { font-size: 13px; color: var(--sec); padding: 0 16px; margin: -14px 0 22px; }
-.total-rodape { display: flex; justify-content: space-between; font-weight: 600; padding: 0 16px; margin-top: -12px; font-variant-numeric: tabular-nums; }
-.mini { width: 38px; height: 32px; border-radius: 8px; background: var(--fill); color: var(--acc); text-align: center; font-size: 17px; }
+.avatar { width: 42px; height: 42px; flex: none; border-radius: 50%; display: grid; place-items: center; background: var(--fill); color: var(--txt); font-size: 15px; font-weight: 800; letter-spacing: -.02em; }
+.avatar svg { width: 20px; height: 20px; stroke-width: 2.1; }
+.avatar.grande { width: 76px; height: 76px; font-size: 28px; }
+.acao .avatar { background: var(--acc-suave); color: var(--acc); }
+.perigo .avatar { background: var(--verm-suave); color: var(--verm); }
+.cab-valor { padding: 0 2px 16px; }
+.cab-valor .valor-g { margin: 2px 0 0; }
+.rot { font-size: 14px; font-weight: 700; color: var(--sec); }
+.leg { font-size: 14px; font-weight: 600; color: var(--sec); }
+.perfil { text-align: center; padding: 2px 0 20px; }
+.perfil .avatar { margin: 0 auto 12px; }
+.perfil h1 { font-size: 22px; margin: 0; }
+.perfil .valor-g { margin: 6px 0 2px; }
+.texto { font-size: 14px; color: var(--sec); padding: 0 16px 12px; }
+.texto b { color: var(--txt); }
+.botoes-linha { display: flex; flex-wrap: wrap; gap: 8px; padding: 2px 16px 12px; }
+.btn-pri, .btn-sec { text-align: center; font-size: 15px; font-weight: 800; padding: 13px 20px; border-radius: 999px; }
+.btn-pri { background: var(--acc-forte); color: #fff; }
+.btn-sec { background: var(--fill); color: var(--txt); }
+.btn-pri.largo { display: block; width: 100%; padding: 16px; margin: 4px 0 16px; font-size: 16px; }
+.rodape { font-size: 13px; color: var(--sec); padding: 0 16px; margin: -6px 0 18px; }
+.mini { width: 40px; height: 34px; border-radius: 12px; background: var(--fill); color: var(--acc); text-align: center; font-size: 17px; font-weight: 700; }
 .mini:disabled { opacity: .3; }
-textarea.nota { display: block; padding: 12px 16px; resize: none; min-height: 46px; }
-.ponto { width: 10px; height: 10px; border-radius: 3px; flex: none; }
+textarea.nota { display: block; padding: 4px 16px 14px; resize: none; min-height: 46px; }
 
 /* gráficos */
-.graf { position: relative; margin-top: 14px; touch-action: pan-y; -webkit-user-select: none; user-select: none; outline: 0; border-radius: 6px; }
+.leitura { padding: 0 16px; }
+.valor-m { font-size: 24px; font-weight: 800; letter-spacing: -.02em; font-variant-numeric: tabular-nums; }
+.chips { display: flex; gap: 2px; }
+.chips button { padding: 6px 10px; border-radius: 999px; font-size: 13px; font-weight: 700; color: var(--sec); }
+.chips .on { background: var(--txt); color: var(--cel); }
+.graf { position: relative; margin: 12px 16px 10px; touch-action: pan-y; -webkit-user-select: none; user-select: none; -webkit-touch-callout: none; outline: 0; border-radius: 8px; }
 .graf:focus-visible { box-shadow: 0 0 0 2px var(--acc); }
 .graf svg { display: block; overflow: visible; stroke: none; }
-.graf text { fill: var(--sec); font-size: 11px; font-variant-numeric: tabular-nums; }
+.graf text { fill: var(--sec); font-size: 11px; font-weight: 600; font-variant-numeric: tabular-nums; }
 .graf .grelha { stroke: var(--sep); stroke-width: 1; }
 .graf .eixo0 { stroke: var(--ter); stroke-width: 1; }
 .graf .traco { fill: none; stroke: var(--acc); stroke-width: 2; stroke-linejoin: round; stroke-linecap: round; }
-.graf .area { fill: var(--acc); opacity: .12; }
 .graf .marca { fill: var(--acc); stroke: var(--cel); stroke-width: 2; }
 .graf .mira, .graf .cursor { visibility: hidden; }
 .graf .mira { stroke: var(--sec); stroke-width: 1; }
 .graf.ativo .mira, .graf.ativo .cursor { visibility: visible; }
-.graf .coluna { fill: var(--acc); transition: opacity .15s; }
-.graf.ativo .coluna:not(.on) { opacity: .35; }
-.seg.peq { margin: 14px 0 0; }
-.seg.peq button { font-size: 13px; padding: 5px 2px; }
-.comp-bloco { padding: 16px; }
-.comp { display: flex; gap: 2px; height: 12px; border-radius: 4px; overflow: hidden; }
+.graf .coluna { fill: var(--acc-suave); transition: fill .15s; }
+.graf .coluna.on { fill: var(--acc); }
+.comp-bloco { padding: 8px 16px 6px; }
+.comp { display: flex; gap: 2px; height: 10px; border-radius: 5px; overflow: hidden; }
 .comp span { min-width: 3px; }
 
 /* ocultar valores (para mostrar o ecrã a alguém) */
-.oculto :is(.val, .grande, .leg, .sub, .graf text, .cab-sec .dir, .total-rodape) { filter: blur(8px); }
+.oculto :is(.val, .valor-g, .valor-m, .leg, .sub, .pilula, .graf text, .cartao-cab .dir) { filter: blur(8px); }
 
+/* barra de separadores */
 .tabs {
   position: fixed; left: 0; right: 0; bottom: 0; z-index: 5; display: flex; justify-content: center;
-  padding: 6px 8px calc(env(safe-area-inset-bottom) + 6px);
+  padding: 8px 8px calc(env(safe-area-inset-bottom) + 6px);
   background: var(--barra); -webkit-backdrop-filter: saturate(180%) blur(20px); backdrop-filter: saturate(180%) blur(20px);
   border-top: .5px solid var(--sep);
 }
-.tabs button { flex: 1; max-width: 130px; display: flex; flex-direction: column; align-items: center; gap: 2px; font-size: 10px; font-weight: 500; color: var(--sec); padding: 2px 0; }
-.tabs svg { width: 26px; height: 26px; }
-.tabs .on { color: var(--acc); }
+.tabs button { flex: 1; max-width: 120px; display: flex; flex-direction: column; align-items: center; gap: 3px; font-size: 11px; font-weight: 700; color: var(--sec); padding: 2px 0; }
+.tabs svg { width: 24px; height: 24px; stroke-width: 2; }
+.tabs .on { color: var(--txt); }
 
 .entra { animation: entra .3s cubic-bezier(.2,.8,.2,1); }
 .volta { animation: volta .3s cubic-bezier(.2,.8,.2,1); }
 @keyframes entra { from { transform: translateX(28%); opacity: 0; } }
 @keyframes volta { from { transform: translateX(-18%); opacity: 0; } }
 
-#camada .fundo { position: fixed; inset: 0; z-index: 10; background: rgba(0,0,0,.38); animation: aparece .25s; }
+/* folhas e menus */
+#camada .fundo { position: fixed; inset: 0; z-index: 10; background: rgba(0,0,0,.4); animation: aparece .25s; }
 .folha {
-  position: fixed; left: 0; right: 0; bottom: 0; top: calc(env(safe-area-inset-top) + 12px); z-index: 11;
-  max-width: 640px; margin: 0 auto; background: var(--bg); border-radius: 14px 14px 0 0;
+  position: fixed; left: 0; right: 0; bottom: 0; top: calc(env(safe-area-inset-top) + 10px); z-index: 11;
+  max-width: 640px; margin: 0 auto; background: var(--bg); border-radius: 28px 28px 0 0;
   display: flex; flex-direction: column; animation: sobe .34s cubic-bezier(.2,.8,.2,1);
 }
-.folha-barra { display: flex; justify-content: space-between; align-items: center; gap: 8px; padding: 6px 10px; min-height: 54px; }
-.folha-barra strong { flex: 1; text-align: center; font-weight: 600; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.folha::before { content: ""; position: absolute; top: 7px; left: 50%; width: 38px; height: 5px; margin-left: -19px; border-radius: 3px; background: var(--ter); }
+.folha-barra { padding: 20px 16px 0; }
 .folha-corpo { flex: 1; overflow: auto; padding: 8px 16px 40px; }
-.campo-val span { color: var(--sec); font-size: 20px; }
-.valor-grande { font-size: 28px; font-weight: 600; font-variant-numeric: tabular-nums; }
-input[type=date] { width: auto; text-align: right; color: var(--acc); }
-.seg { display: flex; background: var(--fill); border-radius: 9px; padding: 2px; margin-bottom: 16px; }
-.seg button { flex: 1; text-align: center; padding: 8px 4px; border-radius: 7px; font-size: 15px; font-weight: 500; }
-.seg .on { background: var(--seg-on); box-shadow: 0 1px 4px rgba(0,0,0,.14); }
+.folha-tit { font-size: 28px; font-weight: 800; letter-spacing: -.03em; line-height: 1.15; margin-bottom: 18px; overflow-wrap: anywhere; }
+.folha .cartao { padding: 4px 0; }
+.folha .linha { min-height: 56px; }
+.campo-val { min-height: 76px !important; }
+.campo-val span { color: var(--sec); font-size: 30px; font-weight: 800; }
+.valor-grande { font-size: 36px; font-weight: 800; letter-spacing: -.03em; font-variant-numeric: tabular-nums; }
+input[type=date] { width: auto; text-align: right; color: var(--acc); font-weight: 700; }
+.seg { display: flex; background: var(--fill); border-radius: 999px; padding: 3px; margin-bottom: 14px; }
+.seg button { flex: 1; text-align: center; padding: 10px 4px; border-radius: 999px; font-size: 15px; font-weight: 700; color: var(--sec); }
+.seg .on { background: var(--seg-on); color: var(--txt); box-shadow: 0 1px 4px rgba(0,0,0,.12); }
 .interruptor { appearance: none; -webkit-appearance: none; flex: none; width: 51px; height: 31px; border-radius: 16px; background: var(--fill); position: relative; transition: background .2s; }
 .interruptor::after { content: ""; position: absolute; top: 2px; left: 2px; width: 27px; height: 27px; border-radius: 50%; background: #fff; box-shadow: 0 2px 5px rgba(0,0,0,.22); transition: transform .2s; }
-.interruptor:checked { background: #34c759; }
+.interruptor:checked { background: var(--acc-forte); }
 .interruptor:checked::after { transform: translateX(20px); }
 
-.folha-acoes { position: fixed; left: 8px; right: 8px; bottom: calc(env(safe-area-inset-bottom) + 8px); z-index: 11; max-width: 480px; margin: 0 auto; animation: sobe .3s cubic-bezier(.2,.8,.2,1); }
-.grupo-acoes { background: var(--acoes); -webkit-backdrop-filter: blur(20px); backdrop-filter: blur(20px); border-radius: 14px; overflow: hidden; margin-bottom: 8px; }
+.folha-acoes {
+  position: fixed; left: 8px; right: 8px; bottom: calc(env(safe-area-inset-bottom) + 8px); z-index: 11; max-width: 480px; margin: 0 auto;
+  display: flex; flex-direction: column; max-height: calc(100% - env(safe-area-inset-top) - 24px); animation: sobe .3s cubic-bezier(.2,.8,.2,1);
+}
+.grupo-acoes { background: var(--acoes); -webkit-backdrop-filter: blur(20px); backdrop-filter: blur(20px); border-radius: 22px; overflow: auto; margin-bottom: 8px; }
 .grupo-acoes > * + * { border-top: .5px solid var(--sep); }
-.grupo-acoes button, .cancelar-acoes { display: block; width: 100%; text-align: center; padding: 17px; font-size: 19px; color: var(--acc); }
-.titulo-acoes { font-size: 13px; color: var(--sec); text-align: center; padding: 14px 16px; }
-.cancelar-acoes { background: var(--cel); border-radius: 14px; font-weight: 600; }
+.grupo-acoes button, .cancelar-acoes { display: block; width: 100%; text-align: center; padding: 17px; font-size: 17px; font-weight: 700; color: var(--acc); }
+.titulo-acoes { font-size: 13px; font-weight: 600; color: var(--sec); text-align: center; padding: 14px 16px; }
+.cancelar-acoes { flex: none; background: var(--cel); color: var(--txt); border-radius: 22px; }
 #camada.saindo .folha, #camada.saindo .folha-acoes { animation: desce .25s forwards; }
 #camada.saindo .fundo { animation: some .25s forwards; }
 @keyframes sobe { from { transform: translateY(100%); } }
@@ -166,13 +226,13 @@ input[type=date] { width: auto; text-align: right; color: var(--acc); }
 @keyframes abanar { 25% { transform: translateX(-6px); } 75% { transform: translateX(6px); } }
 
 #toast {
-  position: fixed; left: 50%; bottom: calc(100px + env(safe-area-inset-bottom)); z-index: 20;
+  position: fixed; left: 50%; bottom: calc(96px + env(safe-area-inset-bottom)); z-index: 20;
   transform: translate(-50%, 16px); opacity: 0; pointer-events: none; transition: .25s;
-  background: rgba(0,0,0,.82); color: #fff; padding: 10px 18px; border-radius: 20px; font-size: 15px;
+  background: var(--toast); color: #fff; padding: 12px 20px; border-radius: 999px; font-size: 15px; font-weight: 700;
 }
 #toast.on { opacity: 1; transform: translate(-50%, 0); }
 #toast.com-acao { pointer-events: auto; white-space: nowrap; }
-#toast button { color: #30d158; font-weight: 600; margin-left: 12px; padding: 4px 0; }
+#toast button { color: #9db0ff; font-weight: 800; margin-left: 14px; padding: 4px 0; }
 @media (prefers-reduced-motion: reduce) { *, *::before, *::after { animation: none !important; transition: none !important; } }
 </style>
 </head>
@@ -294,20 +354,28 @@ function mover(lista, id, d) {
 }
 
 /* ---------- ícones ---------- */
+const ico = d => `<svg viewBox="0 0 24 24">${d}</svg>`;
 const ic = {
-  resumo: '<svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="9.5"/><path d="M15.6 8.7a4.3 4.3 0 1 0 0 6.6M7.6 10.9h6.2M7.6 13.3h6.2"/></svg>',
-  contas: '<svg viewBox="0 0 24 24"><rect x="2.5" y="6" width="19" height="12" rx="2.5"/><circle cx="12" cy="12" r="2.6"/><path d="M6 9.6v4.8M18 9.6v4.8"/></svg>',
-  dividas: '<svg viewBox="0 0 24 24"><circle cx="9" cy="8.5" r="3.2"/><path d="M3 19.2c.6-3.3 3-5.1 6-5.1s5.4 1.8 6 5.1"/><circle cx="16.6" cy="9" r="2.6"/><path d="M16.8 13.7c2.3 0 4 1.4 4.5 4"/></svg>',
-  gastos: '<svg viewBox="0 0 24 24"><path d="M2.5 4h2.6l2.3 10.6h10.4l2-7.6H6.3"/><circle cx="9" cy="19" r="1.5"/><circle cx="17" cy="19" r="1.5"/></svg>',
-  chev: '<svg class="chev" viewBox="0 0 24 24"><path d="M9 5l7 7-7 7"/></svg>',
-  voltar: '<svg viewBox="0 0 24 24"><path d="M15 4l-8 8 8 8"/></svg>',
-  mais: '<svg viewBox="0 0 24 24"><path d="M12 5v14M5 12h14"/></svg>',
-  maisCirc: '<svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="9.5"/><path d="M12 8v8M8 12h8"/></svg>',
-  opcoes: '<svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="9.5"/><path d="M7.9 12h.01M12 12h.01M16.1 12h.01" stroke-width="2.6"/></svg>',
-  pasta: '<svg viewBox="0 0 24 24"><path d="M3 7v11a1.5 1.5 0 0 0 1.5 1.5h15A1.5 1.5 0 0 0 21 18V9a1.5 1.5 0 0 0-1.5-1.5H12L10 5H4.5A1.5 1.5 0 0 0 3 6.5z"/><path d="M12 10.5v6M9 13.5h6"/></svg>',
-  certo: '<svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="9.5"/><path d="M8 12.3l2.7 2.7L16 9.6"/></svg>',
-  olho: '<svg viewBox="0 0 24 24"><path d="M2.5 12S6 5.5 12 5.5 21.5 12 21.5 12 18 18.5 12 18.5 2.5 12 2.5 12z"/><circle cx="12" cy="12" r="3"/></svg>',
-  olhoFechado: '<svg viewBox="0 0 24 24"><path d="M2.5 12S6 5.5 12 5.5 21.5 12 21.5 12 18 18.5 12 18.5 2.5 12 2.5 12z"/><circle cx="12" cy="12" r="3"/><path d="M4 4l16 16"/></svg>',
+  resumo: ico('<path d="M3.5 10.6 12 4l8.5 6.6V19a1.5 1.5 0 0 1-1.5 1.5h-4.2v-5.8H9.2v5.8H5A1.5 1.5 0 0 1 3.5 19z"/>'),
+  contas: ico('<rect x="3" y="5.5" width="18" height="14" rx="3.5"/><path d="M3 10h18M15.5 15h2"/>'),
+  dividas: ico('<circle cx="9" cy="8.5" r="3.2"/><path d="M3 19.2c.6-3.3 3-5.1 6-5.1s5.4 1.8 6 5.1"/><circle cx="16.6" cy="9" r="2.6"/><path d="M16.8 13.7c2.3 0 4 1.4 4.5 4"/>'),
+  gastos: ico('<path d="M5 8.5h14l-1.1 10.9a1.6 1.6 0 0 1-1.6 1.4H7.7a1.6 1.6 0 0 1-1.6-1.4z"/><path d="M9 8.5V7a3 3 0 0 1 6 0v1.5"/>'),
+  atualizar: ico('<path d="M19.5 12a7.5 7.5 0 0 1-13.4 4.6M4.5 12a7.5 7.5 0 0 1 13.4-4.6"/><path d="M18.2 3.6v4h-4M5.8 20.4v-4h4"/>'),
+  trocar: ico('<path d="M4.5 8h14M15 4.5 18.5 8 15 11.5M19.5 16h-14M9 12.5 5.5 16 9 19.5"/>'),
+  voltar: ico('<path d="M15 4.5 7.5 12l7.5 7.5"/>'),
+  mais: ico('<path d="M12 5v14M5 12h14"/>'),
+  mais3: ico('<path d="M6 12h.01M12 12h.01M18 12h.01" stroke-width="3.2"/>'),
+  editar: ico('<path d="M4.5 19.5h3.8L19 8.8a2.7 2.7 0 0 0-3.8-3.8L4.5 15.7z"/><path d="m13.5 6.7 3.8 3.8"/>'),
+  lixo: ico('<path d="M4.5 7h15M9.5 7V5h5v2M6.5 7l.8 12a1.5 1.5 0 0 0 1.5 1.4h6.4a1.5 1.5 0 0 0 1.5-1.4l.8-12"/>'),
+  certo: ico('<path d="m5 12.5 4.5 4.5L19 7.5"/>'),
+  fechar: ico('<path d="M6.5 6.5l11 11M17.5 6.5l-11 11"/>'),
+  pasta: ico('<path d="M3 7v11a1.5 1.5 0 0 0 1.5 1.5h15A1.5 1.5 0 0 0 21 18V9a1.5 1.5 0 0 0-1.5-1.5H12L10 5H4.5A1.5 1.5 0 0 0 3 6.5z"/><path d="M12 10.5v6M9 13.5h6"/>'),
+  ficheiro: ico('<path d="M14 3.5H7A1.5 1.5 0 0 0 5.5 5v14A1.5 1.5 0 0 0 7 20.5h10a1.5 1.5 0 0 0 1.5-1.5V8z"/><path d="M14 3.5V8h4.5M12 11v6M9.5 14.5 12 17l2.5-2.5"/>'),
+  sobe: ico('<path d="M7 17 17 7M9 7h8v8"/>'),
+  desce: ico('<path d="M7 7l10 10M17 9v8H9"/>'),
+  igual: ico('<path d="M6 10h12M6 14h12"/>'),
+  olho: ico('<path d="M2.5 12S6 5.5 12 5.5 21.5 12 21.5 12 18 18.5 12 18.5 2.5 12 2.5 12z"/><circle cx="12" cy="12" r="3"/>'),
+  olhoFechado: ico('<path d="M2.5 12S6 5.5 12 5.5 21.5 12 21.5 12 18 18.5 12 18.5 2.5 12 2.5 12z"/><circle cx="12" cy="12" r="3"/><path d="M4 4l16 16"/>'),
 };
 
 /* ---------- estado do ecrã ---------- */
@@ -408,31 +476,33 @@ function rotuloDia(d, span) {
 
 /** Linha em escada: o valor mantém-se até à mudança seguinte. "pts" começa no dia "de". */
 function grafLinha(pts, de, ate, o = {}) {
-  const W = larguraGraf(), H = 150, topo = 8;
+  const W = larguraGraf(), H = 150, topo = 8, i = graficos.length;
   const vals = pts.map(p => p[1]);
   const e = escala(Math.min(...vals), Math.max(...vals));
   const pw = W - margemY(e), ph = H - topo, span = ate - de;
   const px = d => (d - de) / span * pw;
   const py = v => topo + (e.hi - v) / (e.hi - e.lo) * ph;
   let traco = `M0 ${r1(py(vals[0]))}`;
-  for (let i = 1; i < pts.length; i++) traco += `H${r1(px(pts[i][0]))}V${r1(py(pts[i][1]))}`;
+  for (let k = 1; k < pts.length; k++) traco += `H${r1(px(pts[k][0]))}V${r1(py(pts[k][1]))}`;
   traco += `H${r1(pw)}`;
   const base = Math.min(e.hi, Math.max(e.lo, 0));
-  let svg = grelha(e, pw, W, py, e.lo < 0) +
-    `<path class="area" d="${traco}V${r1(py(base))}H0Z"/><path class="traco" d="${traco}"/>`;
+  let svg = `<defs><linearGradient id="ga${i}" x1="0" y1="0" x2="0" y2="1"><stop offset="0" style="stop-color:var(--acc);stop-opacity:.26"/>` +
+    `<stop offset="1" style="stop-color:var(--acc);stop-opacity:0"/></linearGradient></defs>` +
+    grelha(e, pw, W, py, e.lo < 0) +
+    `<path fill="url(#ga${i})" d="${traco}V${r1(py(base))}H0Z"/><path class="traco" d="${traco}"/>`;
   const n = Math.min(pw < 300 ? 3 : 4, span + 1);
-  for (let i = 0; i < n; i++) {
-    const d = Math.round(de + i * span / (n - 1));
-    svg += `<text x="${r1(px(d))}" y="${H + 16}" text-anchor="${i === 0 ? 'start' : i === n - 1 ? 'end' : 'middle'}">${rotuloDia(d, span)}</text>`;
+  for (let k = 0; k < n; k++) {
+    const d = Math.round(de + k * span / (n - 1));
+    svg += `<text x="${r1(px(d))}" y="${H + 16}" text-anchor="${k === 0 ? 'start' : k === n - 1 ? 'end' : 'middle'}">${rotuloDia(d, span)}</text>`;
   }
   svg += `<line class="mira" x1="0" x2="0" y1="${topo}" y2="${H}"/>` +
     `<circle class="marca" cx="${r1(pw)}" cy="${r1(py(vals[vals.length - 1]))}" r="4"/><circle class="marca cursor" r="4"/>`;
-  const i = graficos.push({ tipo: 'linha', pts, de, ate, px, py, pw, cor: !!o.cor }) - 1;
+  graficos.push({ tipo: 'linha', pts, de, ate, px, py, pw, cor: !!o.cor });
   const desc = `${o.rotulo}: ${euro(vals[0])} em ${dataPT(isoDe(de))}, ${euro(vals[vals.length - 1])} em ${dataPT(isoDe(ate))}`;
   return `<div class="graf" data-g="${i}" tabindex="0" role="img" aria-label="${esc(desc)}"><svg width="${W}" height="${H + 22}" aria-hidden="true">${svg}</svg></div>`;
 }
 
-/** Colunas (uma por mês). A ponta é arredondada, a base é direita. */
+/** Colunas (uma por mês), com o último mês destacado. A ponta é arredondada, a base é direita. */
 function grafColunas(barras, o = {}) {
   const W = larguraGraf(), H = 150, topo = 8;
   const vals = barras.map(b => b.valor);
@@ -446,7 +516,7 @@ function grafColunas(barras, o = {}) {
     const x = i * banda + (banda - larg) / 2, y1 = py(b.valor), h = Math.abs(y1 - y0);
     const r = Math.min(4, larg / 2, h), s = y1 < y0 ? 1 : -1;
     const d = h < .5 ? 'M0 0' : `M${r1(x)} ${r1(y0)}V${r1(y1 + s * r)}Q${r1(x)} ${r1(y1)} ${r1(x + r)} ${r1(y1)}H${r1(x + larg - r)}Q${r1(x + larg)} ${r1(y1)} ${r1(x + larg)} ${r1(y1 + s * r)}V${r1(y0)}Z`;
-    svg += `<path class="coluna" d="${d}"/>`;
+    svg += `<path class="coluna${i === barras.length - 1 ? ' on' : ''}" d="${d}"/>`;
     if ((barras.length - 1 - i) % salto === 0) svg += `<text x="${r1(x + larg / 2)}" y="${H + 16}" text-anchor="middle">${esc(b.rot)}</text>`;
   });
   const i = graficos.push({ tipo: 'colunas', barras, banda }) - 1;
@@ -470,21 +540,22 @@ function mostrar(el, x) {
     valor = g.barras[i].valor; leg = g.barras[i].nome; g.atual = i;
     el.querySelectorAll('.coluna').forEach((c, j) => c.classList.toggle('on', i === j));
   }
-  const cartao = el.closest('.cartao-total');
+  const cartao = el.closest('.cartao');
   const v = cartao.querySelector('[data-ler="valor"]'), l = cartao.querySelector('[data-ler="leg"]');
   if (!g.orig) g.orig = [v.innerHTML, v.className, l.innerHTML];
-  v.textContent = euro(valor);
-  if (g.cor) v.className = 'grande ' + cor(valor);
+  v.innerHTML = euroG(valor);
+  v.className = 'valor-m' + (g.cor ? ' ' + cor(valor) : '');
   l.textContent = leg;
   el.classList.add('ativo');
 }
 function esconder(el) {
   const g = graficos[+el.dataset.g];
   if (!g?.orig) return;
-  const cartao = el.closest('.cartao-total');
+  const cartao = el.closest('.cartao');
   const v = cartao.querySelector('[data-ler="valor"]'), l = cartao.querySelector('[data-ler="leg"]');
   [v.innerHTML, v.className, l.innerHTML] = g.orig;
   g.orig = null; g.atual = null;
+  if (g.tipo === 'colunas') el.querySelectorAll('.coluna').forEach((c, j) => c.classList.toggle('on', j === g.barras.length - 1));
   el.classList.remove('ativo');
 }
 /** Setas do teclado: salta para a mudança (ou coluna) seguinte. */
@@ -503,7 +574,7 @@ function passoGraf(el, sentido) {
 
 /**
  * Evolução até hoje, recortada pelo período escolhido (1M, 3M, 1A, Tudo).
- * Devolve o gráfico com o seletor e a legenda com a variação, ou null se ainda não há história.
+ * Devolve o gráfico, os filtros de período e a variação no período, ou null se ainda não há história.
  */
 function evolucao(pts, inicio, o = {}) {
   if (inicio == null) return null;
@@ -513,12 +584,13 @@ function evolucao(pts, inicio, o = {}) {
   if (de >= ate) return null;
   const r = recortar(pts, de, ate);
   const v0 = r[0][1], dv = r[r.length - 1][1] - v0;
-  const quando = de === ate - dias ? texto : 'desde ' + dataPT(isoDe(de));
   const pct = v0 > 0 && dv ? ` (${fmtPct.format(Math.abs(dv) / v0)})` : '';
-  const seta = dv > 0 ? '▲' : dv < 0 ? '▼' : '=';
   return {
-    leg: `<span class="${cor(dv)}">${seta} ${euro(Math.abs(dv))}${pct}</span> ${esc(quando)}`,
-    graf: grafLinha(r, de, ate, o) + `<div class="seg peq">${PERIODOS.map(([id]) =>
+    texto: `${dv > 0 ? '▲' : dv < 0 ? '▼' : '='} ${euro(Math.abs(dv))}${pct}`,
+    cls: cor(dv),
+    quando: de === ate - dias ? texto : 'desde ' + dataPT(isoDe(de)),
+    graf: grafLinha(r, de, ate, o),
+    filtros: `<div class="chips">${PERIODOS.map(([id]) =>
       `<button data-a="periodo" data-id="${id}" class="${ui.periodo === id ? 'on' : ''}">${id}</button>`).join('')}</div>`,
   };
 }
@@ -529,14 +601,14 @@ function grafFicha(f, div) {
   const de = pts[0][0], ate = div ? Math.max(diaDe(hoje()), pts[pts.length - 1][0]) : pts[pts.length - 1][0];
   return de < ate ? grafLinha(recortar(pts, de, ate), de, ate, { cor: div, rotulo: div ? 'Saldo ao longo do tempo' : 'Gasto acumulado' }) : '';
 }
-/** Gastos de todos os grupos, somados por mês (até 12 meses). */
+/** Gastos de todos os grupos, somados por mês (até 12 meses). Devolve o gráfico, o último mês e a média. */
 function grafGastosMes() {
   const porMes = new Map();
   for (const g of gruposDe('gastos')) for (const f of g.fichas) for (const m of f.movimentos) {
     const k = m.data.slice(0, 7);
     porMes.set(k, (porMes.get(k) || 0) + m.valor);
   }
-  if (!porMes.size) return '';
+  if (!porMes.size) return null;
   const chaves = [...porMes.keys()].sort();
   let [a, m] = chaves[0].split('-').map(Number);
   const [af, mf] = (chaves[chaves.length - 1] > hoje() ? chaves[chaves.length - 1] : hoje().slice(0, 7)).split('-').map(Number);
@@ -546,51 +618,88 @@ function grafGastosMes() {
     barras.push({ rot: MESES[m - 1], nome: `${MESES_LONGOS[m - 1]} de ${a}`, valor: porMes.get(k) || 0 });
     if (++m > 12) { m = 1; a++; }
   }
-  return barras.length < 2 ? '' : grafColunas(barras.slice(-12), { rotulo: 'Gastos por mês' });
+  if (barras.length < 2) return null;
+  const ult = barras.slice(-12);
+  return {
+    graf: grafColunas(ult, { rotulo: 'Gastos por mês' }),
+    atual: ult[ult.length - 1],
+    media: Math.round(ult.reduce((s, b) => s + b.valor, 0) / ult.length),
+  };
 }
 
 /**
  * Barra de distribuição (parte do todo) das partes com valor positivo. As linhas por baixo servem de legenda:
- * cor(i) dá a cor do quadrado de cada linha e pct(i) a percentagem. A cor segue a posição da parte na lista.
+ * slot(i) é a cor do avatar de cada linha (−1 é cinzento) e pct(i) a percentagem. A cor segue a posição na lista.
  */
 function distribuicao(partes) {
-  const n = partes.length, corDe = i => n > 8 && i >= 7 ? 'var(--c0)' : `var(--c${i + 1})`;
+  const n = partes.length, slot = i => n > 8 && i >= 7 ? -1 : i;
+  const corDe = i => slot(i) < 0 ? 'var(--c0)' : `var(--c${i + 1})`;
   const vis = partes.map((p, i) => ({ ...p, i })).filter(p => p.valor > 0);
-  if (vis.length < 2) return { barra: '', cor: () => '', pct: () => '' };
+  if (vis.length < 2) return { barra: '', slot, pct: () => '' };
   const total = vis.reduce((s, p) => s + p.valor, 0), pct = v => fmtPct.format(v / total);
   const desc = 'Distribuição: ' + vis.map(p => `${p.nome} ${pct(p.valor)}`).join(', ');
   return {
     barra: `<div class="comp-bloco"><div class="comp" role="img" aria-label="${esc(desc)}">${vis.map(p =>
       `<span style="flex:${p.valor} 1 0;background:${corDe(p.i)}" title="${esc(p.nome)}: ${euro(p.valor)} (${pct(p.valor)})"></span>`).join('')}</div></div>`,
-    cor: i => partes[i].valor > 0 ? corDe(i) : 'transparent',
+    slot,
     pct: i => partes[i].valor > 0 ? pct(partes[i].valor) : '',
   };
 }
 
 /* ---------- vistas ---------- */
-function cab(titulo, { voltar = '', acoes = '' } = {}) {
-  return `<div class="barra">${voltar ? `<button class="voltar" data-a="voltar">${ic.voltar}${esc(voltar)}</button>` : '<span></span>'}<div class="acoes">${acoes}</div></div><h1>${esc(titulo)}</h1>`;
+/** "Dinheiro vivo" → "DV", "Interrail 2026" → "I" (as palavras sem letras não contam). */
+const iniciais = n => (String(n).trim().split(/\s+/).filter(p => /^\p{L}/u.test(p)).slice(0, 2).map(p => [...p][0]).join('') || [...String(n).trim()][0] || '?').toUpperCase();
+// Cor do avatar a partir do nome, sem o verde e o vermelho (que nesta app querem dizer "a receber" e "a pagar").
+const SLOTS_NOME = [0, 1, 2, 3, 4, 6];
+const slotNome = n => SLOTS_NOME[[...String(n)].reduce((h, c) => (h * 31 + c.codePointAt(0)) % 9973, 7) % SLOTS_NOME.length];
+/** Círculo com as iniciais, como os contactos numa app de banco. slot é a cor (0 a 7, ou −1 para cinzento). */
+function avatar(nome, slot = slotNome(nome), cls = '') {
+  const k = slot < 0 ? 0 : slot + 1;
+  return `<span class="avatar ${cls}" style="background:var(--c${k});color:var(--t${k})" aria-hidden="true">${esc(iniciais(nome))}</span>`;
 }
-const cabSec = t => `<div class="cab-sec"><span>${esc(t)}</span></div>`;
+const avatarIcone = icone => `<span class="avatar" aria-hidden="true">${icone}</span>`;
+
+/** Valor em grande com os cêntimos mais pequenos: "11 621" + ",42 €". */
+function euroG(c) {
+  let a = '', b = '', depois = false;
+  for (const p of fmtEuro.formatToParts(c / 100)) {
+    if (p.type === 'decimal') depois = true;
+    if (depois) b += p.value; else a += p.value;
+  }
+  return `${esc(a)}<small>${esc(b)}</small>`;
+}
+
+function barra({ voltar = '', titulo = '', acoes = '' } = {}) {
+  const esq = voltar ? `<button class="icbtn" data-a="voltar" aria-label="Voltar a ${esc(voltar)}">${ic.voltar}</button>`
+    : titulo ? `<span class="marca">${esc(titulo)}</span>` : '<span></span>';
+  return `<div class="barra">${esq}<div class="acoes">${acoes}</div></div>`;
+}
+const cab = (titulo, o = {}) => barra(o) + `<h1>${esc(titulo)}</h1>`;
+const cabCartao = (titulo, dir = '') => `<div class="cartao-cab"><h2>${esc(titulo)}</h2>${dir}</div>`;
+const verTudo = (tab, texto) => `<button class="lig" data-a="tab" data-id="${tab}">${texto}</button>`;
+const botaoAcao = (a, icone, texto, id = '') =>
+  `<button class="acao-red" data-a="${a}"${id ? ` data-id="${esc(id)}"` : ''}><span class="circ">${icone}</span>${esc(texto)}</button>`;
 
 function linha(titulo, valor, o = {}) {
   const tag = o.a ? 'button' : 'div';
-  const attrs = o.a ? ` data-a="${o.a}" data-id="${esc(o.id ?? '')}"` : '';
-  const ponto = o.ponto ? `<span class="ponto" style="background:${o.ponto}"></span>` : '';
-  return `<${tag} class="linha"${attrs}>${ponto}<div class="txt"><div class="${o.tituloCls || ''}">${esc(titulo)}</div>${o.sub ? `<div class="sub">${esc(o.sub)}</div>` : ''}</div><div class="val ${o.cls || ''}">${valor}</div>${o.a && o.chev !== false ? ic.chev : ''}</${tag}>`;
+  const attrs = o.a ? ` data-a="${o.a}" data-id="${esc(o.id ?? '')}"${o.tipo ? ` data-tipo="${o.tipo}"` : ''}` : '';
+  return `<${tag} class="linha"${attrs}>${o.avatar || ''}<div class="txt"><div class="tit ${o.tituloCls || ''}">${esc(titulo)}</div>${o.sub ? `<div class="sub">${esc(o.sub)}</div>` : ''}</div><div class="val ${o.cls || ''}">${valor}</div></${tag}>`;
 }
 function linhaOrdenar(nome, a, id, i, n) {
-  return `<div class="linha"><div class="txt">${esc(nome)}</div>
+  return `<div class="linha">${avatar(nome)}<div class="txt tit">${esc(nome)}</div>
     <button class="mini" data-a="${a}" data-id="${id}" data-d="-1" ${i === 0 ? 'disabled' : ''} aria-label="Subir">↑</button>
     <button class="mini" data-a="${a}" data-id="${id}" data-d="1" ${i === n - 1 ? 'disabled' : ''} aria-label="Descer">↓</button></div>`;
 }
-const btnOrdenar = () => `<button class="txtbtn${ui.ordenar ? ' forte' : ''}" data-a="ordenar">${ui.ordenar ? 'OK' : 'Ordenar'}</button>`;
+const btnOrdenar = () => `<button class="txtbtn" data-a="ordenar">${ui.ordenar ? 'OK' : 'Ordenar'}</button>`;
+const btnAdicionar = (a, texto, id = '') => `<button class="linha acao" data-a="${a}"${id ? ` data-id="${id}"` : ''}>${avatarIcone(ic.mais)}${esc(texto)}</button>`;
 
-/** Cartão com o valor em grande, uma legenda e o gráfico (que, ao ser tocado, escreve no valor e na legenda). */
-function cartao({ rot = '', valor, cls = '', leg = '', graf = '' }) {
-  return `<div class="lista"><div class="cartao-total">${rot ? `<div class="rot">${esc(rot)}</div>` : ''}
-    <div class="grande ${cls}" data-ler="valor">${valor}</div><div class="leg" data-ler="leg">${leg}</div>${graf}</div></div>`;
+/** Cartão de um gráfico: título e filtros em cima, depois a leitura (que muda ao tocar no gráfico) e o gráfico. */
+function cartaoGraf({ titulo, valor = '', cls = '', leg = '', graf = '', filtros = '' }) {
+  return `<section class="cartao">${cabCartao(titulo, filtros)}
+    <div class="leitura"><div class="valor-m ${cls}" data-ler="valor">${valor}</div><div class="leg" data-ler="leg">${leg}</div></div>${graf}</section>`;
 }
+const cartaoEvolucao = ev => cartaoGraf({ titulo: 'Evolução', valor: esc(ev.texto), cls: ev.cls, leg: esc(ev.quando), graf: ev.graf, filtros: ev.filtros });
+const cartaoTexto = (titulo, texto) => `<section class="cartao">${cabCartao(titulo)}<p class="texto">${texto}</p></section>`;
 
 function textoCopia() {
   const d = lerPref('copia', null);
@@ -599,74 +708,93 @@ function textoCopia() {
   return n > 30 ? `<b>A última cópia de segurança foi ${quando}.</b>` : `Última cópia de segurança: ${quando}.`;
 }
 
+/** As contas, com o avatar na cor da barra de distribuição (a lista serve de legenda). */
+function blocoContas() {
+  const noTotal = db.contas.filter(c => c.noTotal), dist = distribuicao(noTotal);
+  return dist.barra + db.contas.map(c => {
+    const j = noTotal.indexOf(c);
+    return linha(c.nome, euro(c.valor), {
+      a: 'abrir', tipo: 'contas', id: c.id, cls: j < 0 ? 'sec' : '',
+      avatar: avatar(c.nome, j < 0 ? -1 : dist.slot(j)),
+      sub: [c.nota, j < 0 ? 'fora do total' : dist.pct(j)].filter(Boolean).join(' · '),
+    });
+  }).join('');
+}
+
+/** Os últimos movimentos de dívidas e gastos, do mais recente para o mais antigo. */
+function recentes(n) {
+  const L = [];
+  for (const g of db.grupos) for (const f of g.fichas) f.movimentos.forEach((m, i) => L.push({ m, f, g, i }));
+  return L.sort((a, b) => a.m.data < b.m.data ? 1 : a.m.data > b.m.data ? -1 : b.i - a.i).slice(0, n);
+}
+const linhaRecente = ({ m, f, g }) => linha(m.desc || f.nome, euroSinal(m.valor), {
+  a: 'abrir', tipo: g.tipo, id: f.id, avatar: avatar(f.nome), cls: m.valor < 0 ? 'neg' : '', sub: `${f.nome} · ${dataPT(m.data)}`,
+});
+
 function vResumo() {
   const tc = totalContas(), td = totalDividas();
-  const fora = db.contas.filter(c => !c.noTotal);
-  const gastos = gruposDe('gastos').flatMap(g => g.fichas);
   const vazio = !db.contas.length && db.grupos.every(g => !g.fichas.length);
   const s = serieTotal(), ev = evolucao(s.pts, s.inicio, { rotulo: 'Evolução do total' });
-  const leg = ev ? ev.leg : s.inicio != null && !vazio
-    ? 'O gráfico da evolução aparece à medida que atualizas as contas.' : 'contas + dívidas a receber';
-  const partes = [{ nome: 'Contas', valor: tc, id: 'contas' },
-    ...gruposDe('dividas').map(g => ({ nome: 'Dívidas ' + g.nome.toLowerCase(), valor: totalGrupo(g), id: 'dividas' }))];
-  const dist = distribuicao(partes);
   const olho = `<button class="icbtn" data-a="ocultar" aria-label="${ui.oculto ? 'Mostrar valores' : 'Ocultar valores'}">${ui.oculto ? ic.olhoFechado : ic.olho}</button>`;
-  return cab('Dinheiro', { acoes: olho }) + (vazio ? `<div class="lista">
-      <button class="linha acao" data-a="colar">${ic.maisCirc} Colar os meus dados</button>
-      <button class="linha acao" data-a="repor">${ic.maisCirc} Importar de um ficheiro</button></div>
-    <p class="rodape">Primeira vez? Cola o texto que copiei no teu Mac, ou escolhe o ficheiro <b>dinheiro-dados-iniciais.json</b>.</p>` : '') + `
-    ${cartao({ rot: 'Total', valor: euro(tc + td), leg, graf: ev?.graf })}
-    <div class="lista">${dist.barra}
-      ${partes.map((p, i) => linha(p.nome, euro(p.valor), { a: 'tab', id: p.id, ponto: dist.cor(i), sub: dist.pct(i) })).join('')}
-    </div>
-    ${fora.length ? cabSec('Fora do total') + `<div class="lista">${fora.map(c => linha(c.nome, euro(c.valor), { cls: 'sec' })).join('')}</div>` : ''}
-    ${gastos.length ? cabSec('Gastos') + `<div class="lista">${gastos.map(f => linha(f.nome, euro(totalFicha(f)), { a: 'tab', id: 'gastos' })).join('')}</div>` : ''}
-    ${cabSec('Partilhar e cópias')}
-    <div class="lista">
-      <button class="linha acao" data-a="exportar">Exportar em texto</button>
-      <button class="linha acao" data-a="backup">Guardar cópia de segurança</button>
-      <button class="linha acao" data-a="repor">Repor cópia de um ficheiro</button>
-      <button class="linha acao" data-a="colar">Repor cópia colando texto</button>
-    </div>
-    <p class="rodape">Os dados ficam só neste iPhone. ${vazio ? '' : textoCopia()} Guarda uma cópia de segurança de vez em quando (por exemplo em Ficheiros → iCloud Drive).</p>`;
+  let h = `<header class="heroi">${barra({ titulo: 'Dinheiro', acoes: olho })}
+    <div class="heroi-centro"><div class="heroi-rot">Total · contas e dívidas</div>
+      <div class="valor-g">${euroG(tc + td)}</div>
+      ${ev ? `<span class="pilula">${esc(ev.texto)} ${esc(ev.quando)}</span>` : ''}</div>
+    <div class="botoes-acao">${botaoAcao('rapido', ic.atualizar, 'Atualizar', 'contas')}${botaoAcao('rapido', ic.trocar, 'Dívida', 'dividas')}${botaoAcao('rapido', ic.gastos, 'Gasto', 'gastos')}${botaoAcao('menu-copias', ic.mais3, 'Mais')}</div>
+  </header>`;
+  if (vazio) {
+    h += `<section class="cartao">${cabCartao('Começar')}
+      <p class="texto">Primeira vez? Cola o texto que copiei no teu Mac, ou escolhe o ficheiro <b>dinheiro-dados-iniciais.json</b>.</p>
+      <button class="linha acao" data-a="colar">${avatarIcone(ic.mais)}Colar os meus dados</button>
+      <button class="linha acao" data-a="repor">${avatarIcone(ic.ficheiro)}Importar de um ficheiro</button></section>`;
+  } else {
+    h += ev ? cartaoEvolucao(ev) : cartaoTexto('Evolução', 'O gráfico aparece à medida que atualizas o valor das contas.');
+  }
+  if (db.contas.length) h += `<section class="cartao">${cabCartao('Contas', verTudo('contas', 'Ver todas'))}${blocoContas()}</section>`;
+  const gd = gruposDe('dividas').filter(g => g.fichas.length);
+  if (gd.length) h += `<section class="cartao">${cabCartao('Dívidas', verTudo('dividas', 'Ver tudo'))}` + gd.map(g => {
+    const t = totalGrupo(g), n = g.fichas.length;
+    return linha(g.nome, euro(t), { a: 'tab', id: 'dividas', cls: cor(t), avatar: avatarIcone(ic.dividas), sub: `${n} ${n === 1 ? 'pessoa' : 'pessoas'}` });
+  }).join('') + '</section>';
+  const rec = recentes(5);
+  if (rec.length) h += `<section class="cartao">${cabCartao('Movimentos recentes')}${rec.map(linhaRecente).join('')}</section>`;
+  const gf = gruposDe('gastos').flatMap(g => g.fichas);
+  if (gf.length) h += `<section class="cartao">${cabCartao('Gastos', verTudo('gastos', 'Ver tudo'))}` + gf.map(f => {
+    const n = f.movimentos.length;
+    return linha(f.nome, euro(totalFicha(f)), { a: 'abrir', tipo: 'gastos', id: f.id, avatar: avatar(f.nome), sub: `${n} ${n === 1 ? 'movimento' : 'movimentos'}` });
+  }).join('') + '</section>';
+  h += `<section class="cartao">${cabCartao('Cópia de segurança')}
+    <p class="texto">Os dados ficam só neste iPhone. ${vazio ? '' : textoCopia()} Guarda uma cópia de vez em quando (por exemplo em Ficheiros → iCloud Drive).</p>
+    <div class="botoes-linha"><button class="btn-pri" data-a="backup">Guardar cópia</button><button class="btn-sec" data-a="menu-copias">Mais opções</button></div></section>`;
+  return h;
 }
 
 function vContas() {
   const acoes = btnOrdenar() + `<button class="icbtn" data-a="nova-conta" aria-label="Nova conta">${ic.mais}</button>`;
-  const n = db.contas.length, noTotal = db.contas.filter(c => c.noTotal);
-  const dist = distribuicao(noTotal);
-  const linhas = db.contas.map((c, i) => {
-    if (ui.ordenar) return linhaOrdenar(c.nome, 'mover-conta', c.id, i, n);
-    const j = noTotal.indexOf(c);
-    return linha(c.nome, euro(c.valor), {
-      a: 'ficha', id: c.id, cls: c.noTotal ? '' : 'sec',
-      ponto: dist.barra && (j < 0 ? 'transparent' : dist.cor(j)),
-      sub: [c.nota, j < 0 ? 'fora do total' : dist.pct(j)].filter(Boolean).join(' · '),
-    });
-  }).join('');
+  const n = db.contas.length;
   return cab('Contas', { acoes }) +
-    `<div class="lista">${ui.ordenar ? '' : dist.barra}${linhas || '<div class="linha sec">Sem contas</div>'}</div>
-     <div class="total-rodape"><span>Total</span><span>${euro(totalContas())}</span></div>`;
+    `<div class="cab-valor"><div class="rot">Total nas contas</div><div class="valor-g">${euroG(totalContas())}</div></div>
+    <section class="cartao">${ui.ordenar ? db.contas.map((c, i) => linhaOrdenar(c.nome, 'mover-conta', c.id, i, n)).join('') : blocoContas()}
+      ${n ? '' : '<p class="texto" style="padding-top:12px">Ainda não tens contas.</p>'}${btnAdicionar('nova-conta', 'Nova conta')}</section>`;
 }
 
 function vConta() {
   const c = db.contas.find(c => c.id === ui.ficha.contas);
-  const acoes = `<button class="icbtn" data-a="menu-conta" aria-label="Opções">${ic.opcoes}</button>
-                 <button class="icbtn" data-a="novo-hist" aria-label="Atualizar valor">${ic.mais}</button>`;
   const ev = evolucao(acumular(eventosConta(c)), diaDe(c.hist[0].data), { rotulo: 'Evolução de ' + c.nome });
-  let h = cab(c.nome, { voltar: 'Contas', acoes });
-  h += cartao({
-    rot: [c.nota, c.noTotal ? '' : 'Fora do total'].filter(Boolean).join(' · '), valor: euro(c.valor),
-    leg: ev ? ev.leg : 'Atualiza o valor de vez em quando para veres aqui a evolução.', graf: ev?.graf,
-  });
-  h += cabSec('Histórico') + `<div class="lista">` +
-    c.hist.map((x, i) => {
-      const dif = i ? x.valor - c.hist[i - 1].valor : null;
-      return linha(dataPT(x.data), euro(x.valor), {
-        a: 'hist', id: i, chev: false, sub: dif === null ? 'valor inicial' : dif ? euroSinal(dif) : 'sem alteração',
-      });
-    }).reverse().join('') +
-    `<button class="linha acao" data-a="novo-hist">${ic.maisCirc} Atualizar valor</button></div>
+  const rot = [c.nome, c.noTotal ? '' : 'fora do total'].filter(Boolean).join(' · ');
+  let h = `<header class="heroi">${barra({ voltar: 'Contas' })}
+    <div class="heroi-centro"><div class="heroi-rot">${esc(rot)}</div><div class="valor-g">${euroG(c.valor)}</div>
+      ${ev ? `<span class="pilula">${esc(ev.texto)} ${esc(ev.quando)}</span>` : c.nota ? `<span class="pilula">${esc(c.nota)}</span>` : ''}</div>
+    <div class="botoes-acao">${botaoAcao('novo-hist', ic.atualizar, 'Atualizar')}${botaoAcao('editar-conta', ic.editar, 'Editar')}${botaoAcao('menu-conta', ic.mais3, 'Mais')}</div>
+  </header>`;
+  h += ev ? cartaoEvolucao(ev) : cartaoTexto('Evolução', 'Atualiza o valor de vez em quando para veres aqui a evolução.');
+  h += `<section class="cartao">${cabCartao('Histórico')}` + c.hist.map((x, i) => {
+    const dif = i ? x.valor - c.hist[i - 1].valor : null;
+    return linha(dataPT(x.data), euro(x.valor), {
+      a: 'hist', id: i, avatar: avatarIcone(dif === null ? ic.contas : dif > 0 ? ic.sobe : dif < 0 ? ic.desce : ic.igual),
+      sub: dif === null ? 'valor inicial' : dif ? euroSinal(dif) : 'sem alteração',
+    });
+  }).reverse().join('') + `${btnAdicionar('novo-hist', 'Atualizar valor')}</section>
     <p class="rodape">Cada vez que atualizas o valor, fica um registo com a data. É daqui que vem o gráfico.</p>`;
   return h;
 }
@@ -674,7 +802,7 @@ function vConta() {
 function linhaFicha(f, div) {
   const t = totalFicha(f), tem = f.movimentos.length > 0;
   return linha(f.nome, tem ? euro(t) : '—', {
-    a: 'ficha', id: f.id,
+    a: 'abrir', tipo: div ? 'dividas' : 'gastos', id: f.id, avatar: avatar(f.nome),
     sub: [expressao(f), f.nota].filter(Boolean).join(' · '),
     cls: tem ? (div ? cor(t) : '') : 'ter',
   });
@@ -684,22 +812,22 @@ function vGrupos(tipo) {
   const div = tipo === 'dividas', gs = gruposDe(tipo);
   const total = gs.reduce((s, g) => s + totalGrupo(g), 0);
   const acoes = btnOrdenar() + `<button class="icbtn" data-a="novo-grupo" aria-label="Novo grupo">${ic.pasta}</button>`;
-  let h = cab(div ? 'Dívidas' : 'Gastos', { acoes });
+  let h = cab(div ? 'Dívidas' : 'Gastos', { acoes }) +
+    `<div class="cab-valor"><div class="rot">${div ? 'A receber' : 'Total gasto'}</div><div class="valor-g ${div ? cor(total) : ''}">${euroG(total)}</div></div>`;
   if (div) {
     const pts = acumular(eventosDividas());
     const ev = evolucao(pts, pts.length ? pts[0][0] : null, { cor: true, rotulo: 'Evolução do que tens a receber' });
-    h += cartao({ rot: 'A receber', valor: euro(total), cls: cor(total), leg: ev?.leg, graf: ev?.graf });
+    if (ev) h += cartaoEvolucao(ev);
   } else {
-    const graf = grafGastosMes();
-    h += cartao({ rot: 'Total gasto', valor: euro(total), leg: graf ? 'gastos por mês no gráfico' : '', graf });
+    const gm = grafGastosMes();
+    if (gm) h += cartaoGraf({ titulo: 'Por mês', valor: euroG(gm.atual.valor), leg: esc(`${gm.atual.nome} · média de ${euro(gm.media)} por mês`), graf: gm.graf });
   }
   for (const g of gs) {
     const n = g.fichas.length;
-    h += `<div class="cab-sec"><span>${esc(g.nome)}</span><span class="dir">${euro(totalGrupo(g))}
-      <button class="icbtn peq" data-a="menu-grupo" data-id="${g.id}" aria-label="Opções de ${esc(g.nome)}">${ic.opcoes}</button></span></div>`;
-    h += `<div class="lista">` +
+    h += `<section class="cartao">${cabCartao(g.nome, `<span class="dir">${euro(totalGrupo(g))}
+      <button class="icbtn peq" data-a="menu-grupo" data-id="${g.id}" aria-label="Opções de ${esc(g.nome)}">${ic.mais3}</button></span>`)}` +
       g.fichas.map((f, i) => ui.ordenar ? linhaOrdenar(f.nome, 'mover-ficha', f.id, i, n) : linhaFicha(f, div)).join('') +
-      `<button class="linha acao" data-a="nova-ficha" data-id="${g.id}">${ic.maisCirc} Adicionar ${div ? 'pessoa' : 'item'}</button></div>`;
+      btnAdicionar('nova-ficha', div ? 'Adicionar pessoa' : 'Adicionar item', g.id) + '</section>';
   }
   if (!gs.length) h += `<p class="rodape" style="margin-top:0">Ainda não há grupos. Cria um com o botão em cima.</p>`;
   return h;
@@ -709,25 +837,25 @@ function vFicha(tipo) {
   const [, f] = acharFicha(ui.ficha[tipo]);
   const div = tipo === 'dividas', t = totalFicha(f);
   const legenda = !div ? 'gasto total' : t > 0 ? `${f.nome} deve-te` : t < 0 ? `deves a ${f.nome}` : 'contas saldadas';
-  const acoes = `<button class="icbtn" data-a="menu-ficha" aria-label="Opções">${ic.opcoes}</button>
-                 <button class="icbtn" data-a="novo-mov" aria-label="Adicionar movimento">${ic.mais}</button>`;
-  let h = cab(f.nome, { voltar: div ? 'Dívidas' : 'Gastos', acoes });
-  h += cartao({ valor: euro(t), cls: div ? cor(t) : '', leg: esc(legenda), graf: grafFicha(f, div) });
-  h += cabSec('Movimentos') + `<div class="lista">` +
+  const saldar = div && t ? botaoAcao('saldar', ic.certo, t > 0 ? 'Pagou tudo' : 'Paguei tudo') : '';
+  let h = barra({ voltar: div ? 'Dívidas' : 'Gastos' }) + `<div class="perfil">${avatar(f.nome, slotNome(f.nome), 'grande')}<h1>${esc(f.nome)}</h1>
+    <div class="valor-g ${div ? cor(t) : ''}">${euroG(t)}</div><div class="leg">${esc(legenda)}</div>
+    <div class="botoes-acao">${botaoAcao('novo-mov', ic.mais, 'Adicionar')}${saldar}${botaoAcao('menu-ficha', ic.mais3, 'Mais')}</div></div>`;
+  const graf = grafFicha(f, div);
+  if (graf) h += cartaoGraf({
+    titulo: div ? 'Saldo' : 'Gasto acumulado', valor: euroG(t), cls: div ? cor(t) : '',
+    leg: esc('desde ' + dataPT(movOrdenados(f)[0].data)), graf,
+  });
+  h += `<section class="cartao">${cabCartao('Movimentos')}` +
     movOrdenados(f).map(m => linha(m.desc || '—', euroSinal(m.valor), {
-      a: 'mov', id: m.id, sub: dataPT(m.data), cls: m.valor < 0 ? 'neg' : '', chev: false, tituloCls: m.desc ? '' : 'sec',
-    })).join('') +
-    `<button class="linha acao" data-a="novo-mov">${ic.maisCirc} Adicionar</button></div>`;
-  h += cabSec('Nota') + `<div class="lista"><textarea class="nota" data-campo="nota" rows="2" placeholder="${div ? 'Ex.: deve-me um brasão' : 'Notas'}">${esc(f.nota)}</textarea></div>`;
-  if (div && t !== 0) {
-    h += `<div class="lista"><button class="linha acao" data-a="saldar">${ic.certo} ${t > 0 ? `Pagou-me tudo (${euro(t)})` : `Paguei tudo (${euro(-t)})`}</button></div>
-          <p class="rodape">Acrescenta um movimento que deixa a conta a zero.</p>`;
-  }
+      a: 'mov', id: m.id, avatar: avatar(m.desc || f.nome), sub: dataPT(m.data), cls: m.valor < 0 ? 'neg' : '', tituloCls: m.desc ? '' : 'sec',
+    })).join('') + `${btnAdicionar('novo-mov', 'Adicionar')}</section>`;
+  h += `<section class="cartao">${cabCartao('Nota')}<textarea class="nota" data-campo="nota" rows="2" placeholder="${div ? 'Ex.: deve-me um brasão' : 'Notas'}">${esc(f.nota)}</textarea></section>`;
   return h;
 }
 
 function vTabs() {
-  const tabs = [['resumo', 'Resumo'], ['contas', 'Contas'], ['dividas', 'Dívidas'], ['gastos', 'Gastos']];
+  const tabs = [['resumo', 'Início'], ['contas', 'Contas'], ['dividas', 'Dívidas'], ['gastos', 'Gastos']];
   return `<nav class="tabs">${tabs.map(([id, nome]) =>
     `<button data-a="tab" data-id="${id}" class="${ui.tab === id ? 'on' : ''}">${ic[id]}<span>${nome}</span></button>`).join('')}</nav>`;
 }
@@ -769,12 +897,14 @@ function fechar() {
     document.documentElement.classList.remove('travado');
   }, 240);
 }
+// Folha que sobe de baixo: título grande, os campos, o botão principal e, no fim, o botão de apagar (extra).
 function vFolha(c) {
   return `<div class="folha" role="dialog" aria-label="${esc(c.titulo)}">
-    <div class="folha-barra"><button class="txtbtn" data-a="fechar">Cancelar</button><strong>${esc(c.titulo)}</strong>
-    <button class="txtbtn forte" data-a="guardar-folha">${c.ok || 'Guardar'}</button></div>
-    <div class="folha-corpo">${c.corpo}</div></div>`;
+    <div class="folha-barra"><button class="icbtn" data-a="fechar" aria-label="Cancelar">${ic.fechar}</button></div>
+    <div class="folha-corpo"><h2 class="folha-tit">${esc(c.titulo)}</h2>${c.corpo}
+      <button class="btn-pri largo" data-a="guardar-folha">${c.ok || 'Guardar'}</button>${c.extra || ''}</div></div>`;
 }
+const btnApagar = (a, id, texto) => `<section class="cartao"><button class="linha acao perigo" data-a="${a}" data-id="${id}">${avatarIcone(ic.lixo)}${texto}</button></section>`;
 function vAcoes(c) {
   return `<div class="folha-acoes" role="dialog"><div class="grupo-acoes">
     ${c.titulo ? `<div class="titulo-acoes">${esc(c.titulo)}</div>` : ''}
@@ -790,15 +920,15 @@ function pontoDeRetorno() {
   return () => { db = JSON.parse(antes); };
 }
 function erro(sel) {
-  const el = $(sel); el.closest('.lista')?.classList.remove('abanar');
-  void el.offsetWidth; el.closest('.lista')?.classList.add('abanar'); el.focus();
+  const el = $(sel); el.closest('.cartao')?.classList.remove('abanar');
+  void el.offsetWidth; el.closest('.cartao')?.classList.add('abanar'); el.focus();
   return false;
 }
 
 function pedirNome(titulo, valor, ok) {
   abrir({
     tipo: 'folha', titulo, ok: 'OK',
-    corpo: `<div class="lista"><div class="linha"><input id="f-nome" placeholder="Nome" value="${esc(valor)}" autocomplete="off" autofocus></div></div>`,
+    corpo: `<div class="cartao"><div class="linha"><input id="f-nome" placeholder="Nome" value="${esc(valor)}" autocomplete="off" autofocus></div></div>`,
     guardar: () => { const n = $('#f-nome').value.trim(); if (!n) return erro('#f-nome'); ok(n); return true; },
   });
 }
@@ -808,13 +938,13 @@ function folhaConta(id) {
   const c = db.contas.find(c => c.id === id);
   abrir({
     tipo: 'folha', titulo: c ? 'Editar conta' : 'Nova conta',
-    corpo: `<div class="lista">
+    corpo: `<div class="cartao">
         <div class="linha"><input id="f-nome" placeholder="Nome" value="${esc(c?.nome)}" autocomplete="off" autofocus></div>
         ${c ? '' : '<div class="linha campo-val"><input id="f-valor" class="valor-grande" inputmode="decimal" placeholder="0" autocomplete="off"><span>€</span></div>'}
         <label class="linha"><span class="txt">Contar no total</span><input type="checkbox" class="interruptor" id="f-total" ${!c || c.noTotal ? 'checked' : ''}></label>
         <div class="linha"><input id="f-nota" placeholder="Nota (ex.: interrail)" value="${esc(c?.nota)}" autocomplete="off"></div>
-      </div>
-      ${c ? `<div class="lista"><button class="linha acao perigo" data-a="apagar-conta" data-id="${c.id}">Apagar conta</button></div>` : ''}`,
+      </div>`,
+    extra: c ? btnApagar('apagar-conta', c.id, 'Apagar conta') : '',
     guardar: () => {
       const nome = $('#f-nome').value.trim(), v = c ? c.valor : lerValor($('#f-valor').value);
       if (!nome) return erro('#f-nome');
@@ -832,12 +962,12 @@ function folhaHist(i) {
   const c = db.contas.find(c => c.id === ui.ficha.contas), h = i == null ? null : c.hist[i];
   abrir({
     tipo: 'folha', titulo: h ? 'Editar registo' : c.nome,
-    corpo: `<div class="lista">
+    corpo: `<div class="cartao">
         <div class="linha campo-val"><input id="f-valor" class="valor-grande" inputmode="decimal" placeholder="0" value="${numSinal(h ? h.valor : c.valor)}" autocomplete="off" autofocus><span>€</span></div>
         <label class="linha"><span class="txt">Data</span><input type="date" id="f-data" value="${h?.data || hoje()}"></label>
       </div>
-      ${h ? '' : '<p class="rodape">O valor que a conta tem nesta data. Podes escrever contas, como “1200 + 50”.</p>'}
-      ${h && c.hist.length > 1 ? `<div class="lista"><button class="linha acao perigo" data-a="apagar-hist" data-id="${i}">Apagar registo</button></div>` : ''}`,
+      ${h ? '' : '<p class="rodape">O valor que a conta tem nesta data. Podes escrever contas, como “1200 + 50”.</p>'}`,
+    extra: h && c.hist.length > 1 ? btnApagar('apagar-hist', i, 'Apagar registo') : '',
     guardar: () => {
       const v = lerValor($('#f-valor').value), data = $('#f-data').value || hoje();
       if (v === null) return erro('#f-valor');
@@ -856,18 +986,18 @@ function folhaMov(movId) {
   const m = f.movimentos.find(m => m.id === movId), div = g.tipo === 'dividas';
   const neg = m ? m.valor < 0 : false;
   abrir({
-    tipo: 'folha', titulo: m ? 'Editar' : f.nome, sinal: neg, nome: f.nome, div,
+    tipo: 'folha', titulo: m ? 'Editar movimento' : f.nome, sinal: neg, nome: f.nome, div,
     corpo: `<div class="seg" id="f-sinal">
         <button data-a="sinal" data-id="0" class="${neg ? '' : 'on'}">${div ? 'Deve-me  +' : 'Gasto  +'}</button>
         <button data-a="sinal" data-id="1" class="${neg ? 'on' : ''}">${div ? 'Desconto  −' : 'Reembolso  −'}</button>
       </div>
-      <div class="lista">
+      <div class="cartao">
         <div class="linha campo-val"><input id="f-valor" class="valor-grande" inputmode="decimal" placeholder="0,00" value="${m ? numero(m.valor) : ''}" autocomplete="off" autofocus><span>€</span></div>
-        <div class="linha"><input id="f-desc" placeholder="${div ? 'Descrição (ex.: jogo padle)' : 'Descrição'}" value="${esc(m?.desc)}" autocomplete="off"></div>
+        <div class="linha"><input id="f-desc" placeholder="${div ? 'Descrição (ex.: jogo de padel)' : 'Descrição'}" value="${esc(m?.desc)}" autocomplete="off"></div>
         <label class="linha"><span class="txt">Data</span><input type="date" id="f-data" value="${m?.data || hoje()}"></label>
       </div>
-      ${div ? '<p class="rodape" id="f-ajuda"></p>' : ''}
-      ${m ? `<div class="lista"><button class="linha acao perigo" data-a="apagar-mov" data-id="${m.id}">Apagar movimento</button></div>` : ''}`,
+      ${div ? '<p class="rodape" id="f-ajuda"></p>' : ''}`,
+    extra: m ? btnApagar('apagar-mov', m.id, 'Apagar movimento') : '',
     depois: ajudaSinal,
     guardar: () => {
       const v = lerValor($('#f-valor').value);
@@ -950,8 +1080,8 @@ function repor() {
 function colar() {
   abrir({
     tipo: 'folha', titulo: 'Colar dados', ok: 'Importar',
-    corpo: `<div class="lista"><textarea id="f-dados" class="nota" rows="8" placeholder="Toca aqui, mantém o dedo e escolhe Colar" autocomplete="off" autocorrect="off" spellcheck="false"></textarea></div>
-      <p class="rodape" style="margin-top:-14px">Copia o texto da cópia de segurança (por exemplo, no Mac) e cola-o aqui.</p>`,
+    corpo: `<div class="cartao"><textarea id="f-dados" class="nota" style="padding-top:14px" rows="8" placeholder="Toca aqui, mantém o dedo e escolhe Colar" autocomplete="off" autocorrect="off" spellcheck="false"></textarea></div>
+      <p class="rodape">Copia o texto da cópia de segurança (por exemplo, no Mac) e cola-o aqui.</p>`,
     guardar: () => {
       const t = $('#f-dados').value;
       if (!t.trim()) return erro('#f-dados');
@@ -993,14 +1123,16 @@ document.addEventListener('click', e => {
     case 'voltar':
       ui.ficha[ui.tab] = null; ui.anim = 'volta';
       render(); scrollTo(0, ui.scroll[ui.tab] || 0); return;
-    case 'ficha':
-      ui.scroll[ui.tab] = scrollY; ui.ficha[ui.tab] = id; ui.anim = 'entra';
+    case 'abrir': // abre uma conta, pessoa ou item, mesmo que esteja noutro separador
+      if (b.dataset.tipo !== ui.tab) irPara(b.dataset.tipo); else ui.scroll[ui.tab] = scrollY;
+      ui.ficha[ui.tab] = id; ui.anim = 'entra';
       render(); scrollTo(0, 0); return;
     case 'ordenar': ui.ordenar = !ui.ordenar; render(); return;
     case 'mover-conta': mover(db.contas, id, +b.dataset.d); break;
     case 'mover-ficha': { const g = db.grupos.find(g => g.fichas.some(f => f.id === id)); if (g) mover(g.fichas, id, +b.dataset.d); break; }
 
     case 'nova-conta': folhaConta(null); return;
+    case 'editar-conta': folhaConta(ui.ficha.contas); return;
     case 'menu-conta': {
       const c = db.contas.find(c => c.id === ui.ficha.contas);
       acoes(c.nome, [
@@ -1088,6 +1220,26 @@ document.addEventListener('click', e => {
       document.documentElement.classList.toggle('oculto', ui.oculto);
       render(); return;
 
+    case 'rapido': { // botões redondos do início: escolher a conta, pessoa ou item e abrir logo a folha
+      const ir = (tipo, fid, folha) => () => { irPara(tipo); ui.ficha[tipo] = fid; render(); scrollTo(0, 0); folha(null); };
+      if (id === 'contas') {
+        if (!db.contas.length) { irPara('contas'); render(); folhaConta(null); return; }
+        acoes('Atualizar o valor de', db.contas.map(c => ({ texto: c.nome, fn: ir('contas', c.id, folhaHist) })));
+        return;
+      }
+      const fichas = gruposDe(id).flatMap(g => g.fichas);
+      if (!fichas.length) { irPara(id); render(); scrollTo(0, 0); toast(id === 'dividas' ? 'Adiciona primeiro uma pessoa' : 'Adiciona primeiro um item'); return; }
+      acoes(id === 'dividas' ? 'Movimento de' : 'Gasto em', fichas.map(f => ({ texto: f.nome, fn: ir(id, f.id, folhaMov) })));
+      return;
+    }
+    case 'menu-copias':
+      acoes('Cópias e partilha', [
+        { texto: 'Guardar cópia de segurança', fn: backup },
+        { texto: 'Exportar em texto', fn: exportar },
+        { texto: 'Repor cópia de um ficheiro', fn: repor },
+        { texto: 'Repor cópia colando texto', fn: colar },
+      ]);
+      return;
     case 'exportar': exportar(); return;
     case 'backup': backup(); return;
     case 'repor': repor(); return;
