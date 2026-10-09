@@ -187,7 +187,7 @@ code { font: 700 14px/1.3 ui-monospace, Menlo, monospace; background: var(--fill
 @keyframes volta { from { transform: translateX(-18%); opacity: 0; } }
 
 /* folhas e menus */
-#camada .fundo { position: fixed; inset: 0; z-index: 10; background: rgba(0,0,0,.4); animation: aparece .25s; }
+#camada .fundo { position: fixed; inset: 0; z-index: 10; background: rgba(0,0,0,.4); animation: aparece .25s; cursor: pointer; }
 .folha {
   position: fixed; left: 0; right: 0; bottom: 0; top: calc(env(safe-area-inset-top) + 10px); z-index: 11;
   max-width: 640px; margin: 0 auto; background: var(--bg); border-radius: 28px 28px 0 0;
@@ -256,6 +256,11 @@ const uid = () => Date.now().toString(36) + Math.random().toString(36).slice(2, 
 const hoje = () => {
   const d = new Date();
   return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
+};
+/** Data e hora locais, no formato em que o atalho as escreve (2026-10-09T15:58:12). */
+const agora = () => {
+  const d = new Date(), n = x => String(x).padStart(2, '0');
+  return `${d.getFullYear()}-${n(d.getMonth() + 1)}-${n(d.getDate())}T${n(d.getHours())}:${n(d.getMinutes())}:${n(d.getSeconds())}`;
 };
 const MESES = ['jan', 'fev', 'mar', 'abr', 'mai', 'jun', 'jul', 'ago', 'set', 'out', 'nov', 'dez'];
 const MESES_LONGOS = ['janeiro', 'fevereiro', 'março', 'abril', 'maio', 'junho', 'julho', 'agosto', 'setembro', 'outubro', 'novembro', 'dezembro'];
@@ -966,7 +971,7 @@ function folhaConta(id) {
       if (!nome) return erro('#f-nome');
       if (v === null) return erro('#f-valor');
       let alvo = c;
-      if (!alvo) { alvo = { id: uid(), valor: v, hist: [{ data: hoje(), valor: v }] }; db.contas.push(alvo); }
+      if (!alvo) { alvo = { id: uid(), valor: v, hist: [{ data: hoje(), valor: v, em: agora() }] }; db.contas.push(alvo); }
       Object.assign(alvo, { nome, noTotal: $('#f-total').checked, nota: $('#f-nota').value.trim() });
       return true;
     },
@@ -989,7 +994,8 @@ function folhaHist(i) {
       if (v === null) return erro('#f-valor');
       let alvo = h || c.hist.find(x => x.data === data);
       if (!alvo) c.hist.push(alvo = {});
-      Object.assign(alvo, { data, valor: v });
+      // "em": quando o valor foi visto; um gasto do atalho feito antes disso já está incluído nele
+      Object.assign(alvo, { data, valor: v, em: data === hoje() ? agora() : `${data}T23:59:59` });
       c.hist = c.hist.filter(x => x === alvo || x.data !== data);
       ordenarHist(c);
       return true;
@@ -1019,7 +1025,9 @@ function folhaMov(movId) {
       const v = lerValor($('#f-valor').value);
       if (v === null) return erro('#f-valor');
       const dados = { valor: camada.sinal ? -Math.abs(v) : v, desc: $('#f-desc').value.trim(), data: $('#f-data').value || hoje() };
+      const c = m?.conta && (dados.valor !== m.valor || dados.data !== m.data) && ajustarDesconto(m, dados);
       if (m) Object.assign(m, dados); else f.movimentos.push({ id: uid(), ...dados });
+      if (c) toast(`${c.nome} também foi acertada: ${euro(c.valor)}`);
       return true;
     },
   });
@@ -1083,6 +1091,17 @@ function importar(texto) {
   }
 }
 /** Escolher um ficheiro: uma cópia de segurança (JSON) substitui os dados; o ficheiro do atalho acrescenta movimentos. */
+/** Abre os Ficheiros e entrega o ficheiro escolhido. No iPhone, Cancelar não avisa: o input fica até à próxima vez. */
+function escolherFicheiro(accept, fn) {
+  document.querySelectorAll('input.escolher').forEach(x => x.remove());
+  const i = document.createElement('input');
+  i.type = 'file'; i.className = 'escolher'; i.style.display = 'none';
+  if (accept) i.accept = accept;
+  document.body.appendChild(i);
+  i.onchange = () => { const f = i.files[0]; i.remove(); if (f) fn(f); };
+  i.oncancel = () => i.remove();
+  i.click();
+}
 /** Texto de um ficheiro em UTF-8 ou em UTF-16 (com ou sem a marca inicial), que é como alguns editores gravam. */
 async function lerFicheiro(f) {
   const b = new Uint8Array(await f.arrayBuffer());
@@ -1092,16 +1111,10 @@ async function lerFicheiro(f) {
 }
 function repor() {
   // Sem filtro de tipo: no iPhone o filtro .json costuma deixar os ficheiros a cinzento.
-  const i = document.createElement('input');
-  i.type = 'file'; i.style.display = 'none';
-  document.body.appendChild(i);
-  i.onchange = async () => {
-    const f = i.files[0]; i.remove();
-    if (!f) return;
+  escolherFicheiro('', async f => {
     const t = await lerFicheiro(f);
     if (t.trim().startsWith('{')) importar(t); else importarAtalho(t, 'ficheiro', f.name);
-  };
-  i.click();
+  });
 }
 function colar() {
   abrir({
@@ -1198,22 +1211,53 @@ function lerLinhaAtalho(linha) {
   const r = v === undefined ? lerTextoAtalho(p.slice(2).join(';'), nomes)
     : v ? { valor: Math.abs(v), nome: p[2], desc: linha.split(';').slice(4).join(';').trim() } : null;
   if (!r || !r.valor || !r.nome) return null;
-  const data = dataAtalho(p[0]);
-  return { ...r, tipo, grupo, data: data || hoje(), semData: !data };
+  const data = dataAtalho(p[0]), hora = data && horaAtalho(p[0]);
+  return { ...r, tipo, grupo, data: data || hoje(), semData: !data, quando: hora ? `${data}T${hora}` : null };
+}
+/** Hora no início da linha ("15:58:12", "15:58", "3:58 PM") como "HH:mm:ss", ou null. */
+function horaAtalho(texto) {
+  const m = texto.match(/(\d{1,2}):(\d{2})(?::(\d{2}))?(?:\s*([ap])\.?\s?m\b)?/i);
+  if (!m) return null;
+  let h = +m[1];
+  if (m[4]) h = h % 12 + (/p/i.test(m[4]) ? 12 : 0);
+  return h < 24 ? `${String(h).padStart(2, '0')}:${m[2]}:${m[3] || '00'}` : null;
 }
 /**
  * Tira um gasto ao saldo da conta, no histórico, na data do gasto. Os registos de datas posteriores ficam
- * como estão: foram escritos à mão depois do gasto, por isso já o incluem.
+ * como estão: foram escritos à mão depois do gasto, por isso já o incluem. O mesmo para o registo desse dia,
+ * se foi escrito à mão depois da hora do gasto ("quando"). Devolve true se descontou.
  */
-function descontar(c, valor, data) {
-  if (data < c.hist[0].data) return; // o primeiro registo foi escrito depois do gasto e já o inclui
+function descontar(c, valor, data, quando) {
+  if (data < c.hist[0].data) return false; // o primeiro registo foi escrito depois do gasto e já o inclui
   let h = c.hist.find(x => x.data === data);
+  if (h?.em && quando && h.em > quando) return false;
   if (!h) {
     const antes = c.hist.filter(x => x.data < data);
     c.hist.push(h = { data, valor: (antes.length ? antes[antes.length - 1] : c.hist[0]).valor });
   }
   h.valor -= valor;
   ordenarHist(c);
+  return true;
+}
+/** Um gasto do atalho descontado numa conta fica ligado a ela, para que corrigi-lo ou apagá-lo acerte a conta. */
+const ligarConta = (m, c, valor, data) => Object.assign(m, { conta: c.id, descontado: valor, dataConta: data, descontadoEm: agora() });
+/**
+ * A conta a que o gasto está ligado, se ainda se pode acertar: se o valor desse dia foi escrito à mão
+ * depois do desconto, é esse que vale e a conta já não se mexe.
+ */
+function contaLigada(m) {
+  const c = m.conta && db.contas.find(c => c.id === m.conta), h = c && c.hist.find(x => x.data === m.dataConta);
+  return h && !(h.em && h.em > m.descontadoEm) ? { c, h } : null;
+}
+/** Ao corrigir (novo = { valor, data }) ou apagar (novo = null) um gasto ligado, acerta a conta. Devolve a conta, se mexeu. */
+function ajustarDesconto(m, novo) {
+  const l = contaLigada(m), descontado = m.descontado;
+  for (const k of ['conta', 'descontado', 'dataConta', 'descontadoEm']) delete m[k];
+  if (!l) return null;
+  l.h.valor += descontado;
+  ordenarHist(l.c);
+  if (novo && descontar(l.c, novo.valor, novo.data)) ligarConta(m, l.c, novo.valor, novo.data);
+  return l.c;
 }
 /** O grupo deste tipo com este nome; se não existir, é criado no fim. */
 function grupoChamado(nome, tipo) {
@@ -1226,7 +1270,14 @@ function grupoChamado(nome, tipo) {
  * ou 'link'. Cada movimento fica com a data e a hora em que foi registado no atalho, mesmo que entre dias depois.
  */
 function importarAtalho(texto, origem = 'ficheiro', nomeFicheiro = '') {
-  const desfaz = pontoDeRetorno();
+  const voltar = pontoDeRetorno();
+  // Desfazer tira os movimentos, mas as linhas ficam como vistas: senão voltavam a entrar da próxima vez
+  const desfaz = () => {
+    const vistas = [db.atalho, db.atalhoMaus];
+    voltar();
+    [db.atalho, db.atalhoMaus] = vistas;
+    return 'Desfeito · estes movimentos do atalho não voltam a entrar';
+  };
   if (!Array.isArray(db.atalho)) db.atalho = [];         // linhas já importadas (com o n.º da repetição, para linhas iguais)
   if (!Array.isArray(db.atalhoMaus)) db.atalhoMaus = []; // linhas que não percebi e de que já avisei
   // Uma descrição escrita em várias linhas chega partida: o que não começa um registo junta-se à linha anterior.
@@ -1251,20 +1302,24 @@ function importarAtalho(texto, origem = 'ficheiro', nomeFicheiro = '') {
     // "João (Amigos)": quando há duas pessoas com o mesmo nome, a lista do atalho junta o grupo
     const fichas = gruposDe(m.grupo).flatMap(g => g.fichas.map(f => [f, g]));
     let f = (fichas.find(([f, g]) => norm(`${f.nome} (${g.nome})`) === norm(m.nome)) || fichas.find(([f]) => norm(f.nome) === norm(m.nome)) || [])[0];
+    let ligada = null;
     if (m.grupo === 'gastos') {
       const conta = db.contas.find(c => norm(c.nome) === norm(m.nome));
-      if (conta) descontar(conta, m.valor, m.data); else semConta.add(m.nome);
+      if (!conta) semConta.add(m.nome);
+      else if (descontar(conta, m.valor, m.data, m.quando)) ligada = conta;
       // o item em Gastos tem o nome da conta, escrito como está em Contas
       if (!f) grupoChamado('Dia a dia', 'gastos').fichas.push(f = { id: uid(), nome: conta ? conta.nome : m.nome, nota: '', movimentos: [] });
     } else if (!f) {
       grupoChamado('Do atalho', 'dividas').fichas.push(f = { id: uid(), nome: m.nome, nota: '', movimentos: [] });
       nomesNovos++;
     }
-    f.movimentos.push({ id: uid(), valor: m.tipo === 'menos' ? -m.valor : m.valor, desc: m.desc, data: m.data });
+    const mov = { id: uid(), valor: m.tipo === 'menos' ? -m.valor : m.valor, desc: m.desc, data: m.data };
+    if (ligada) ligarConta(mov, ligada, m.valor, m.data);
+    f.movimentos.push(mov);
     db.atalho.push(chave); novos++; ultimo = { m, f };
   }
   if (!novos && !jaVistas && !linhas.some(l => dataAtalho(l))) {
-    desfaz();
+    voltar();
     if (origem === 'ficheiro') ficheiroEstranho(texto, nomeFicheiro);
     else toast(origem === 'link' ? 'O link do atalho não tem um movimento válido' : 'O que está copiado não é do atalho. Corre o atalho e volta a colar.');
     return;
@@ -1329,14 +1384,7 @@ function folhaAtalho() {
  * cada um com a sua data. Não depende do que está copiado. Só aceita texto, para o iPhone abrir logo os Ficheiros.
  */
 function ficheiroAtalho() {
-  const i = document.createElement('input');
-  i.type = 'file'; i.accept = '.txt,text/plain'; i.style.display = 'none';
-  document.body.appendChild(i);
-  i.onchange = async () => {
-    const f = i.files[0]; i.remove();
-    if (f) importarAtalho(await lerFicheiro(f), 'ficheiro', f.name);
-  };
-  i.click();
+  escolherFicheiro('.txt,text/plain', async f => importarAtalho(await lerFicheiro(f), 'ficheiro', f.name));
 }
 /** O ficheiro escolhido não tem movimentos do atalho: mostra o que tem (e deixa copiá-lo), para se perceber porquê. */
 function ficheiroEstranho(texto, nome) {
@@ -1368,7 +1416,7 @@ function colarAtalho() {
 let escondidaDesde = 0;
 function perguntarAtalho() {
   const vazio = !db.contas.length && db.grupos.every(g => !g.fichas.length);
-  if (camada || vazio || location.hash.startsWith('#atalho=') || lerPref('perguntarAtalho', '1') !== '1' || lerPref('atalho', '') === 'oculto') return;
+  if (camada || vazio || lerPref('perguntarAtalho', '1') !== '1') return;
   acoes('Juntar os movimentos do atalho?', [
     { texto: 'Escolher atalho.txt', fn: ficheiroAtalho },
     { texto: 'Colar o que o atalho copiou', fn: colarAtalho },
@@ -1489,8 +1537,18 @@ document.addEventListener('click', e => {
     case 'novo-mov': folhaMov(null); return;
     case 'mov': folhaMov(id); return;
     case 'apagar-mov': {
-      const [, f] = naFicha(), desfaz = pontoDeRetorno();
-      f.movimentos = f.movimentos.filter(m => m.id !== id);
+      const [, f] = naFicha(), m = f.movimentos.find(m => m.id === id), l = m && contaLigada(m);
+      const apagar = devolver => () => { if (devolver) ajustarDesconto(m, null); f.movimentos = f.movimentos.filter(x => x !== m); };
+      if (l) {
+        const d = m.descontado;
+        acoes(`Este gasto veio do atalho e foi descontado em ${l.c.nome}`, [
+          { texto: d < 0 ? `Apagar e tirar ${euro(-d)} a ${l.c.nome}` : `Apagar e devolver ${euro(d)} a ${l.c.nome}`, fn: apagar(true), desfazer: 'Movimento apagado' },
+          { texto: `Apagar só aqui (${l.c.nome} fica igual)`, fn: apagar(false), desfazer: 'Movimento apagado' },
+        ]);
+        return;
+      }
+      const desfaz = pontoDeRetorno();
+      apagar(false)();
       guardar(); fechar(); render(); toast('Movimento apagado', desfaz); return;
     }
     case 'sinal':
@@ -1513,10 +1571,12 @@ document.addEventListener('click', e => {
       if (desfaz) toast(botao.desfazer, desfaz);
       return;
     }
-    case 'desfazer':
+    case 'desfazer': {
       if (!toast.desfazer) return;
-      toast.desfazer(); toast('Desfeito');
+      const aviso = toast.desfazer();
+      toast(typeof aviso === 'string' ? aviso : 'Desfeito');
       break;
+    }
 
     case 'periodo': ui.periodo = id; gravarPref('periodo', id); render(); return;
     case 'ocultar':
@@ -1622,8 +1682,8 @@ addEventListener('hashchange', lerLinkAtalho);
 
 document.documentElement.classList.toggle('oculto', ui.oculto);
 render();
+if (!location.hash.startsWith('#atalho=')) setTimeout(perguntarAtalho, 400); // com um link, o movimento que entra fica à vista
 lerLinkAtalho();
-setTimeout(perguntarAtalho, 400);
 navigator.storage?.persist?.();
 if ('serviceWorker' in navigator) navigator.serviceWorker.register('sw.js', { updateViaCache: 'none' }).catch(() => {});
 
@@ -1632,12 +1692,15 @@ if ('serviceWorker' in navigator) navigator.serviceWorker.register('sw.js', { up
 // (não recarrega com uma folha aberta, para não perder o que se está a escrever; a pergunta do atalho não conta).
 const assinatura = t => { let h = 0; for (let i = 0; i < t.length; i++) h = (h * 31 + t.charCodeAt(i)) | 0; return h; };
 const paginaNoServidor = () => fetch('index.html', { cache: 'no-store' }).then(r => r.ok ? r.text() : null).then(t => t && assinatura(t)).catch(() => null);
-let versaoAberta = null;
+let versaoAberta = null, toques = 0;
 paginaNoServidor().then(v => { versaoAberta = v; });
+document.addEventListener('click', () => { toques++; }, true);
 document.addEventListener('visibilitychange', async () => {
   if (document.visibilityState !== 'visible' || versaoAberta === null) return;
+  const antes = toques;
   const v = await paginaNoServidor();
-  if (v !== null && v !== versaoAberta && (!camada || camada.pergunta)) location.reload();
+  // se entretanto se tocou em algo (ex.: "Escolher atalho.txt" já abriu os Ficheiros), fica para a próxima vez
+  if (v !== null && v !== versaoAberta && toques === antes && (!camada || camada.pergunta)) location.reload();
 });
 </script>
 </body>
