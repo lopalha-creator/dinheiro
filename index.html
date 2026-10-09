@@ -1435,11 +1435,13 @@ function ficheiroEstranho(texto, nome, deNovo = ficheiroAtalho) {
   const deRepor = deNovo === repor, outro = !deRepor && nome && !/^atalho( ?\(?\d+\)?)?\.txt$/i.test(nome);
   abrir({
     tipo: 'folha', ok: 'Escolher outro ficheiro',
-    titulo: !linhas.length ? 'O ficheiro está vazio' : deRepor ? 'Este ficheiro não é uma cópia da app' : 'Este ficheiro não tem movimentos do atalho',
+    titulo: !linhas.length ? (!deRepor && /\n/.test(texto) ? 'O atalho escreveu linhas em branco' : 'O ficheiro está vazio') : deRepor ? 'Este ficheiro não é uma cópia da app' : 'Este ficheiro não tem movimentos do atalho',
     corpo: `<p class="texto" style="padding:0 2px 14px">${deRepor
       ? 'As cópias de segurança chamam-se <b>dinheiro-…json</b> (Mais → Guardar cópia de segurança). Também se pode escolher aqui o <b>atalho.txt</b>.' + (linhas.length ? ' Este ficheiro começa assim:' : '')
       : (outro ? `Escolheste <b>${esc(nome)}</b>. O do atalho chama-se <b>atalho.txt</b> e está em iCloud Drive → Atalhos → Dinheiro. ` : '') + (linhas.length
       ? 'Cada linha do atalho começa pela data, assim: <code>2026-10-09T15:58:12;gasto;Revolut;2;café</code>. Este ficheiro começa assim:'
+      : /\n/.test(texto)
+      ? 'O atalho escreveu linhas em branco: é a versão antiga, que não guardava o texto. Instala outra vez o atalho pelo Mac (Mais → Atalho do iPhone → Copiar comando) e regista de novo os movimentos que faltam.'
       : 'Corre o atalho uma vez (Dívida ou Gasto) e volta a escolher <b>atalho.txt</b>.')}</p>
       ${linhas.length ? `<section class="cartao"><p class="texto"><code style="white-space:pre-wrap;display:block">${esc(amostra)}</code></p>
         <div class="botoes-linha"><button class="btn-sec" data-a="copiar-amostra">Copiar o que tem</button></div></section>` : ''}`,
