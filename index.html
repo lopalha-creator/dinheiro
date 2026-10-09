@@ -1208,8 +1208,8 @@ function grupoChamado(nome, tipo) {
   return g;
 }
 /**
- * origem: 'ficheiro' (Importar do ficheiro), 'colado' (Colar do atalho: o atalho copia todos os movimentos que guardou)
- * ou 'link'. Cada movimento fica com a data e a hora em que foi registado no atalho, mesmo que entre dias depois.
+ * origem: 'ficheiro' (Importar do ficheiro), 'colado' (Colar do atalho: o atalho copia todos os movimentos que guardou),
+ * 'auto' (colado sozinho ao primeiro toque, sem avisos se não houver nada novo) ou 'link'. Cada movimento fica com a data e a hora em que foi registado no atalho, mesmo que entre dias depois.
  */
 function importarAtalho(texto, origem = 'ficheiro') {
   const desfaz = pontoDeRetorno();
@@ -1256,7 +1256,8 @@ function importarAtalho(texto, origem = 'ficheiro') {
   }
   gravarPref('atalho', hoje());
   guardar();
-  if (novos === 1 && !maus) {
+  if (origem === 'auto' && !novos) { render(); return; }
+  if (novos === 1 && !maus && origem !== 'auto') {
     // abre a pessoa ou o item, para se ver logo o movimento novo
     const { m, f } = ultimo;
     irPara(m.grupo); ui.ficha[m.grupo] = f.id; ui.anim = 'entra'; render(); scrollTo(0, 0);
@@ -1266,6 +1267,12 @@ function importarAtalho(texto, origem = 'ficheiro') {
     return;
   }
   render();
+  if (origem === 'auto' && novos === 1 && !maus) {
+    const { m, f } = ultimo;
+    const valor = m.tipo === 'menos' ? '−' + euro(m.valor) : m.tipo === 'gasto' ? euro(m.valor) + ' gasto' : '+' + euro(m.valor);
+    toast(`Do atalho: ${f.nome} ${valor}${m.data === hoje() ? '' : ` · ${dataPT(m.data)}`}`, desfaz);
+    return;
+  }
   if (!novos && jaVistas && !maus) { toast(origem === 'link' ? 'Este movimento já estava guardado' : 'Já estava tudo na app'); return; }
   const curta = t => t.length > 40 ? t.slice(0, 39) + '…' : t;
   const naoPercebi = maus ? `não percebi ${maus === 1 ? 'uma linha' : `${maus} linhas`}: «${curta(primeiroMau)}»` : '';
@@ -1292,7 +1299,7 @@ function folhaAtalho() {
   const lista = tipo => { const n = nomesAtalho(tipo); return n.length ? esc(n.join(' · ')) : tipo === 'contas' ? 'Ainda não há contas.' : 'Ainda não há pessoas.'; };
   abrir({
     tipo: 'folha', titulo: 'Atalho do iPhone', ok: 'Abrir o ficheiro do atalho',
-    corpo: `<p class="texto" style="padding:0 2px 14px">Aponta dívidas e gastos sem abrir a app, até com o iPhone bloqueado: tocas num botão, escolhes <b>Dívida</b> ou <b>Gasto</b>, quem (ou de que conta), a quantia, se te devem ou se deves, e a descrição. O atalho guarda cada movimento com a data e a hora em <b>atalho.txt</b> (iCloud Drive → Atalhos → Dinheiro). Quando abrires a app, toca em <b>Atalho</b> (no topo do início) e escolhe esse ficheiro: entram os movimentos que faltam, cada um com a sua data. Da segunda vez em diante, os Ficheiros já abrem nessa pasta.</p>
+    corpo: `<p class="texto" style="padding:0 2px 14px">Aponta dívidas e gastos sem abrir a app, até com o iPhone bloqueado: tocas num botão, escolhes <b>Dívida</b> ou <b>Gasto</b>, quem (ou de que conta), a quantia, se te devem ou se deves, e a descrição. O atalho guarda cada movimento com a data e a hora e copia-os. Quando abrires a app, ao primeiro toque o iPhone mostra <b>Colar</b>: tocas e entram os movimentos que faltam, cada um com a sua data. Se entretanto copiaste outra coisa, toca em <b>Atalho</b> (no topo do início) e escolhe <b>atalho.txt</b> (iCloud Drive → Atalhos → Dinheiro).</p>
       <section class="cartao">${cabCartao('1. Instalar o atalho (no Mac, uma vez)')}
         <p class="texto">A Apple só deixa instalar atalhos assinados, e isso faz-se num Mac. Abre o <b>Terminal</b> (Cmd+Espaço, escreve «Terminal»), cola este comando e carrega em Enter. A app Atalhos abre: toca em <b>Adicionar atalho</b> e ele passa para o iPhone pelo iCloud.</p>
         <p class="texto"><code>${esc(COMANDO_MAC)}</code></p>
@@ -1331,6 +1338,22 @@ function colarAtalho() {
     if (t.trim().startsWith('{')) importar(t); else importarAtalho(t, 'colado');
   }, () => colar()); // sem autorização para ler: abre a folha para colar à mão
 }
+
+// Ao abrir a app (ou ao voltar a ela), o primeiro toque tenta colar o que o atalho copiou. O iPhone só deixa ler o que
+// está copiado depois de um toque e mostra «Colar» para confirmar. Se não for do atalho, não faz nada.
+let colarAoTocar = false;
+const armarColar = () => { colarAoTocar = lerPref('atalho', '') !== 'oculto' && !!navigator.clipboard?.readText; };
+document.addEventListener('click', e => {
+  if (!colarAoTocar) return;
+  colarAoTocar = false;
+  // estes botões já leem um ficheiro ou o que está copiado, ou precisam do toque para outra coisa
+  if (e.target.closest?.('[data-a="colar-atalho"], [data-a="ficheiro-atalho"], [data-a="repor"], [data-a="colar"], [data-a="backup"], [data-a="exportar"], input, textarea')) return;
+  navigator.clipboard.readText().then(t => {
+    if (t && t.split(/\r\n?|\n/).some(l => comecaRegisto(l.trim()))) importarAtalho(t, 'auto');
+  }, () => {});
+}, true);
+document.addEventListener('visibilitychange', () => { if (document.visibilityState === 'visible') armarColar(); });
+armarColar();
 
 /** No início: primeiro um convite para criar o atalho; depois de usado, o botão para importar. */
 function cartaoAtalho() {
