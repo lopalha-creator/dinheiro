@@ -73,8 +73,8 @@ h1 { font-size: 32px; font-weight: 800; letter-spacing: -.03em; line-height: 1.1
 
 /* topo com gradiente */
 .heroi {
-  color: #fff; margin: calc(-4px - env(safe-area-inset-top)) -16px 18px; padding: calc(env(safe-area-inset-top) + 4px) 16px 24px;
-  border-radius: 0 0 32px 32px;
+  color: #fff; margin: calc(-4px - env(safe-area-inset-top)) -16px 14px; padding: calc(env(safe-area-inset-top) + 4px) 16px 18px;
+  border-radius: 0 0 28px 28px;
   background:
     radial-gradient(110% 80% at 0% 0%, var(--h1), transparent 62%),
     radial-gradient(90% 75% at 100% 0%, var(--h2), transparent 66%),
@@ -82,27 +82,30 @@ h1 { font-size: 32px; font-weight: 800; letter-spacing: -.03em; line-height: 1.1
     var(--h0);
 }
 .heroi .icbtn, .heroi .pilula, .heroi .acao-red .circ { background: rgba(255,255,255,.2); color: #fff; box-shadow: none; -webkit-backdrop-filter: blur(12px); backdrop-filter: blur(12px); }
-.heroi-centro { text-align: center; padding: 16px 0 2px; }
+.heroi-centro { text-align: center; padding: 4px 0 0; }
+.heroi .valor-g { font-size: 40px; margin: 2px 0 10px; }
 .heroi-rot { font-size: 14px; font-weight: 700; opacity: .85; }
 .valor-g { font-size: 44px; font-weight: 800; letter-spacing: -.035em; line-height: 1.1; margin: 4px 0 12px; overflow-wrap: anywhere; }
 .valor-g small, .valor-m small { font-size: .56em; font-weight: 800; letter-spacing: -.01em; }
 .pilula { display: inline-flex; align-items: center; gap: 6px; padding: 7px 14px; border-radius: 999px; font-size: 14px; font-weight: 700; }
 
 /* botões de ação redondos */
-.botoes-acao { display: flex; justify-content: center; gap: 4px; margin-top: 22px; }
-.acao-red { flex: 0 1 84px; min-width: 0; display: flex; flex-direction: column; align-items: center; gap: 7px; font-size: 13px; font-weight: 700; text-align: center; line-height: 1.2; }
-.acao-red .circ { width: 52px; height: 52px; border-radius: 50%; display: grid; place-items: center; background: var(--cel); color: var(--acc); box-shadow: var(--sombra); transition: transform .15s; }
+.botoes-acao { display: flex; justify-content: center; gap: 4px; margin-top: 16px; }
+.acao-red { flex: 0 1 80px; min-width: 0; display: flex; flex-direction: column; align-items: center; gap: 7px; font-size: 13px; font-weight: 700; text-align: center; line-height: 1.2; }
+.acao-red .circ { width: 48px; height: 48px; border-radius: 50%; display: grid; place-items: center; background: var(--cel); color: var(--acc); box-shadow: var(--sombra); transition: transform .15s; }
 .acao-red .circ svg { width: 22px; height: 22px; stroke-width: 2.1; }
 .acao-red:active .circ { transform: scale(.92); }
 
 /* cartões e linhas */
-.cartao { background: var(--cel); border-radius: 24px; padding: 6px 0; margin-bottom: 16px; box-shadow: var(--sombra); overflow: hidden; }
+.cartao { background: var(--cel); border-radius: 20px; padding: 6px 0; margin-bottom: 12px; box-shadow: var(--sombra); overflow: hidden; }
 .cartao > * { position: relative; }
-.cartao-cab { display: flex; justify-content: space-between; align-items: center; gap: 8px; min-height: 48px; padding: 10px 16px 4px; }
-.cartao-cab h2 { font-size: 18px; font-weight: 800; letter-spacing: -.02em; overflow-wrap: anywhere; }
+.cartao-cab { display: flex; justify-content: space-between; align-items: center; gap: 8px; min-height: 44px; padding: 12px 16px 2px; }
+.cartao-cab h2 { font-size: 17px; font-weight: 800; letter-spacing: -.02em; overflow-wrap: anywhere; }
 .cartao-cab .dir { display: flex; align-items: center; gap: 8px; color: var(--sec); font-weight: 700; font-variant-numeric: tabular-nums; white-space: nowrap; }
 .lig { color: var(--acc); font-size: 15px; font-weight: 700; padding: 6px 0; }
-.linha { display: flex; align-items: center; gap: 12px; width: 100%; min-height: 62px; padding: 10px 16px; }
+.linha { display: flex; align-items: center; gap: 12px; width: 100%; min-height: 56px; padding: 8px 16px; }
+.linha.mov { min-height: 52px; }
+.linha.mov .tit { font-weight: 600; }
 button.linha:active, .grupo-acoes button:active, .cancelar-acoes:active { background: var(--prem); }
 .txt { flex: 1; min-width: 0; }
 .tit { font-weight: 700; overflow-wrap: anywhere; }
@@ -115,19 +118,24 @@ button.linha:active, .grupo-acoes button:active, .cancelar-acoes:active { backgr
 .zero { color: var(--sec); }
 .acao { color: var(--acc); font-weight: 700; }
 .perigo { color: var(--verm) !important; }
-.avatar { width: 42px; height: 42px; flex: none; border-radius: 50%; display: grid; place-items: center; background: var(--fill); color: var(--txt); font-size: 15px; font-weight: 800; letter-spacing: -.02em; }
+.avatar { width: 38px; height: 38px; flex: none; border-radius: 50%; display: grid; place-items: center; background: var(--fill); color: var(--txt); font-size: 14px; font-weight: 800; letter-spacing: -.02em; }
 .avatar svg { width: 20px; height: 20px; stroke-width: 2.1; }
-.avatar.grande { width: 76px; height: 76px; font-size: 28px; }
+.avatar.grande { width: 64px; height: 64px; font-size: 24px; }
 .acao .avatar { background: var(--acc-suave); color: var(--acc); }
 .perigo .avatar { background: var(--verm-suave); color: var(--verm); }
-.cab-valor { padding: 0 2px 16px; }
-.cab-valor .valor-g { margin: 2px 0 0; }
+.cab-tab { display: flex; align-items: center; justify-content: space-between; gap: 12px; min-height: 56px; padding-top: 6px; }
+.cab-tab h1 { margin: 0; font-size: 30px; }
+.cab-valor { padding: 2px 2px 14px; }
+.cab-valor .valor-g { font-size: 40px; margin: 2px 0 0; }
+.cab-valor .leg { margin-top: 4px; }
 .rot { font-size: 14px; font-weight: 700; color: var(--sec); }
 .leg { font-size: 14px; font-weight: 600; color: var(--sec); }
-.perfil { text-align: center; padding: 2px 0 20px; }
-.perfil .avatar { margin: 0 auto 12px; }
+.perfil { text-align: center; padding: 0 0 14px; }
+.perfil .avatar { margin: 0 auto 10px; }
 .perfil h1 { font-size: 22px; margin: 0; }
-.perfil .valor-g { margin: 6px 0 2px; }
+.perfil .valor-g { font-size: 40px; margin: 4px 0 2px; }
+.perfil .pilula { background: var(--fill); margin: 6px 0 2px; }
+.perfil .leg + .botoes-acao, .perfil .pilula + .botoes-acao { margin-top: 14px; }
 .texto { font-size: 14px; color: var(--sec); padding: 0 16px 12px; overflow-wrap: anywhere; }
 .texto b { color: var(--txt); }
 .botoes-linha { display: flex; flex-wrap: wrap; gap: 8px; padding: 2px 16px 12px; }
@@ -136,20 +144,44 @@ button.linha:active, .grupo-acoes button:active, .cancelar-acoes:active { backgr
 .btn-sec { background: var(--fill); color: var(--txt); }
 .btn-pri.largo { display: block; width: 100%; padding: 16px; margin: 4px 0 16px; font-size: 16px; }
 .rodape { font-size: 13px; color: var(--sec); padding: 0 16px; margin: -6px 0 18px; }
+.rodape.centro { text-align: center; margin-top: 4px; }
 .mini { width: 40px; height: 34px; border-radius: 12px; background: var(--fill); color: var(--acc); text-align: center; font-size: 17px; font-weight: 700; }
 .mini:disabled { opacity: .3; }
 textarea.nota { display: block; padding: 4px 16px 14px; resize: none; min-height: 46px; }
-.passos { padding: 0 16px 12px 38px; font-size: 15px; }
-.passos li { margin: 0 0 10px; padding-left: 2px; }
-.passos li::marker { font-weight: 800; color: var(--acc); }
+
+/* peças do Início e das listas */
+.aviso { display: flex; align-items: center; justify-content: space-between; gap: 12px; min-height: 52px; padding: 8px 16px; margin-bottom: 12px; border-radius: 16px; background: var(--cel); box-shadow: var(--sombra); font-size: 14px; font-weight: 700; color: var(--sec); }
+.duo { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; padding: 2px 16px 10px; }
+.duo .valor-m { font-size: 22px; }
+.mosaico { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; padding: 4px 12px 12px; }
+.tile { display: flex; flex-direction: column; gap: 4px; min-width: 0; min-height: 64px; padding: 12px 14px; border-radius: 16px; background: var(--fill); }
+.tile:active { background: var(--prem); }
+.tile-nome { font-size: 13px; font-weight: 700; color: var(--sec); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.tile .val { font-size: 18px; font-weight: 800; letter-spacing: -.02em; }
+.tile.fora .val { color: var(--sec); }
+.mes-cab { display: flex; justify-content: space-between; padding: 14px 16px 4px; font-size: 13px; font-weight: 700; color: var(--sec); }
+.mes-cab:first-of-type { padding-top: 4px; }
+.conta-nota { font-size: 13px; color: var(--sec); padding: 6px 16px 12px; overflow-wrap: anywhere; }
+.nota-cartao { padding: 0; }
+.nota-cartao textarea.nota { padding: 14px 16px; min-height: 48px; }
+.vazio { text-align: center; padding: 40px 24px; }
+.vazio p { font-size: 15px; color: var(--sec); margin-bottom: 14px; }
+.linha.opcao { font-weight: 600; }
+.opcao .avatar { background: var(--acc-suave); color: var(--acc); }
+.det { display: block; font-size: 13px; font-weight: 500; color: var(--sec); margin-top: 2px; }
+details summary { list-style: none; cursor: pointer; }
+details summary::-webkit-details-marker { display: none; }
+.chev { margin-left: auto; color: var(--ter); }
+.chev svg { width: 18px; height: 18px; transform: rotate(180deg); transition: transform .2s; }
+details[open] .chev svg { transform: rotate(-90deg); }
 code { font: 700 14px/1.3 ui-monospace, Menlo, monospace; background: var(--fill); padding: 2px 6px; border-radius: 6px; overflow-wrap: anywhere; }
 
 /* gráficos */
 .leitura { padding: 0 16px; }
 .valor-m { font-size: 24px; font-weight: 800; letter-spacing: -.02em; font-variant-numeric: tabular-nums; }
-.chips { display: flex; gap: 2px; }
-.chips button { padding: 6px 10px; border-radius: 999px; font-size: 13px; font-weight: 700; color: var(--sec); }
-.chips .on { background: var(--txt); color: var(--cel); }
+.chips { display: flex; background: var(--fill); border-radius: 999px; padding: 2px; }
+.chips button { min-width: 36px; padding: 5px 10px; border-radius: 999px; font-size: 13px; font-weight: 700; color: var(--sec); text-align: center; }
+.chips .on { background: var(--seg-on); color: var(--txt); box-shadow: 0 1px 3px rgba(0,0,0,.12); }
 .graf { position: relative; margin: 12px 16px 10px; touch-action: pan-y; -webkit-user-select: none; user-select: none; -webkit-touch-callout: none; outline: 0; border-radius: 8px; }
 .graf:focus-visible { box-shadow: 0 0 0 2px var(--acc); }
 .graf svg { display: block; overflow: visible; stroke: none; }
@@ -168,7 +200,7 @@ code { font: 700 14px/1.3 ui-monospace, Menlo, monospace; background: var(--fill
 .comp span { min-width: 3px; }
 
 /* ocultar valores (para mostrar o ecrã a alguém) */
-.oculto :is(.val, .valor-g, .valor-m, .leg, .sub, .pilula, .graf text, .cartao-cab .dir) { filter: blur(8px); }
+.oculto :is(.val, .valor-g, .valor-m, .leg, .sub, .pilula, .graf text, .cartao-cab .dir, .conta-nota, .mes-cab span + span) { filter: blur(8px); }
 
 /* barra de separadores */
 .tabs {
@@ -179,7 +211,8 @@ code { font: 700 14px/1.3 ui-monospace, Menlo, monospace; background: var(--fill
 }
 .tabs button { flex: 1; max-width: 120px; display: flex; flex-direction: column; align-items: center; gap: 3px; font-size: 11px; font-weight: 700; color: var(--sec); padding: 2px 0; }
 .tabs svg { width: 24px; height: 24px; stroke-width: 2; }
-.tabs .on { color: var(--txt); }
+.tabs .on { color: var(--acc); }
+.tabs .on svg { stroke-width: 2.3; }
 
 .entra { animation: entra .3s cubic-bezier(.2,.8,.2,1); }
 .volta { animation: volta .3s cubic-bezier(.2,.8,.2,1); }
@@ -194,9 +227,15 @@ code { font: 700 14px/1.3 ui-monospace, Menlo, monospace; background: var(--fill
   display: flex; flex-direction: column; animation: sobe .34s cubic-bezier(.2,.8,.2,1);
 }
 .folha::before { content: ""; position: absolute; top: 7px; left: 50%; width: 38px; height: 5px; margin-left: -19px; border-radius: 3px; background: var(--ter); }
-.folha-barra { padding: 20px 16px 0; }
-.folha-corpo { flex: 1; overflow: auto; padding: 8px 16px 40px; }
-.folha-tit { font-size: 28px; font-weight: 800; letter-spacing: -.03em; line-height: 1.15; margin-bottom: 18px; overflow-wrap: anywhere; }
+.folha-barra { display: flex; align-items: center; justify-content: space-between; gap: 12px; padding: 22px 16px 10px; }
+.folha-barra .icbtn { width: 32px; height: 32px; background: var(--fill); box-shadow: none; color: var(--sec); position: relative; }
+.folha-barra .icbtn::after { content: ""; position: absolute; inset: -6px; }
+.folha-barra .icbtn svg { width: 18px; height: 18px; }
+.folha-corpo { flex: 1; overflow: auto; padding: 6px 16px calc(40px + env(safe-area-inset-bottom)); }
+.folha-tit { font-size: 22px; font-weight: 800; letter-spacing: -.02em; line-height: 1.2; overflow-wrap: anywhere; }
+.folha .cartao > .linha + .linha::before { content: ""; position: absolute; top: 0; left: 16px; right: 0; border-top: .5px solid var(--sep); }
+.folha .cartao > .opcao + .opcao::before, .folha .cartao > .opcao + details > summary::before { content: ""; position: absolute; top: 0; left: 66px; right: 0; border-top: .5px solid var(--sep); }
+.folha details > summary { position: relative; }
 .folha .cartao { padding: 4px 0; }
 .folha .linha { min-height: 56px; }
 .campo-val { min-height: 76px !important; }
@@ -219,6 +258,12 @@ input[type=date] { width: auto; text-align: right; color: var(--acc); font-weigh
 .grupo-acoes > * + * { border-top: .5px solid var(--sep); }
 .grupo-acoes button, .cancelar-acoes { display: block; width: 100%; text-align: center; padding: 17px; font-size: 17px; font-weight: 700; color: var(--acc); }
 .titulo-acoes { font-size: 13px; font-weight: 600; color: var(--sec); text-align: center; padding: 14px 16px; }
+.grupo-acoes.grelha { display: grid; grid-template-columns: repeat(4, 1fr); gap: 14px 4px; padding: 0 10px 18px; }
+.grupo-acoes.grelha > * + * { border-top: 0; }
+.grelha .titulo-acoes { grid-column: 1 / -1; padding: 14px 0 4px; }
+.grupo-acoes.grelha button { display: flex; flex-direction: column; align-items: center; gap: 6px; padding: 4px 0; font-size: 12px; font-weight: 700; color: var(--txt); min-width: 0; }
+.grelha button span:last-child { max-width: 100%; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.grelha .avatar { width: 48px; height: 48px; font-size: 16px; }
 .cancelar-acoes { flex: none; background: var(--cel); color: var(--txt); border-radius: 22px; }
 #camada.saindo .folha, #camada.saindo .folha-acoes { animation: desce .25s forwards; }
 #camada.saindo .fundo { animation: some .25s forwards; }
@@ -266,6 +311,12 @@ const MESES = ['jan', 'fev', 'mar', 'abr', 'mai', 'jun', 'jul', 'ago', 'set', 'o
 const MESES_LONGOS = ['janeiro', 'fevereiro', 'março', 'abril', 'maio', 'junho', 'julho', 'agosto', 'setembro', 'outubro', 'novembro', 'dezembro'];
 /** "2026-10-08" → "8 out 2026" */
 const dataPT = iso => { const [a, m, d] = iso.split('-'); return `${+d} ${MESES[m - 1]} ${a}`; };
+/** Data curta para as listas: "hoje", "ontem", "6 out" (este ano) ou "6 out 2025". */
+const dataCurta = iso => {
+  const n = diaDe(hoje()) - diaDe(iso), [a, m, d] = iso.split('-');
+  return n === 0 ? 'hoje' : n === 1 ? 'ontem' : `${+d} ${MESES[m - 1]}${a === hoje().slice(0, 4) ? '' : ' ' + a}`;
+};
+const mesAtual = () => hoje().slice(0, 7);
 
 // Todos os valores são guardados em cêntimos (inteiros) para não haver erros de arredondamento.
 const fmtEuro = new Intl.NumberFormat('pt-PT', { style: 'currency', currency: 'EUR' });
@@ -361,6 +412,10 @@ const movOrdenados = f => f.movimentos
   .map((m, i) => [m, i])
   .sort((a, b) => a[0].data < b[0].data ? -1 : a[0].data > b[0].data ? 1 : a[1] - b[1])
   .map(x => x[0]);
+/** O último movimento (por data), para o subtítulo das listas: "jantar · ontem". */
+const subUltimo = f => { const m = movOrdenados(f).at(-1); return m ? `${m.desc || 'sem descrição'} · ${dataCurta(m.data)}` : 'sem movimentos'; };
+/** O que se gastou num item num mês (por omissão, no mês atual). */
+const gastoMes = (f, k = mesAtual()) => f.movimentos.reduce((s, m) => s + (m.data.startsWith(k) ? m.valor : 0), 0);
 /** A conta escrita como na nota: "115,82 tricount + 4,60 pré casa − 2,50 fino ibar" */
 const expressao = f => movOrdenados(f)
   .map((m, i) => (m.valor < 0 ? '− ' : i ? '+ ' : '') + numero(m.valor) + (m.desc ? ' ' + m.desc : ''))
@@ -397,6 +452,11 @@ const ic = {
   desce: ico('<path d="M7 7l10 10M17 9v8H9"/>'),
   colar: ico('<rect x="5.5" y="4.5" width="13" height="16" rx="2.5"/><path d="M9.5 4.5V4a1 1 0 0 1 1-1h3a1 1 0 0 1 1 1v.5M9 11h6M9 15h4"/>'),
   igual: ico('<path d="M6 10h12M6 14h12"/>'),
+  guardar: ico('<path d="M12 4v11M7.5 10.5 12 15l4.5-4.5"/><path d="M4.5 15.5v2A2.5 2.5 0 0 0 7 20h10a2.5 2.5 0 0 0 2.5-2.5v-2"/>'),
+  partilhar: ico('<path d="M12 15V4M7.5 8.5 12 4l4.5 4.5"/><path d="M8 11H6.5a2 2 0 0 0-2 2v5a2 2 0 0 0 2 2h11a2 2 0 0 0 2-2v-5a2 2 0 0 0-2-2H16"/>'),
+  repor: ico('<path d="M4.5 12a7.5 7.5 0 1 0 2.2-5.3"/><path d="M4.5 4.5v4h4"/>'),
+  portatil: ico('<rect x="4.5" y="5" width="15" height="10.5" rx="1.5"/><path d="M2.5 19h19"/>'),
+  sino: ico('<path d="M6 16.5V11a6 6 0 0 1 12 0v5.5l1.5 1.5h-15z"/><path d="M10 20.5a2 2 0 0 0 4 0"/>'),
   olho: ico('<path d="M2.5 12S6 5.5 12 5.5 21.5 12 21.5 12 18 18.5 12 18.5 2.5 12 2.5 12z"/><circle cx="12" cy="12" r="3"/>'),
   olhoFechado: ico('<path d="M2.5 12S6 5.5 12 5.5 21.5 12 21.5 12 18 18.5 12 18.5 2.5 12 2.5 12z"/><circle cx="12" cy="12" r="3"/><path d="M4 4l16 16"/>'),
 };
@@ -453,11 +513,11 @@ function eventosConta(c) {
  * Antes do primeiro registo de cada conta conta-se com esse primeiro valor, que é o melhor que se sabe:
  * assim, registar o passado de uma só conta não faz parecer que as outras apareceram do nada.
  */
-function serieTotal() {
+function serieTotal(comDividas = true) {
   const contas = db.contas.filter(c => c.noTotal);
   const inicio = contas.length ? Math.min(...contas.map(c => diaDe(c.hist[0].data))) : null;
   const ev = contas.flatMap(c => eventosConta(c).map((e, i) => i ? e : [inicio, e[1]]));
-  const pts = acumular([...ev, ...eventosDividas()]);
+  const pts = acumular([...ev, ...(comDividas ? eventosDividas() : [])]);
   return { pts, inicio: inicio ?? (pts.length ? pts[0][0] : null) };
 }
 
@@ -607,7 +667,7 @@ function evolucao(pts, inicio, o = {}) {
   if (de >= ate) return null;
   const r = recortar(pts, de, ate);
   const v0 = r[0][1], dv = r[r.length - 1][1] - v0;
-  const pct = v0 > 0 && dv ? ` (${fmtPct.format(Math.abs(dv) / v0)})` : '';
+  const pct = !o.semPct && v0 > 0 && dv ? ` (${fmtPct.format(Math.abs(dv) / v0)})` : '';
   return {
     texto: `${dv > 0 ? '▲' : dv < 0 ? '▼' : '='} ${euro(Math.abs(dv))}${pct}`,
     cls: cor(dv),
@@ -624,17 +684,21 @@ function grafFicha(f, div) {
   const de = pts[0][0], ate = div ? Math.max(diaDe(hoje()), pts[pts.length - 1][0]) : pts[pts.length - 1][0];
   return de < ate ? grafLinha(recortar(pts, de, ate), de, ate, { cor: div, rotulo: div ? 'Saldo ao longo do tempo' : 'Gasto acumulado' }) : '';
 }
-/** Gastos de todos os grupos, somados por mês (até 12 meses). Devolve o gráfico, o último mês e a média. */
-function grafGastosMes() {
+/**
+ * Gastos somados por mês (até 12 meses), de todos os itens ou só dos indicados. Devolve o gráfico, o último mês
+ * e a média. Com ateHoje, os meses vão até ao atual; sem ele (um item, como uma viagem), até ao último movimento.
+ */
+function grafGastosMes(fichas = gruposDe('gastos').flatMap(g => g.fichas), ateHoje = true) {
   const porMes = new Map();
-  for (const g of gruposDe('gastos')) for (const f of g.fichas) for (const m of f.movimentos) {
+  for (const f of fichas) for (const m of f.movimentos) {
     const k = m.data.slice(0, 7);
     porMes.set(k, (porMes.get(k) || 0) + m.valor);
   }
   if (!porMes.size) return null;
   const chaves = [...porMes.keys()].sort();
   let [a, m] = chaves[0].split('-').map(Number);
-  const [af, mf] = (chaves[chaves.length - 1] > hoje() ? chaves[chaves.length - 1] : hoje().slice(0, 7)).split('-').map(Number);
+  const ult = chaves[chaves.length - 1];
+  const [af, mf] = (!ateHoje || ult > mesAtual() ? ult : mesAtual()).split('-').map(Number);
   const barras = [];
   while (a < af || (a === af && m <= mf)) {
     const k = `${a}-${String(m).padStart(2, '0')}`;
@@ -642,11 +706,11 @@ function grafGastosMes() {
     if (++m > 12) { m = 1; a++; }
   }
   if (barras.length < 2) return null;
-  const ult = barras.slice(-12);
+  const doze = barras.slice(-12);
   return {
-    graf: grafColunas(ult, { rotulo: 'Gastos por mês' }),
-    atual: ult[ult.length - 1],
-    media: Math.round(ult.reduce((s, b) => s + b.valor, 0) / ult.length),
+    graf: grafColunas(doze, { rotulo: 'Gastos por mês' }),
+    atual: doze[doze.length - 1],
+    media: Math.round(doze.reduce((s, b) => s + b.valor, 0) / doze.length),
   };
 }
 
@@ -697,7 +761,12 @@ function barra({ voltar = '', titulo = '', acoes = '' } = {}) {
     : titulo ? `<span class="marca">${esc(titulo)}</span>` : '<span></span>';
   return `<div class="barra">${esq}<div class="acoes">${acoes}</div></div>`;
 }
-const cab = (titulo, o = {}) => barra(o) + `<h1>${esc(titulo)}</h1>`;
+/** Cabeçalho de um separador: o título e um só botão ••• com as opções (ou "OK" enquanto se ordena). */
+const cabTab = (titulo, menu) => `<div class="cab-tab"><h1>${esc(titulo)}</h1>${ui.ordenar
+  ? '<button class="txtbtn" data-a="ordenar">OK</button>'
+  : `<button class="icbtn" data-a="${menu}" aria-label="Opções de ${esc(titulo)}">${ic.mais3}</button>`}</div>`;
+/** Separador ainda vazio: uma frase e o botão para começar. */
+const vazio = (texto, a, botao) => `<div class="vazio"><p>${esc(texto)}</p><button class="btn-pri" data-a="${a}">${esc(botao)}</button></div>`;
 const cabCartao = (titulo, dir = '') => `<div class="cartao-cab"><h2>${esc(titulo)}</h2>${dir}</div>`;
 const verTudo = (tab, texto) => `<button class="lig" data-a="tab" data-id="${tab}">${texto}</button>`;
 const botaoAcao = (a, icone, texto, id = '') =>
@@ -713,7 +782,6 @@ function linhaOrdenar(nome, a, id, i, n) {
     <button class="mini" data-a="${a}" data-id="${id}" data-d="-1" ${i === 0 ? 'disabled' : ''} aria-label="Subir">↑</button>
     <button class="mini" data-a="${a}" data-id="${id}" data-d="1" ${i === n - 1 ? 'disabled' : ''} aria-label="Descer">↓</button></div>`;
 }
-const btnOrdenar = () => `<button class="txtbtn" data-a="ordenar">${ui.ordenar ? 'OK' : 'Ordenar'}</button>`;
 const btnAdicionar = (a, texto, id = '') => `<button class="linha acao" data-a="${a}"${id ? ` data-id="${id}"` : ''}>${avatarIcone(ic.mais)}${esc(texto)}</button>`;
 
 /** Cartão de um gráfico: título e filtros em cima, depois a leitura (que muda ao tocar no gráfico) e o gráfico. */
@@ -722,7 +790,6 @@ function cartaoGraf({ titulo, valor = '', cls = '', leg = '', graf = '', filtros
     <div class="leitura"><div class="valor-m ${cls}" data-ler="valor">${valor}</div><div class="leg" data-ler="leg">${leg}</div></div>${graf}</section>`;
 }
 const cartaoEvolucao = ev => cartaoGraf({ titulo: 'Evolução', valor: esc(ev.texto), cls: ev.cls, leg: esc(ev.quando), graf: ev.graf, filtros: ev.filtros });
-const cartaoTexto = (titulo, texto) => `<section class="cartao">${cabCartao(titulo)}<p class="texto">${texto}</p></section>`;
 
 function textoCopia() {
   const d = lerPref('copia', null);
@@ -750,116 +817,137 @@ function recentes(n) {
   for (const g of db.grupos) for (const f of g.fichas) f.movimentos.forEach((m, i) => L.push({ m, f, g, i }));
   return L.sort((a, b) => a.m.data < b.m.data ? 1 : a.m.data > b.m.data ? -1 : b.i - a.i).slice(0, n);
 }
-// Como num extrato: um gasto é dinheiro que sai (−) e um reembolso entra (+, a verde); nas dívidas, + é o que te devem.
+/**
+ * Valor de um movimento numa lista, como num extrato: um gasto é dinheiro que sai (−, sem cor) e um reembolso
+ * entra (+, a verde); nas dívidas, o sinal guardado (+ é o que te devem). O verde e o vermelho ficam para os saldos.
+ */
+const valorMov = (m, gasto) => gasto ? { texto: euroSinal(-m.valor), cls: m.valor < 0 ? 'pos' : '' } : { texto: euroSinal(m.valor), cls: '' };
 const linhaRecente = ({ m, f, g }) => {
-  const gasto = g.tipo === 'gastos', v = gasto ? -m.valor : m.valor;
-  return linha(m.desc || f.nome, euroSinal(v), {
-    a: 'abrir', tipo: g.tipo, id: f.id, avatar: avatar(f.nome), sub: `${f.nome} · ${dataPT(m.data)}`,
-    cls: gasto ? (v > 0 ? 'pos' : '') : v < 0 ? 'neg' : '',
-  });
+  const v = valorMov(m, g.tipo === 'gastos');
+  return linha(m.desc || f.nome, v.texto, { a: 'abrir', tipo: g.tipo, id: f.id, avatar: avatar(f.nome), sub: `${f.nome} · ${dataCurta(m.data)}`, cls: v.cls });
 };
+/** Um movimento dentro de uma pessoa ou item: descrição, data (e a conta, se foi descontado) e valor. */
+function linhaMov(m, gasto) {
+  const v = valorMov(m, gasto), c = m.descontado && db.contas.find(c => c.id === m.conta);
+  return `<button class="linha mov" data-a="mov" data-id="${m.id}"><div class="txt"><div class="tit${m.desc ? '' : ' sec'}">${esc(m.desc || 'Sem descrição')}</div>` +
+    `<div class="sub">${esc(dataCurta(m.data) + (c ? ` · descontado em ${c.nome}` : ''))}</div></div><div class="val ${v.cls}">${v.texto}</div></button>`;
+}
 
 function vResumo() {
   const tc = totalContas(), td = totalDividas();
   const vazio = !db.contas.length && db.grupos.every(g => !g.fichas.length);
   const s = serieTotal(), ev = evolucao(s.pts, s.inicio, { rotulo: 'Evolução do total' });
   const olho = `<button class="icbtn" data-a="ocultar" aria-label="${ui.oculto ? 'Mostrar valores' : 'Ocultar valores'}">${ui.oculto ? ic.olhoFechado : ic.olho}</button>`;
-  let h = `<header class="heroi">${barra({ titulo: 'Dinheiro', acoes: olho })}
+  const mais = `<button class="icbtn" data-a="mais" aria-label="Mais">${ic.mais3}</button>`;
+  let h = `<header class="heroi">${barra({ titulo: 'Dinheiro', acoes: olho + mais })}
     <div class="heroi-centro"><div class="heroi-rot">Total · contas e dívidas</div>
       <div class="valor-g">${euroG(tc + td)}</div>
       ${ev ? `<span class="pilula">${esc(ev.texto)} ${esc(ev.quando)}</span>` : ''}</div>
-    <div class="botoes-acao">${botaoAcao('ficheiro-atalho', ic.ficheiro, 'Atalho')}${botaoAcao('rapido', ic.atualizar, 'Atualizar', 'contas')}${botaoAcao('rapido', ic.trocar, 'Dívida', 'dividas')}${botaoAcao('rapido', ic.gastos, 'Gasto', 'gastos')}${botaoAcao('menu-copias', ic.mais3, 'Mais')}</div>
+    <div class="botoes-acao">${botaoAcao('ficheiro-atalho', ic.ficheiro, 'Importar')}${botaoAcao('rapido', ic.atualizar, 'Atualizar', 'contas')}${botaoAcao('rapido', ic.dividas, 'Dívida', 'dividas')}${botaoAcao('rapido', ic.gastos, 'Gasto', 'gastos')}</div>
   </header>`;
-  if (vazio) {
-    h += `<section class="cartao">${cabCartao('Começar')}
-      <p class="texto">Primeira vez? Cola o texto que copiei no teu Mac, ou escolhe o ficheiro <b>dinheiro-dados-iniciais.json</b>.</p>
-      <button class="linha acao" data-a="colar">${avatarIcone(ic.mais)}Colar os meus dados</button>
-      <button class="linha acao" data-a="repor">${avatarIcone(ic.ficheiro)}Importar de um ficheiro</button></section>`;
-  } else {
-    if (lerPref('atalho', '') && lerPref('atalho', '') !== 'oculto') h += cartaoAtalho();
-    h += ev ? cartaoEvolucao(ev) : cartaoTexto('Evolução', 'O gráfico aparece à medida que atualizas o valor das contas.');
+  if (vazio) return h + `<section class="cartao">${cabCartao('Começar')}
+    <button class="linha acao" data-a="colar">${avatarIcone(ic.colar)}Colar os meus dados</button>
+    <button class="linha acao" data-a="repor">${avatarIcone(ic.repor)}Repor de um ficheiro</button></section>`;
+
+  // lembrete da cópia de segurança, só quando faz falta
+  const copia = lerPref('copia', null), dias = copia ? diaDe(hoje()) - diaDe(copia) : null;
+  if (dias === null || dias > 30) h += `<div class="aviso"><span>${dias === null ? 'Ainda não há cópia de segurança' : `Última cópia há ${dias} dias`}</span><button class="lig" data-a="backup">Guardar</button></div>`;
+
+  // quem te deve e a quem deves: as pessoas com saldo, das maiores para as menores
+  const pessoas = gruposDe('dividas').flatMap(g => g.fichas);
+  if (pessoas.length) {
+    const comSaldo = pessoas.filter(f => totalFicha(f)).sort((a, b) => Math.abs(totalFicha(b)) - Math.abs(totalFicha(a)));
+    const devem = comSaldo.reduce((t, f) => t + Math.max(0, totalFicha(f)), 0), deves = -comSaldo.reduce((t, f) => t + Math.min(0, totalFicha(f)), 0);
+    h += `<section class="cartao">${cabCartao('Dívidas', verTudo('dividas', comSaldo.length > 4 ? `Ver todas (${comSaldo.length})` : 'Ver todas'))}` + (comSaldo.length
+      ? `<div class="duo"><div><div class="rot">Devem-te</div><div class="valor-m pos">${euroG(devem)}</div></div>` +
+        (deves ? `<div><div class="rot">Deves</div><div class="valor-m neg">${euroG(deves)}</div></div>` : '') + '</div>' +
+        comSaldo.slice(0, 4).map(f => linhaFicha(f, true)).join('')
+      : '<p class="texto">Contas saldadas com todos.</p>') + '</section>';
   }
-  if (db.contas.length) h += `<section class="cartao">${cabCartao('Contas', verTudo('contas', 'Ver todas'))}${blocoContas()}</section>`;
-  const gd = gruposDe('dividas').filter(g => g.fichas.length);
-  if (gd.length) h += `<section class="cartao">${cabCartao('Dívidas', verTudo('dividas', 'Ver tudo'))}` + gd.map(g => {
-    const t = totalGrupo(g), n = g.fichas.length;
-    return linha(g.nome, euro(t), { a: 'tab', id: 'dividas', cls: cor(t), avatar: avatarIcone(ic.dividas), sub: `${n} ${n === 1 ? 'pessoa' : 'pessoas'}` });
-  }).join('') + '</section>';
+
+  // o saldo de cada conta, em quadrados
+  if (db.contas.length) h += `<section class="cartao">${cabCartao('Contas', `<span class="dir">${euro(tc)}</span>`)}<div class="mosaico">${db.contas.map(c =>
+    `<button class="tile${c.noTotal ? '' : ' fora'}" data-a="abrir" data-tipo="contas" data-id="${c.id}"><span class="tile-nome">${esc(c.nome)}</span><span class="val">${euro(c.valor)}</span></button>`).join('')}</div></section>`;
+
+  // o que se gastou este mês, nos itens com mais gastos
+  const doMes = gruposDe('gastos').flatMap(g => g.fichas).map(f => [f, gastoMes(f)]).filter(([, v]) => v).sort((a, b) => b[1] - a[1]);
+  if (doMes.length) h += `<section class="cartao">${cabCartao(`Gastos em ${MESES_LONGOS[+mesAtual().slice(5) - 1]}`, `<span class="dir">${euro(doMes.reduce((t, [, v]) => t + v, 0))}</span>`)}` +
+    doMes.slice(0, 3).map(([f, v]) => linha(f.nome, euro(v), { a: 'abrir', tipo: 'gastos', id: f.id, avatar: avatar(f.nome), sub: subUltimo(f) })).join('') + '</section>';
+
   const rec = recentes(5);
-  if (rec.length) h += `<section class="cartao">${cabCartao('Movimentos recentes')}${rec.map(linhaRecente).join('')}</section>`;
-  const gf = gruposDe('gastos').flatMap(g => g.fichas);
-  if (gf.length) h += `<section class="cartao">${cabCartao('Gastos', verTudo('gastos', 'Ver tudo'))}` + gf.map(f => {
-    const n = f.movimentos.length;
-    return linha(f.nome, euro(totalFicha(f)), { a: 'abrir', tipo: 'gastos', id: f.id, avatar: avatar(f.nome), sub: `${n} ${n === 1 ? 'movimento' : 'movimentos'}` });
-  }).join('') + '</section>';
-  if (!vazio && !lerPref('atalho', '')) h += cartaoAtalho();
-  h += `<section class="cartao">${cabCartao('Cópia de segurança')}
-    <p class="texto">Os dados ficam só neste iPhone. ${vazio ? '' : textoCopia()} Guarda uma cópia de vez em quando (por exemplo em Ficheiros → iCloud Drive).</p>
-    <div class="botoes-linha"><button class="btn-pri" data-a="backup">Guardar cópia</button><button class="btn-sec" data-a="menu-copias">Mais opções</button></div></section>`;
+  if (rec.length) h += `<section class="cartao">${cabCartao('Últimos movimentos')}${rec.map(linhaRecente).join('')}</section>`;
   return h;
 }
 
 function vContas() {
-  const acoes = btnOrdenar() + `<button class="icbtn" data-a="nova-conta" aria-label="Nova conta">${ic.mais}</button>`;
   const n = db.contas.length;
-  return cab('Contas', { acoes }) +
-    `<div class="cab-valor"><div class="rot">Total nas contas</div><div class="valor-g">${euroG(totalContas())}</div></div>
-    <section class="cartao">${ui.ordenar ? db.contas.map((c, i) => linhaOrdenar(c.nome, 'mover-conta', c.id, i, n)).join('') : blocoContas()}
-      ${n ? '' : '<p class="texto" style="padding-top:12px">Ainda não tens contas.</p>'}${btnAdicionar('nova-conta', 'Nova conta')}</section>`;
+  let h = cabTab('Contas', 'menu-contas');
+  if (!n) return h + vazio('Ainda não há contas', 'nova-conta', 'Nova conta');
+  h += `<div class="cab-valor"><div class="rot">Total nas contas</div><div class="valor-g">${euroG(totalContas())}</div></div>
+    <section class="cartao">${ui.ordenar ? db.contas.map((c, i) => linhaOrdenar(c.nome, 'mover-conta', c.id, i, n)).join('') : blocoContas()}</section>`;
+  const s = serieTotal(false), ev = !ui.ordenar && evolucao(s.pts, s.inicio, { rotulo: 'Evolução do total nas contas' });
+  if (ev) h += cartaoEvolucao(ev);
+  return h;
 }
 
 function vConta() {
   const c = db.contas.find(c => c.id === ui.ficha.contas);
   const ev = evolucao(acumular(eventosConta(c)), diaDe(c.hist[0].data), { rotulo: 'Evolução de ' + c.nome });
-  const rot = [c.nome, c.noTotal ? '' : 'fora do total'].filter(Boolean).join(' · ');
-  let h = `<header class="heroi">${barra({ voltar: 'Contas' })}
-    <div class="heroi-centro"><div class="heroi-rot">${esc(rot)}</div><div class="valor-g">${euroG(c.valor)}</div>
-      ${ev ? `<span class="pilula">${esc(ev.texto)} ${esc(ev.quando)}</span>` : c.nota ? `<span class="pilula">${esc(c.nota)}</span>` : ''}</div>
-    <div class="botoes-acao">${botaoAcao('novo-hist', ic.atualizar, 'Atualizar')}${botaoAcao('editar-conta', ic.editar, 'Editar')}${botaoAcao('menu-conta', ic.mais3, 'Mais')}</div>
-  </header>`;
-  h += ev ? cartaoEvolucao(ev) : cartaoTexto('Evolução', 'Atualiza o valor de vez em quando para veres aqui a evolução.');
+  const noTotal = db.contas.filter(x => x.noTotal), j = noTotal.indexOf(c);
+  const leg = [c.nota, c.noTotal ? '' : 'fora do total'].filter(Boolean).join(' · ');
+  let h = barra({ voltar: 'Contas' }) + `<div class="perfil">${avatar(c.nome, j < 0 ? -1 : distribuicao(noTotal).slot(j), 'grande')}<h1>${esc(c.nome)}</h1>
+    <div class="valor-g">${euroG(c.valor)}</div>${ev ? `<span class="pilula ${ev.cls}">${esc(ev.texto)} ${esc(ev.quando)}</span>` : ''}${leg ? `<div class="leg">${esc(leg)}</div>` : ''}
+    <div class="botoes-acao">${botaoAcao('novo-hist', ic.atualizar, 'Atualizar')}${botaoAcao('editar-conta', ic.editar, 'Editar')}</div></div>`;
   h += `<section class="cartao">${cabCartao('Histórico')}` + c.hist.map((x, i) => {
     const dif = i ? x.valor - c.hist[i - 1].valor : null;
-    return linha(dataPT(x.data), euro(x.valor), {
+    return linha(dataCurta(x.data), euro(x.valor), {
       a: 'hist', id: i, avatar: avatarIcone(dif === null ? ic.contas : dif > 0 ? ic.sobe : dif < 0 ? ic.desce : ic.igual),
-      sub: dif === null ? 'valor inicial' : dif ? euroSinal(dif) : 'sem alteração',
+      sub: dif === null ? 'valor inicial' : !dif ? 'sem alteração' : euroSinal(dif) + (x.auto ? ' · gastos do atalho' : ''),
     });
-  }).reverse().join('') + `${btnAdicionar('novo-hist', 'Atualizar valor')}</section>
-    <p class="rodape">Cada vez que atualizas o valor, fica um registo com a data. É daqui que vem o gráfico.</p>`;
+  }).reverse().join('') + '</section>';
+  if (ev) h += cartaoEvolucao(ev);
   return h;
 }
 
 function linhaFicha(f, div) {
   const t = totalFicha(f), tem = f.movimentos.length > 0;
   return linha(f.nome, tem ? euro(t) : '—', {
-    a: 'abrir', tipo: div ? 'dividas' : 'gastos', id: f.id, avatar: avatar(f.nome),
-    sub: [expressao(f), f.nota].filter(Boolean).join(' · '),
-    cls: tem ? (div ? cor(t) : '') : 'ter',
+    a: 'abrir', tipo: div ? 'dividas' : 'gastos', id: f.id, avatar: avatar(f.nome), sub: f.nota || subUltimo(f),
+    cls: tem ? (div ? cor(t) : '') : 'ter', tituloCls: div && !t ? 'sec' : '',
   });
 }
 
 function vGrupos(tipo) {
-  const div = tipo === 'dividas', gs = gruposDe(tipo);
-  const total = gs.reduce((s, g) => s + totalGrupo(g), 0);
-  const acoes = btnOrdenar() + `<button class="icbtn" data-a="novo-grupo" aria-label="Novo grupo">${ic.pasta}</button>`;
-  let h = cab(div ? 'Dívidas' : 'Gastos', { acoes }) +
-    `<div class="cab-valor"><div class="rot">${div ? 'A receber' : 'Total gasto'}</div><div class="valor-g ${div ? cor(total) : ''}">${euroG(total)}</div></div>`;
+  const div = tipo === 'dividas', gs = gruposDe(tipo), fichas = gs.flatMap(g => g.fichas);
+  let h = cabTab(div ? 'Dívidas' : 'Gastos', 'menu-tab');
+  if (!gs.length) return h + vazio('Ainda não há grupos', 'novo-grupo', 'Novo grupo');
   if (div) {
-    const pts = acumular(eventosDividas());
-    const ev = evolucao(pts, pts.length ? pts[0][0] : null, { cor: true, rotulo: 'Evolução do que tens a receber' });
-    if (ev) h += cartaoEvolucao(ev);
+    const total = gs.reduce((t, g) => t + totalGrupo(g), 0), ts = fichas.map(totalFicha);
+    const devem = ts.filter(t => t > 0).reduce((a, b) => a + b, 0), deves = -ts.filter(t => t < 0).reduce((a, b) => a + b, 0);
+    h += `<div class="cab-valor"><div class="rot">A receber</div><div class="valor-g ${cor(total)}">${euroG(total)}</div>
+      ${devem || deves ? `<div class="leg">Devem-te ${euro(devem)}${deves ? ` · Deves ${euro(deves)}` : ''}</div>` : ''}</div>`;
   } else {
-    const gm = grafGastosMes();
-    if (gm) h += cartaoGraf({ titulo: 'Por mês', valor: euroG(gm.atual.valor), leg: esc(`${gm.atual.nome} · média de ${euro(gm.media)} por mês`), graf: gm.graf });
+    const mes = fichas.reduce((t, f) => t + gastoMes(f), 0), total = fichas.reduce((t, f) => t + totalFicha(f), 0), gm = grafGastosMes();
+    h += `<div class="cab-valor"><div class="rot">Gastos em ${MESES_LONGOS[+mesAtual().slice(5) - 1]}</div><div class="valor-g">${euroG(mes)}</div>
+      <div class="leg">${gm ? `média de ${euro(gm.media)} por mês · ` : ''}${euro(total)} no total</div></div>`;
   }
   for (const g of gs) {
-    const n = g.fichas.length;
-    h += `<section class="cartao">${cabCartao(g.nome, `<span class="dir">${euro(totalGrupo(g))}
+    const n = g.fichas.length, t = totalGrupo(g);
+    h += `<section class="cartao">${cabCartao(g.nome, `<span class="dir"><span class="${div ? cor(t) : ''}">${euro(t)}</span>
       <button class="icbtn peq" data-a="menu-grupo" data-id="${g.id}" aria-label="Opções de ${esc(g.nome)}">${ic.mais3}</button></span>`)}` +
       g.fichas.map((f, i) => ui.ordenar ? linhaOrdenar(f.nome, 'mover-ficha', f.id, i, n) : linhaFicha(f, div)).join('') +
-      btnAdicionar('nova-ficha', div ? 'Adicionar pessoa' : 'Adicionar item', g.id) + '</section>';
+      (n || ui.ordenar ? '' : btnAdicionar('nova-ficha', div ? 'Adicionar pessoa' : 'Adicionar item', g.id)) + '</section>';
   }
-  if (!gs.length) h += `<p class="rodape" style="margin-top:0">Ainda não há grupos. Cria um com o botão em cima.</p>`;
+  if (!ui.ordenar) {
+    if (div) {
+      const pts = acumular(eventosDividas());
+      const ev = evolucao(pts, pts.length ? pts[0][0] : null, { cor: true, semPct: true, rotulo: 'Evolução do que tens a receber' });
+      if (ev) h += cartaoEvolucao(ev);
+    } else {
+      const gm = grafGastosMes();
+      if (gm) h += cartaoGraf({ titulo: 'Por mês', valor: euroG(gm.atual.valor), leg: esc(`${gm.atual.nome} · média de ${euro(gm.media)} por mês`), graf: gm.graf });
+    }
+  }
   return h;
 }
 
@@ -871,16 +959,33 @@ function vFicha(tipo) {
   let h = barra({ voltar: div ? 'Dívidas' : 'Gastos' }) + `<div class="perfil">${avatar(f.nome, slotNome(f.nome), 'grande')}<h1>${esc(f.nome)}</h1>
     <div class="valor-g ${div ? cor(t) : ''}">${euroG(t)}</div><div class="leg">${esc(legenda)}</div>
     <div class="botoes-acao">${botaoAcao('novo-mov', ic.mais, 'Adicionar')}${saldar}${botaoAcao('menu-ficha', ic.mais3, 'Mais')}</div></div>`;
-  const graf = grafFicha(f, div);
-  if (graf) h += cartaoGraf({
-    titulo: div ? 'Saldo' : 'Gasto acumulado', valor: euroG(t), cls: div ? cor(t) : '',
-    leg: esc('desde ' + dataPT(movOrdenados(f)[0].data)), graf,
-  });
-  h += `<section class="cartao">${cabCartao('Movimentos')}` +
-    movOrdenados(f).map(m => linha(m.desc || '—', euroSinal(m.valor), {
-      a: 'mov', id: m.id, avatar: avatar(m.desc || f.nome), sub: dataPT(m.data), cls: m.valor < 0 ? 'neg' : '', tituloCls: m.desc ? '' : 'sec',
-    })).join('') + `${btnAdicionar('novo-mov', 'Adicionar')}</section>`;
-  h += `<section class="cartao">${cabCartao('Nota')}<textarea class="nota" data-campo="nota" rows="2" placeholder="${div ? 'Ex.: deve-me um brasão' : 'Notas'}">${esc(f.nota)}</textarea></section>`;
+  h += `<section class="cartao nota-cartao"><textarea class="nota" data-campo="nota" rows="${f.nota ? 3 : 1}" placeholder="Adicionar nota">${esc(f.nota)}</textarea></section>`;
+  // os movimentos mais recentes em cima; nos gastos, separados por mês
+  const movs = [...movOrdenados(f)].reverse();
+  h += `<section class="cartao">${cabCartao('Movimentos')}`;
+  if (!movs.length) h += btnAdicionar('novo-mov', 'Adicionar movimento');
+  else if (div) h += movs.map(m => linhaMov(m, false)).join('');
+  else {
+    let mes = '';
+    for (const m of movs) {
+      const k = m.data.slice(0, 7);
+      if (k !== mes) {
+        mes = k;
+        h += `<div class="mes-cab"><span>${MESES_LONGOS[+k.slice(5) - 1]} ${k.slice(0, 4)}</span><span>${euro(gastoMes(f, k))}</span></div>`;
+      }
+      h += linhaMov(m, true);
+    }
+  }
+  // nas dívidas, a conta como na nota não se perde
+  if (div && movs.length > 1) h += `<p class="conta-nota">${esc(expressao(f))} = ${esc(numSinal(t))}</p>`;
+  h += '</section>';
+  if (div) {
+    const graf = grafFicha(f, true);
+    if (graf) h += cartaoGraf({ titulo: 'Evolução', valor: euroG(t), cls: cor(t), leg: esc('desde ' + dataPT(movOrdenados(f)[0].data)), graf });
+  } else {
+    const gm = grafGastosMes([f], false);
+    if (gm) h += cartaoGraf({ titulo: 'Por mês', valor: euroG(gm.atual.valor), leg: esc(`${gm.atual.nome} · média de ${euro(gm.media)} por mês`), graf: gm.graf });
+  }
   return h;
 }
 
@@ -930,15 +1035,15 @@ function fechar() {
 // Folha que sobe de baixo: título grande, os campos, o botão principal e, no fim, o botão de apagar (extra).
 function vFolha(c) {
   return `<div class="folha" role="dialog" aria-label="${esc(c.titulo)}">
-    <div class="folha-barra"><button class="icbtn" data-a="fechar" aria-label="Cancelar">${ic.fechar}</button></div>
-    <div class="folha-corpo"><h2 class="folha-tit">${esc(c.titulo)}</h2>${c.corpo}
-      <button class="btn-pri largo" data-a="guardar-folha">${c.ok || 'Guardar'}</button>${c.extra || ''}</div></div>`;
+    <div class="folha-barra"><h2 class="folha-tit">${esc(c.titulo)}</h2><button class="icbtn" data-a="fechar" aria-label="Fechar">${ic.fechar}</button></div>
+    <div class="folha-corpo">${c.corpo}
+      ${c.ok === false ? '' : `<button class="btn-pri largo" data-a="guardar-folha">${c.ok || 'Guardar'}</button>`}${c.extra || ''}</div></div>`;
 }
 const btnApagar = (a, id, texto) => `<section class="cartao"><button class="linha acao perigo" data-a="${a}" data-id="${id}">${avatarIcone(ic.lixo)}${texto}</button></section>`;
 function vAcoes(c) {
-  return `<div class="folha-acoes" role="dialog"><div class="grupo-acoes">
+  return `<div class="folha-acoes" role="dialog"><div class="grupo-acoes${c.grelha ? ' grelha' : ''}">
     ${c.titulo ? `<div class="titulo-acoes">${esc(c.titulo)}</div>` : ''}
-    ${c.botoes.map((b, i) => `<button data-a="acao" data-id="${i}" class="${b.perigo ? 'perigo' : ''}">${esc(b.texto)}</button>`).join('')}
+    ${c.botoes.map((b, i) => `<button data-a="acao" data-id="${i}" class="${b.perigo ? 'perigo' : ''}">${c.grelha ? avatar(b.texto) + `<span>${esc(b.texto)}</span>` : esc(b.texto)}</button>`).join('')}
     </div><button class="cancelar-acoes" data-a="fechar">Cancelar</button></div>`;
 }
 const acoes = (titulo, botoes) => abrir({ tipo: 'acoes', titulo, botoes });
@@ -964,6 +1069,16 @@ function pedirNome(titulo, valor, ok) {
 }
 
 // O valor de uma conta que já existe muda-se em "Atualizar valor" (folhaHist), para ficar no histórico.
+/** Nova pessoa (ou item) no grupo g. */
+const novaFicha = g => pedirNome(g.tipo === 'dividas' ? `Nova pessoa em ${g.nome}` : `Novo item em ${g.nome}`, '',
+  n => g.fichas.push({ id: uid(), nome: n, nota: '', movimentos: [] }));
+/** Nova pessoa ou item a partir do ••• do separador: escolhe o grupo, se houver mais do que um. */
+function escolherGrupoNova() {
+  const div = ui.tab === 'dividas', gs = gruposDe(ui.tab);
+  if (!gs.length) pedirNome('Novo grupo', '', n => { const g = { id: uid(), nome: n, tipo: ui.tab, fichas: [] }; db.grupos.push(g); setTimeout(() => novaFicha(g), 300); });
+  else if (gs.length === 1) novaFicha(gs[0]);
+  else acoes(div ? 'Nova pessoa em' : 'Novo item em', gs.map(g => ({ texto: g.nome, fn: () => novaFicha(g) })));
+}
 function folhaConta(id) {
   const c = db.contas.find(c => c.id === id);
   abrir({
@@ -996,7 +1111,7 @@ function folhaHist(i) {
         <div class="linha campo-val"><input id="f-valor" class="valor-grande" inputmode="decimal" placeholder="0" value="${numSinal(h ? h.valor : c.valor)}" autocomplete="off" autofocus><span>€</span></div>
         <label class="linha"><span class="txt">Data</span><input type="date" id="f-data" value="${h?.data || hoje()}"></label>
       </div>
-      ${h ? '' : '<p class="rodape">O valor que a conta tem nesta data. Podes escrever contas, como “1200 + 50”.</p>'}`,
+`,
     extra: h && c.hist.length > 1 ? btnApagar('apagar-hist', i, 'Apagar registo') : '',
     guardar: () => {
       const v = lerValor($('#f-valor').value), data = $('#f-data').value || hoje();
@@ -1022,12 +1137,12 @@ function folhaMov(movId) {
   abrir({
     tipo: 'folha', titulo: m ? 'Editar movimento' : f.nome, sinal: neg, nome: f.nome, div,
     corpo: `<div class="seg" id="f-sinal">
-        <button data-a="sinal" data-id="0" class="${neg ? '' : 'on'}">${div ? 'Deve-me  +' : 'Gasto  +'}</button>
-        <button data-a="sinal" data-id="1" class="${neg ? 'on' : ''}">${div ? 'Desconto  −' : 'Reembolso  −'}</button>
+        <button data-a="sinal" data-id="0" class="${neg ? '' : 'on'}">${div ? 'Deve-me  +' : 'Gasto'}</button>
+        <button data-a="sinal" data-id="1" class="${neg ? 'on' : ''}">${div ? 'Devo eu  −' : 'Reembolso'}</button>
       </div>
       <div class="cartao">
         <div class="linha campo-val"><input id="f-valor" class="valor-grande" inputmode="decimal" placeholder="0,00" value="${m ? numero(m.valor) : ''}" autocomplete="off" autofocus><span>€</span></div>
-        <div class="linha"><input id="f-desc" placeholder="${div ? 'Descrição (ex.: jogo de padel)' : 'Descrição'}" value="${esc(m?.desc)}" autocomplete="off"></div>
+        <div class="linha"><input id="f-desc" placeholder="Descrição" value="${esc(m?.desc)}" autocomplete="off"></div>
         <label class="linha"><span class="txt">Data</span><input type="date" id="f-data" value="${m?.data || hoje()}"></label>
       </div>
       ${div ? '<p class="rodape" id="f-ajuda"></p>' : ''}`,
@@ -1047,7 +1162,7 @@ function folhaMov(movId) {
 function ajudaSinal() {
   const el = $('#f-ajuda');
   if (el) el.textContent = camada.sinal
-    ? `Desconta ao que ${camada.nome} te deve (pagou-te, ou pagou algo por ti).`
+    ? `Tira ao que ${camada.nome} te deve: pagou-te, ou és tu que lhe deves.`
     : `Soma ao que ${camada.nome} te deve.`;
 }
 
@@ -1397,24 +1512,29 @@ function nomesAtalho(tipo) {
 const URL_ATALHO = 'https://raw.githubusercontent.com/lopalha-creator/dinheiro/main/atalho/Dinheiro.shortcut';
 const COMANDO_MAC = `cd ~/Downloads && curl -fsSL -o Dinheiro.shortcut ${URL_ATALHO} && shortcuts sign -m anyone -i Dinheiro.shortcut -o Dinheiro-assinado.shortcut && open Dinheiro-assinado.shortcut`;
 
-function folhaAtalho() {
-  const lista = tipo => { const n = nomesAtalho(tipo); return n.length ? esc(n.join(' · ')) : tipo === 'contas' ? 'Ainda não há contas.' : 'Ainda não há pessoas.'; };
+/** Folha Mais: o atalho e as cópias de segurança, que se usam pouco. */
+function folhaMais() {
+  const ult = lerPref('atalho', ''), n = /^\d{4}-/.test(ult) ? diaDe(hoje()) - diaDe(ult) : null;
+  const quando = n === null ? 'ainda nenhuma' : n <= 0 ? 'hoje' : n === 1 ? 'ontem' : `há ${n} dias`;
+  const np = nomesAtalho('dividas').length;
+  const opcao = (a, icone, texto, det = '', id = '') => `<button class="linha opcao" data-a="${a}"${id ? ` data-id="${id}"` : ''}>${avatarIcone(icone)}` +
+    `<span class="txt">${esc(texto)}${det ? `<span class="det">${esc(det)}</span>` : ''}</span></button>`;
   abrir({
-    tipo: 'folha', titulo: 'Atalho do iPhone', ok: 'Abrir o ficheiro do atalho',
-    corpo: `<p class="texto" style="padding:0 2px 14px">Aponta dívidas e gastos sem abrir a app, até com o iPhone bloqueado: tocas num botão, escolhes <b>Dívida</b> ou <b>Gasto</b>, quem (ou de que conta), a quantia, se te devem ou se deves, e a descrição. O atalho guarda cada movimento com a data e a hora e copia-os. Quando abrires a app, ela pergunta se queres juntar os movimentos: toca em <b>Escolher atalho.txt</b> (iCloud Drive → Atalhos → Dinheiro) e entram os que faltam, cada um com a sua data, mesmo que tenhas copiado outras coisas. Da segunda vez em diante, os Ficheiros já abrem nessa pasta.</p>
-      <section class="cartao">${cabCartao('1. Instalar o atalho (no Mac, uma vez)')}
-        <p class="texto">A Apple só deixa instalar atalhos assinados, e isso faz-se num Mac. Abre o <b>Terminal</b> (Cmd+Espaço, escreve «Terminal»), cola este comando e carrega em Enter. A app Atalhos abre: toca em <b>Adicionar atalho</b> e ele passa para o iPhone pelo iCloud.</p>
-        <p class="texto"><code>${esc(COMANDO_MAC)}</code></p>
-        <div class="botoes-linha"><button class="btn-pri" data-a="copiar-comando">Copiar comando</button></div></section>
-      <section class="cartao">${cabCartao('2. Pôr no ecrã bloqueado')}<ol class="passos">
-        <li>Com o iPhone desbloqueado, mas ainda no ecrã bloqueado, mantém o dedo e toca em <b>Personalizar</b> → <b>Ecrã bloqueado</b>.</li>
-        <li>Tira o botão da lanterna ou da câmara com <b>−</b>, toca em <b>+</b>, escolhe <b>Atalho</b>, toca em <b>Escolher</b>, seleciona <b>Dinheiro</b> e toca em <b>OK</b>.</li>
-      </ol><p class="texto">As perguntas aparecem num cartão no topo do ecrã; não toques fora do cartão, que isso cancela. Para guardar o movimento, o iPhone pode pedir o Face ID.</p></section>
-      <section class="cartao">${cabCartao('Pessoas', '<button class="lig" data-a="copiar-nomes" data-id="dividas">Copiar</button>')}<p class="texto">${lista('dividas')}</p>
-        <p class="texto">O atalho tem a sua própria lista de pessoas e de contas (Revolut, Carteira, Conta corrente). Quando juntares alguém aqui, abre o atalho na app Atalhos e cola a lista nova no primeiro Texto.</p></section>
-      <section class="cartao">${cabCartao('Também dá para colar')}
-        <p class="texto">O atalho também copia os movimentos. Se não tiveres copiado mais nada entretanto, podes usar <b>Mais → Colar do atalho</b> em vez de abrir o ficheiro.</p></section>`,
-    guardar: () => { fechar(); ficheiroAtalho(); return false; },
+    tipo: 'folha', titulo: 'Mais', ok: false, mais: true,
+    corpo: `<section class="cartao">${cabCartao('Atalho do iPhone')}<p class="texto">Última importação: ${quando}.</p>
+        ${opcao('colar-atalho', ic.colar, 'Colar o que o atalho copiou')}
+        <label class="linha opcao">${avatarIcone(ic.sino)}<span class="txt">Perguntar ao abrir</span>
+          <input type="checkbox" class="interruptor" data-a="perguntar-atalho" ${lerPref('perguntarAtalho', '1') === '1' ? 'checked' : ''}></label>
+        ${opcao('copiar-nomes', ic.dividas, 'Copiar lista de pessoas', `${np} ${np === 1 ? 'pessoa' : 'pessoas'} · para o 1.º Texto do atalho`, 'dividas')}
+        <details><summary class="linha opcao">${avatarIcone(ic.portatil)}<span class="txt">Reinstalar o atalho no Mac</span><span class="chev">${ic.voltar}</span></summary>
+          <p class="texto">Cola no Terminal do Mac e toca em Adicionar atalho.</p>
+          <div class="botoes-linha"><button class="btn-sec" data-a="copiar-comando">Copiar comando</button></div></details></section>
+      <section class="cartao">${cabCartao('Cópia de segurança')}<p class="texto">${textoCopia()}</p>
+        ${opcao('backup', ic.guardar, 'Guardar cópia de segurança')}
+        ${opcao('exportar', ic.partilhar, 'Exportar em texto')}
+        ${opcao('repor', ic.repor, 'Repor de um ficheiro')}
+        ${opcao('colar', ic.colar, 'Repor colando texto')}</section>
+      <p class="rodape centro">Os dados ficam só neste iPhone.</p>`,
   });
 }
 
@@ -1441,7 +1561,7 @@ function ficheiroEstranho(texto, nome, deNovo = ficheiroAtalho) {
       : (outro ? `Escolheste <b>${esc(nome)}</b>. O do atalho chama-se <b>atalho.txt</b> e está em iCloud Drive → Atalhos → Dinheiro. ` : '') + (linhas.length
       ? 'Cada linha do atalho começa pela data, assim: <code>2026-10-09T15:58:12;gasto;Revolut;2;café</code>. Este ficheiro começa assim:'
       : /\n/.test(texto)
-      ? 'O atalho escreveu linhas em branco: é a versão antiga, que não guardava o texto. Instala outra vez o atalho pelo Mac (Mais → Atalho do iPhone → Copiar comando) e regista de novo os movimentos que faltam.'
+      ? 'O atalho escreveu linhas em branco: é a versão antiga, que não guardava o texto. Instala outra vez o atalho pelo Mac (Mais → Reinstalar o atalho no Mac) e regista de novo os movimentos que faltam.'
       : 'Corre o atalho uma vez (Dívida ou Gasto) e volta a escolher <b>atalho.txt</b>.')}</p>
       ${linhas.length ? `<section class="cartao"><p class="texto"><code style="white-space:pre-wrap;display:block">${esc(amostra)}</code></p>
         <div class="botoes-linha"><button class="btn-sec" data-a="copiar-amostra">Copiar o que tem</button></div></section>` : ''}`,
@@ -1467,7 +1587,6 @@ function perguntarAtalho() {
   acoes('Juntar os movimentos do atalho?', [
     { texto: 'Escolher atalho.txt', fn: ficheiroAtalho },
     { texto: 'Colar o que o atalho copiou', fn: colarAtalho },
-    { texto: 'Não perguntar mais', fn: () => { gravarPref('perguntarAtalho', ''); toast('Para voltar a perguntar: Mais → Perguntar pelo atalho ao abrir'); } },
   ]);
   camada.pergunta = true; // a atualização automática pode recarregar por cima desta pergunta (volta a aparecer)
   $('.cancelar-acoes').textContent = 'Agora não';
@@ -1476,19 +1595,6 @@ document.addEventListener('visibilitychange', () => {
   if (document.visibilityState === 'hidden') escondidaDesde = Date.now();
   else if (escondidaDesde && Date.now() - escondidaDesde > 60000) perguntarAtalho();
 });
-
-/** No início: primeiro um convite para criar o atalho; depois de usado, o botão para importar. */
-function cartaoAtalho() {
-  const ult = lerPref('atalho', '');
-  if (ult === 'oculto') return '';
-  if (!ult) return `<section class="cartao">${cabCartao('Registar do ecrã bloqueado')}
-    <p class="texto">Com um atalho do iPhone, apontas dívidas e gastos sem abrir a app, até com o iPhone bloqueado.</p>
-    <div class="botoes-linha"><button class="btn-pri" data-a="atalho-ajuda">Ver como</button><button class="btn-sec" data-a="atalho-ocultar">Agora não</button></div></section>`;
-  const n = diaDe(hoje()) - diaDe(ult);
-  return `<section class="cartao">${cabCartao('Atalho do iPhone', '<button class="lig" data-a="atalho-ajuda">Ajuda</button>')}
-    <p class="texto">Última importação: ${n <= 0 ? 'hoje' : n === 1 ? 'ontem' : `há ${n} dias`}.</p>
-    <div class="botoes-linha"><button class="btn-pri" data-a="ficheiro-atalho">Abrir o ficheiro do atalho</button><button class="btn-sec" data-a="colar-atalho">Colar</button></div></section>`;
-}
 
 /** Aviso curto em baixo. Com "desfazer" (uma função), fica mais tempo e tem o botão Desfazer. */
 function toast(t, desfazer) {
@@ -1512,6 +1618,8 @@ document.addEventListener('click', e => {
   if (!b || b.disabled) return;
   const a = b.dataset.a, id = b.dataset.id;
   const naFicha = () => acharFicha(ui.ficha[ui.tab]);
+  // na folha Mais, as opções que abrem outra coisa (Ficheiros, partilhar, outra folha) fecham-na no mesmo toque
+  if (camada?.mais && ['backup', 'exportar', 'repor', 'colar', 'colar-atalho'].includes(a)) fechar();
 
   switch (a) {
     case 'tab':
@@ -1532,14 +1640,9 @@ document.addEventListener('click', e => {
 
     case 'nova-conta': folhaConta(null); return;
     case 'editar-conta': folhaConta(ui.ficha.contas); return;
-    case 'menu-conta': {
-      const c = db.contas.find(c => c.id === ui.ficha.contas);
-      acoes(c.nome, [
-        { texto: 'Editar conta', fn: () => folhaConta(c.id) },
-        { texto: 'Apagar conta', perigo: true, fn: () => confirmar(`Apagar a conta "${c.nome}" e o seu histórico?`, 'Apagar', () => { db.contas = db.contas.filter(x => x !== c); }) },
-      ]);
+    case 'menu-contas':
+      acoes('Contas', [{ texto: 'Nova conta', fn: () => folhaConta(null) }, ...(db.contas.length > 1 ? [{ texto: 'Ordenar', fn: () => { ui.ordenar = true; } }] : [])]);
       return;
-    }
     case 'novo-hist': folhaHist(null); return;
     case 'hist': folhaHist(+id); return;
     case 'apagar-hist': {
@@ -1557,15 +1660,20 @@ document.addEventListener('click', e => {
     case 'novo-grupo':
       pedirNome('Novo grupo', '', n => db.grupos.push({ id: uid(), nome: n, tipo: ui.tab, fichas: [] }));
       return;
-    case 'nova-ficha': {
-      const g = db.grupos.find(g => g.id === id);
-      pedirNome(ui.tab === 'dividas' ? `Nova pessoa em ${g.nome}` : `Novo item em ${g.nome}`, '',
-        n => g.fichas.push({ id: uid(), nome: n, nota: '', movimentos: [] }));
+    case 'nova-ficha': novaFicha(db.grupos.find(g => g.id === id)); return;
+    case 'menu-tab': {
+      const div = ui.tab === 'dividas';
+      acoes(div ? 'Dívidas' : 'Gastos', [
+        { texto: div ? 'Nova pessoa' : 'Novo item', fn: escolherGrupoNova },
+        { texto: 'Novo grupo', fn: () => pedirNome('Novo grupo', '', n => db.grupos.push({ id: uid(), nome: n, tipo: ui.tab, fichas: [] })) },
+        { texto: 'Ordenar', fn: () => { ui.ordenar = true; } },
+      ]);
       return;
     }
     case 'menu-grupo': {
       const g = db.grupos.find(g => g.id === id);
       acoes(g.nome, [
+        { texto: g.tipo === 'dividas' ? 'Adicionar pessoa' : 'Adicionar item', fn: () => novaFicha(g) },
         { texto: 'Mudar nome', fn: () => pedirNome('Mudar nome', g.nome, n => { g.nome = n; }) },
         { texto: 'Apagar grupo', perigo: true, fn: () => apagarComContas(`Apagar "${g.nome}" e tudo o que tem dentro?`, g.fichas.flatMap(f => f.movimentos), () => { db.grupos = db.grupos.filter(x => x !== g); }) },
       ]);
@@ -1574,6 +1682,11 @@ document.addEventListener('click', e => {
     case 'menu-ficha': {
       const [g, f] = naFicha();
       const botoes = [{ texto: 'Mudar nome', fn: () => pedirNome('Mudar nome', f.nome, n => { f.nome = n; }) }];
+      // por exemplo, passar quem chegou pelo atalho a "Do atalho" para Pais ou Amigos
+      const outros = gruposDe(g.tipo).filter(x => x !== g);
+      if (outros.length) botoes.push({ texto: 'Mudar de grupo', fn: () => acoes(`Passar ${f.nome} para`, outros.map(x => ({
+        texto: x.nome, fn: () => { g.fichas = g.fichas.filter(y => y !== f); x.fichas.push(f); },
+      }))) });
       if (f.movimentos.length) botoes.push({ texto: 'Apagar todos os movimentos', perigo: true,
         fn: () => apagarComContas(`Apagar todos os movimentos de ${f.nome}?`, f.movimentos, () => { f.movimentos = []; }) });
       botoes.push({ texto: g.tipo === 'dividas' ? 'Apagar pessoa' : 'Apagar item', perigo: true,
@@ -1636,32 +1749,22 @@ document.addEventListener('click', e => {
       const ir = (tipo, fid, folha) => () => { irPara(tipo); ui.ficha[tipo] = fid; render(); scrollTo(0, 0); folha(null); };
       if (id === 'contas') {
         if (!db.contas.length) { irPara('contas'); render(); folhaConta(null); return; }
-        acoes('Atualizar o valor de', db.contas.map(c => ({ texto: c.nome, fn: ir('contas', c.id, folhaHist) })));
+        abrir({ tipo: 'acoes', grelha: true, titulo: 'Atualizar o valor de', botoes: db.contas.map(c => ({ texto: c.nome, fn: ir('contas', c.id, folhaHist) })) });
         return;
       }
       const fichas = gruposDe(id).flatMap(g => g.fichas);
       if (!fichas.length) { irPara(id); render(); scrollTo(0, 0); toast(id === 'dividas' ? 'Adiciona primeiro uma pessoa' : 'Adiciona primeiro um item'); return; }
-      acoes(id === 'dividas' ? 'Movimento de' : 'Gasto em', fichas.map(f => ({ texto: f.nome, fn: ir(id, f.id, folhaMov) })));
+      abrir({ tipo: 'acoes', grelha: true, titulo: id === 'dividas' ? 'Movimento de' : 'Gasto em', botoes: fichas.map(f => ({ texto: f.nome, fn: ir(id, f.id, folhaMov) })) });
       return;
     }
-    case 'menu-copias':
-      acoes('Mais', [
-        { texto: 'Abrir o ficheiro do atalho', fn: ficheiroAtalho },
-        { texto: 'Colar do atalho', fn: colarAtalho },
-        { texto: 'Atalho do iPhone', fn: folhaAtalho },
-        lerPref('perguntarAtalho', '1') === '1'
-          ? { texto: 'Não perguntar pelo atalho ao abrir', fn: () => { gravarPref('perguntarAtalho', ''); toast('Já não pergunta ao abrir'); } }
-          : { texto: 'Perguntar pelo atalho ao abrir', fn: () => { gravarPref('perguntarAtalho', '1'); toast('Vai perguntar sempre que abrires a app'); } },
-        { texto: 'Guardar cópia de segurança', fn: backup },
-        { texto: 'Exportar em texto', fn: exportar },
-        { texto: 'Repor cópia de um ficheiro', fn: repor },
-        { texto: 'Repor cópia colando texto', fn: colar },
-      ]);
+    case 'mais': case 'menu-copias': folhaMais(); return;
+    case 'perguntar-atalho':
+      gravarPref('perguntarAtalho', b.checked ? '1' : '');
+      toast(b.checked ? 'Vai perguntar ao abrir' : 'Já não pergunta ao abrir');
       return;
     case 'exportar': exportar(); return;
     case 'backup': backup(); return;
     case 'repor': repor(); return;
-    case 'atalho-ajuda': folhaAtalho(); return;
     case 'colar-atalho': colarAtalho(); return;
     case 'ficheiro-atalho': ficheiroAtalho(); return;
     case 'copiar-amostra':
@@ -1677,7 +1780,6 @@ document.addEventListener('click', e => {
         .then(() => toast(id === 'contas' ? 'Contas copiadas' : 'Pessoas copiadas'), () => toast('Não foi possível copiar'));
       return;
     }
-    case 'atalho-ocultar': gravarPref('atalho', 'oculto'); render(); toast('Fica em Mais → Atalho do iPhone'); return;
     case 'colar': colar(); return;
     default: return;
   }
