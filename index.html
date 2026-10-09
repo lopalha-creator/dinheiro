@@ -128,7 +128,7 @@ button.linha:active, .grupo-acoes button:active, .cancelar-acoes:active { backgr
 .perfil .avatar { margin: 0 auto 12px; }
 .perfil h1 { font-size: 22px; margin: 0; }
 .perfil .valor-g { margin: 6px 0 2px; }
-.texto { font-size: 14px; color: var(--sec); padding: 0 16px 12px; }
+.texto { font-size: 14px; color: var(--sec); padding: 0 16px 12px; overflow-wrap: anywhere; }
 .texto b { color: var(--txt); }
 .botoes-linha { display: flex; flex-wrap: wrap; gap: 8px; padding: 2px 16px 12px; }
 .btn-pri, .btn-sec { text-align: center; font-size: 15px; font-weight: 800; padding: 13px 20px; border-radius: 999px; }
@@ -275,7 +275,8 @@ const cor = c => c > 0 ? 'pos' : c < 0 ? 'neg' : 'zero';
 
 /** Lê "15,32", "1.044,50", "1.200", "2 543,49 €" ou somas como "115,82 + 4,60 - 60". Devolve cêntimos ou null. */
 function lerValor(texto) {
-  const s = String(texto).replace(/−/g, '-').replace(/[^0-9,.+\-]/g, '');
+  // um ponto ou vírgula sem algarismo a seguir (fim de frase, "aprox.") não é separador
+  const s = String(texto).replace(/−/g, '-').replace(/[^0-9,.+\-]/g, '').replace(/[.,](?!\d)/g, '');
   if (!s) return null;
   const termos = [];
   let atual = '';
@@ -1123,7 +1124,7 @@ const norm = s => String(s).normalize('NFD').replace(/\p{M}/gu, '').toLowerCase(
  * (o mais comprido, em qualquer posição, e pode ter números, como "Interrail 2026"); depois, o valor.
  */
 function lerTextoAtalho(texto, nomes) {
-  const pal = texto.trim().replace(/(\d)\s(?=\d{3}(?:[.,]\d+)?(?:\s|€|$))/g, '$1').split(/\s+/).filter(p => p && !/^(€|eur)$/i.test(p));
+  const pal = texto.trim().split(/\s+/).filter(p => p && !/^(€|eur)$/i.test(p));
   const conhecidos = new Set(nomes.map(norm));
   let nome = '', resto = pal;
   for (let n = pal.length; n > 0 && !nome; n--) {
@@ -1134,6 +1135,8 @@ function lerTextoAtalho(texto, nomes) {
       break;
     }
   }
+  // milhares com espaço ("1 200,5") só depois de tirar o nome, que pode ter números ("Interrail 2026 120")
+  resto = resto.join(' ').replace(/(\d)\s(?=\d{3}(?:[.,]\d+)?(?:\s|$))/g, '$1').split(' ').filter(Boolean);
   const iv = resto.findIndex(p => /\d/.test(p) && lerValor(p));
   if (iv < 0) return null;
   const valor = Math.abs(lerValor(resto[iv]));
@@ -1158,18 +1161,27 @@ function dataAtalho(texto) {
   }
   return d && isoDe(diaDe(d)) === d ? d : null; // recusa datas impossíveis, como 31/02
 }
+function tipoAtalho(texto) {
+  const t = norm(texto);
+  return t.includes('gast') ? 'gasto' : /neg|^(menos|desc|-|−)|[-−]$/.test(t) ? 'menos' : /^(mais|divida|deve|\+)/.test(t) ? 'mais' : null;
+}
+/** Uma linha do ficheiro começa um registo novo se tiver data e tipo; as outras são o resto da descrição anterior. */
+function comecaRegisto(linha) {
+  const p = linha.split(';');
+  return p.length >= 3 && (dataAtalho(p[0].trim()) || (/\d/.test(p[0]) && tipoAtalho(p[1])));
+}
 function lerLinhaAtalho(linha) {
   const p = linha.split(';').map(x => x.trim());
   if (p.length < 3) return null;
   // só os tipos conhecidos: um engano (ex.: "meno") não pode passar a somar dinheiro
-  const t = norm(p[1]);
-  const tipo = t.includes('gast') ? 'gasto' : /neg|^(menos|desc|-|−)|[-−]$/.test(t) ? 'menos' : /^(mais|divida|deve|\+)/.test(t) ? 'mais' : null;
+  const tipo = tipoAtalho(p[1]);
   if (!tipo) return null;
   const grupo = tipo === 'gasto' ? 'gastos' : 'dividas';
   const nomes = gruposDe(grupo).flatMap(g => g.fichas.map(f => f.nome)).concat(tipo === 'gasto' ? db.contas.map(c => c.nome) : []);
   // data;tipo;nome;valor;descrição — se o 4.º campo parece um número (ou está vazio), é este formato
   const v = p.length >= 5 && /^[-+−\d\s.,€]*$/.test(p[3]) ? valorAtalho(p[3]) : undefined;
-  const r = v === undefined ? lerTextoAtalho(p.slice(2).join(';'), nomes) : v ? { valor: Math.abs(v), nome: p[2], desc: p.slice(4).join(';') } : null;
+  const r = v === undefined ? lerTextoAtalho(p.slice(2).join(';'), nomes)
+    : v ? { valor: Math.abs(v), nome: p[2], desc: linha.split(';').slice(4).join(';').trim() } : null;
   if (!r || !r.valor || !r.nome) return null;
   const data = dataAtalho(p[0]);
   return { ...r, tipo, grupo, data: data || hoje(), semData: !data };
@@ -1198,13 +1210,14 @@ function importarAtalho(texto) {
   const desfaz = pontoDeRetorno();
   if (!Array.isArray(db.atalho)) db.atalho = [];         // linhas já importadas (com o n.º da repetição, para linhas iguais)
   if (!Array.isArray(db.atalhoMaus)) db.atalhoMaus = []; // linhas que não percebi e de que já avisei
-  // Uma descrição escrita em várias linhas chega partida: os pedaços sem os ";" juntam-se à linha anterior.
+  // Uma descrição escrita em várias linhas chega partida: o que não começa um registo junta-se à linha anterior.
   const linhas = [];
   for (const bruta of String(texto).replace(/^﻿/, '').split(/\r\n?|\n/)) {
     const l = bruta.trim();
     if (!l) continue;
-    if (linhas.length && l.split(';').length < 3) linhas[linhas.length - 1] += ' ' + l; else linhas.push(l);
+    if (linhas.length && !comecaRegisto(l)) linhas[linhas.length - 1] += ' ' + l; else linhas.push(l);
   }
+  if (linhas.some(l => norm(l).startsWith('data formatada'))) { toast('No atalho, o último Texto tem os nomes escritos em vez das variáveis (passo 9)'); return; }
   const vistas = new Set([...db.atalho, ...db.atalhoMaus]), repeticoes = new Map(), semConta = new Set();
   let novos = 0, nomesNovos = 0, maus = 0, jaVistas = 0, semData = 0, primeiroMau = '';
   for (const linha of linhas) {
@@ -1214,7 +1227,7 @@ function importarAtalho(texto) {
     if (vistas.has(chave)) { jaVistas++; continue; }
     vistas.add(chave);
     const m = lerLinhaAtalho(linha);
-    if (!m) { maus++; primeiroMau ||= linha.replace(/^[^;]*;/, ''); db.atalhoMaus.push(chave); continue; }
+    if (!m) { maus++; primeiroMau ||= dataAtalho(linha) ? linha.replace(/^[^;]*;/, '') : linha; db.atalhoMaus.push(chave); continue; }
     if (m.semData) semData++;
     // "João (Amigos)": quando há duas pessoas com o mesmo nome, a lista do atalho junta o grupo
     const fichas = gruposDe(m.grupo).flatMap(g => g.fichas.map(f => [f, g]));
@@ -1236,7 +1249,7 @@ function importarAtalho(texto) {
   guardar(); render();
   const curta = t => t.length > 40 ? t.slice(0, 39) + '…' : t;
   const naoPercebi = maus ? `não percebi ${maus === 1 ? 'uma linha' : `${maus} linhas`}: «${curta(primeiroMau)}»` : '';
-  if (!novos) { toast(naoPercebi ? `Nada de novo · ${naoPercebi}` : 'Não há movimentos novos'); return; }
+  if (!novos) { toast(naoPercebi ? `Nada de novo · ${naoPercebi}` : 'Não há movimentos novos', maus ? desfaz : null); return; }
   toast([`${novos} ${novos === 1 ? 'movimento importado' : 'movimentos importados'}`,
     nomesNovos ? `${nomesNovos} ${nomesNovos === 1 ? 'pessoa nova' : 'pessoas novas'} em «Do atalho»` : '',
     semConta.size ? `sem conta «${[...semConta].join('», «')}» em Contas` : '',
@@ -1272,7 +1285,7 @@ function folhaAtalho() {
         <li>Depois de <b>Terminar menu</b>, adiciona <b>Pedir entrada</b> (tipo Número) com a pergunta «Valor» e, a seguir, <b>Definir variável</b> com o nome <b>Valor</b>.</li>
         <li>Adiciona <b>Pedir entrada</b> (tipo Texto) com a pergunta «Descrição» e <b>Definir variável</b> com o nome <b>Descrição</b>. Quando não quiseres descrição, basta tocar em OK.</li>
         <li>Adiciona <b>Data atual</b> e depois <b>Formatar data</b>: em Formato da data escolhe <b>ISO 8601</b> e liga a opção da hora.</li>
-        <li>Adiciona <b>Texto</b> com as quatro variáveis separadas por ponto e vírgula: <code>Data formatada;Resultado do menu;Valor;Descrição</code>. Se uma variável não aparecer por cima do teclado, toca em <b>Selecionar variável</b> e depois na ação que a dá (para o Resultado do menu, toca em Terminar menu).</li>
+        <li>Adiciona <b>Texto</b> com quatro variáveis, por esta ordem, e um <code>;</code> entre cada uma: <b>Data formatada</b> <code>;</code> <b>Resultado do menu</b> <code>;</code> <b>Valor</b> <code>;</code> <b>Descrição</b>. Os nomes não se escrevem: toca em cada variável por cima do teclado (ou em <b>Selecionar variável</b> e depois na ação que a dá; para o Resultado do menu, toca em Terminar menu). Só os <code>;</code> se escrevem.</li>
         <li>Adiciona a ação que acrescenta texto a um ficheiro (procura «ficheiro de texto»; em inglês, «Append to Text File»): o texto é o do passo anterior, a pasta fica <b>Atalhos</b>, o caminho é <code>Dinheiro/atalho.txt</code> e <b>Criar nova linha</b> fica ligado.</li>
         <li>Se quiseres uma confirmação, junta <b>Mostrar notificação</b> com «Guardado».</li>
       </ol><p class="texto">Os nomes das ações podem mudar um pouco com a versão do iOS: procura pela palavra principal. Quando juntares pessoas ou contas na app, volta aqui, toca em <b>Copiar</b> e substitui a lista no atalho.</p></section>
