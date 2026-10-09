@@ -2,14 +2,15 @@
  * Atalho da app Dinheiro (https://lopalha-creator.github.io/dinheiro/).
  * Dívida: quem → quantia → devem-me (+) ou devo eu (−) → descrição.
  * Gasto: de que conta → quantia → descrição.
- * Abre a app no Safari com o movimento no link (a app junta-o logo) e guarda também a linha em
- * iCloud Drive/Atalhos/Dinheiro/atalho.txt, como cópia (a app lê-a em "Importar do atalho"):
+ * Acrescenta a linha (com a data e a hora em que foi registada) a iCloud Drive/Atalhos/Dinheiro/atalho.txt
+ * e copia o ficheiro todo. Na app, "Colar do atalho" junta os movimentos que ainda não tinha:
  *   2026-10-09T10:30:15;mais;Mãe;12,5;jantar
  */
 
 #include 'actions/calendar'
 #include 'actions/documents'
-#include 'actions/web'
+#include 'actions/text'
+#include 'actions/sharing'
 
 #define name Dinheiro
 #define color blue
@@ -53,5 +54,7 @@ const agora = currentDate()
 const data = formatDate(agora, "Custom", "yyyy-MM-dd'T'HH:mm:ss")
 const linha = text("{data};{@tipo};{@nome};{@quantia};{descricao}")
 appendToFile("Dinheiro/atalho.txt", linha)
-const codigo = urlEncode(linha)
-openURL("https://lopalha-creator.github.io/dinheiro/#atalho={codigo}")
+const ficheiro = getFile("Dinheiro/atalho.txt")
+const todos = getText(ficheiro)
+setClipboard(todos)
+showNotification("Abre a app e toca em Colar do atalho.", "Guardado: {@nome} {@quantia} €")

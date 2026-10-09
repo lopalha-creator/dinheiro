@@ -1,6 +1,6 @@
 // Guarda a app em cache para abrir sem internet. Vai sempre primeiro ao servidor para receber as atualizações,
 // sem usar a cache do browser (o GitHub Pages deixa guardar as páginas 10 minutos).
-const CACHE = 'dinheiro-v6';
+const CACHE = 'dinheiro-v7';
 const FICHEIROS = ['./', './index.html', './manifest.webmanifest', './icon-180.png', './icon-192.png', './icon-512.png', './fonts/manrope.woff2'];
 
 self.addEventListener('install', e => {
