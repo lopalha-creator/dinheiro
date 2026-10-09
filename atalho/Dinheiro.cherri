@@ -3,7 +3,7 @@
  * Dívida: quem → quantia → devem-me (+) ou devo eu (−) → descrição.
  * Gasto: de que conta → quantia → descrição.
  * Acrescenta a linha (com a data e a hora em que foi registada) a iCloud Drive/Atalhos/Dinheiro/atalho.txt
- * e copia o ficheiro todo. Na app, "Colar do atalho" junta os movimentos que ainda não tinha:
+ * (e copia-o). Na app, o botão "Atalho" abre esse ficheiro e junta os movimentos que ainda não tinha:
  *   2026-10-09T10:30:15;mais;Mãe;12,5;jantar
  */
 
@@ -57,4 +57,4 @@ appendToFile("Dinheiro/atalho.txt", linha)
 const ficheiro = getFile("Dinheiro/atalho.txt")
 const todos = getText(ficheiro)
 setClipboard(todos)
-showNotification("Abre a app e toca em Colar do atalho.", "Guardado: {@nome} {@quantia} €")
+showNotification("Abre a app e toca em Atalho.", "Guardado: {@nome} {@quantia} €")
