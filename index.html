@@ -324,9 +324,18 @@ function guardar() {
   try { localStorage.setItem(CHAVE, JSON.stringify(db)); } catch { toast('Não foi possível guardar'); }
 }
 
-/** Cada conta tem um histórico de valores [{ data, valor }] por ordem de data; o valor atual é o último. */
+/**
+ * Cada conta tem um histórico de valores [{ data, valor }] por ordem de data; o valor atual é o último.
+ * Os registos escritos à mão valem o que se escreveu (base), menos os gastos do atalho feitos depois nesse dia
+ * (desconto). Os criados pelo atalho (auto) valem o registo anterior menos os gastos desse dia: assim, mudar
+ * um registo ou um gasto passa sozinho para os dias seguintes, até ao próximo registo escrito à mão.
+ */
 function ordenarHist(c) {
   c.hist.sort((a, b) => a.data < b.data ? -1 : a.data > b.data ? 1 : 0);
+  c.hist.forEach((x, i) => {
+    if (x.auto && i > 0) x.valor = c.hist[i - 1].valor - (x.desconto || 0);
+    else if (x.base != null) x.valor = x.base - (x.desconto || 0);
+  });
   c.valor = c.hist[c.hist.length - 1].valor;
 }
 /** Acrescenta a dados antigos o que as versões novas precisam (o histórico das contas começa hoje). */
@@ -994,8 +1003,11 @@ function folhaHist(i) {
       if (v === null) return erro('#f-valor');
       let alvo = h || c.hist.find(x => x.data === data);
       if (!alvo) c.hist.push(alvo = {});
+      desligarData(c, data);
+      if (h) desligarData(c, h.data);
       // "em": quando o valor foi visto; um gasto do atalho feito antes disso já está incluído nele
       Object.assign(alvo, { data, valor: v, em: data === hoje() ? agora() : `${data}T23:59:59` });
+      for (const k of ['auto', 'base', 'desconto']) delete alvo[k];
       c.hist = c.hist.filter(x => x === alvo || x.data !== data);
       ordenarHist(c);
       return true;
@@ -1025,7 +1037,7 @@ function folhaMov(movId) {
       const v = lerValor($('#f-valor').value);
       if (v === null) return erro('#f-valor');
       const dados = { valor: camada.sinal ? -Math.abs(v) : v, desc: $('#f-desc').value.trim(), data: $('#f-data').value || hoje() };
-      const c = m?.conta && (dados.valor !== m.valor || dados.data !== m.data) && ajustarDesconto(m, dados);
+      const c = m?.conta && (dados.valor !== m.valor || dados.data !== m.data) ? ajustarDesconto(m, dados) : null;
       if (m) Object.assign(m, dados); else f.movimentos.push({ id: uid(), ...dados });
       if (c) toast(`${c.nome} também foi acertada: ${euro(c.valor)}`);
       return true;
@@ -1092,14 +1104,16 @@ function importar(texto) {
 }
 /** Escolher um ficheiro: uma cópia de segurança (JSON) substitui os dados; o ficheiro do atalho acrescenta movimentos. */
 /** Abre os Ficheiros e entrega o ficheiro escolhido. No iPhone, Cancelar não avisa: o input fica até à próxima vez. */
+let escolhaAte = 0; // os Ficheiros estão abertos (até 2 minutos): a atualização automática espera
 function escolherFicheiro(accept, fn) {
   document.querySelectorAll('input.escolher').forEach(x => x.remove());
+  escolhaAte = Date.now() + 120000;
   const i = document.createElement('input');
   i.type = 'file'; i.className = 'escolher'; i.style.display = 'none';
   if (accept) i.accept = accept;
   document.body.appendChild(i);
-  i.onchange = () => { const f = i.files[0]; i.remove(); if (f) fn(f); };
-  i.oncancel = () => i.remove();
+  i.onchange = () => { const f = i.files[0]; i.remove(); escolhaAte = 0; if (f) fn(f); };
+  i.oncancel = () => { i.remove(); escolhaAte = 0; };
   i.click();
 }
 /** Texto de um ficheiro em UTF-8 ou em UTF-16 (com ou sem a marca inicial), que é como alguns editores gravam. */
@@ -1113,7 +1127,7 @@ function repor() {
   // Sem filtro de tipo: no iPhone o filtro .json costuma deixar os ficheiros a cinzento.
   escolherFicheiro('', async f => {
     const t = await lerFicheiro(f);
-    if (t.trim().startsWith('{')) importar(t); else importarAtalho(t, 'ficheiro', f.name);
+    if (t.trim().startsWith('{')) importar(t); else importarAtalho(t, 'ficheiro', f.name, repor);
   });
 }
 function colar() {
@@ -1223,41 +1237,66 @@ function horaAtalho(texto) {
   return h < 24 ? `${String(h).padStart(2, '0')}:${m[2]}:${m[3] || '00'}` : null;
 }
 /**
- * Tira um gasto ao saldo da conta, no histórico, na data do gasto. Os registos de datas posteriores ficam
- * como estão: foram escritos à mão depois do gasto, por isso já o incluem. O mesmo para o registo desse dia,
- * se foi escrito à mão depois da hora do gasto ("quando"). Devolve true se descontou.
+ * Tira um gasto ao saldo da conta, no registo da data do gasto (criado pelo atalho, se não houver). Os registos
+ * seguintes criados pelo atalho acompanham; um registo escrito à mão depois já inclui o gasto. O mesmo para o
+ * registo do próprio dia, se foi escrito à mão depois da hora do gasto ("quando"). Devolve true se descontou.
  */
 function descontar(c, valor, data, quando) {
   if (data < c.hist[0].data) return false; // o primeiro registo foi escrito depois do gasto e já o inclui
   let h = c.hist.find(x => x.data === data);
-  if (h?.em && quando && h.em > quando) return false;
-  if (!h) {
-    const antes = c.hist.filter(x => x.data < data);
-    c.hist.push(h = { data, valor: (antes.length ? antes[antes.length - 1] : c.hist[0]).valor });
-  }
-  h.valor -= valor;
+  if (h && !h.auto && h.em && quando && h.em > quando) return false;
+  if (!h) c.hist.push(h = { data, valor: 0, auto: true });
+  else if (!h.auto) h.base ??= h.valor;
+  h.desconto = (h.desconto || 0) + valor;
   ordenarHist(c);
   return true;
 }
-/** Um gasto do atalho descontado numa conta fica ligado a ela, para que corrigi-lo ou apagá-lo acerte a conta. */
-const ligarConta = (m, c, valor, data) => Object.assign(m, { conta: c.id, descontado: valor, dataConta: data, descontadoEm: agora() });
+/** Devolve à conta um gasto descontado no registo h; um registo do atalho que fica sem gastos desaparece. */
+function devolver(c, h, valor) {
+  h.desconto = (h.desconto || 0) - valor;
+  if (h.auto && !h.desconto) c.hist = c.hist.filter(x => x !== h);
+  ordenarHist(c);
+}
 /**
- * A conta a que o gasto está ligado, se ainda se pode acertar: se o valor desse dia foi escrito à mão
- * depois do desconto, é esse que vale e a conta já não se mexe.
+ * Um gasto do atalho com uma conta com esse nome fica ligado a ela: descontado (0 se a conta já o incluía),
+ * a data e a hora. Corrigir ou apagar o gasto acerta a conta. Um registo escrito à mão nessa data desliga-o.
  */
+const LIGACAO = ['conta', 'descontado', 'dataConta', 'quando'];
+const ligarConta = (m, c, descontado, data, quando) => Object.assign(m, { conta: c.id, descontado, dataConta: data, quando });
 function contaLigada(m) {
-  const c = m.conta && db.contas.find(c => c.id === m.conta), h = c && c.hist.find(x => x.data === m.dataConta);
-  return h && !(h.em && h.em > m.descontadoEm) ? { c, h } : null;
+  const c = m.conta && db.contas.find(c => c.id === m.conta);
+  const h = c && m.descontado ? c.hist.find(x => x.data === m.dataConta) : null;
+  return c && (h || !m.descontado) ? { c, h } : null;
 }
 /** Ao corrigir (novo = { valor, data }) ou apagar (novo = null) um gasto ligado, acerta a conta. Devolve a conta, se mexeu. */
 function ajustarDesconto(m, novo) {
-  const l = contaLigada(m), descontado = m.descontado;
-  for (const k of ['conta', 'descontado', 'dataConta', 'descontadoEm']) delete m[k];
+  const l = contaLigada(m), { descontado, quando } = m;
+  for (const k of LIGACAO) delete m[k];
   if (!l) return null;
-  l.h.valor += descontado;
-  ordenarHist(l.c);
-  if (novo && descontar(l.c, novo.valor, novo.data)) ligarConta(m, l.c, novo.valor, novo.data);
-  return l.c;
+  const antes = l.c.valor;
+  if (l.h) devolver(l.c, l.h, descontado);
+  if (novo) {
+    const q = quando ? novo.data + quando.slice(10) : null; // a mesma hora, no dia novo
+    ligarConta(m, l.c, descontar(l.c, novo.valor, novo.data, q) ? novo.valor : 0, novo.data, q);
+  }
+  return l.c.valor !== antes ? l.c : null;
+}
+/** Um valor escrito à mão passa a valer por si: os gastos descontados nesse dia deixam de acertar a conta. */
+function desligarData(c, data) {
+  for (const g of gruposDe('gastos')) for (const f of g.fichas) for (const m of f.movimentos)
+    if (m.conta === c.id && m.dataConta === data) for (const k of LIGACAO) delete m[k];
+}
+/** Apagar vários movimentos: se algum gasto do atalho foi descontado numa conta, pergunta se devolve o dinheiro. */
+function apagarComContas(titulo, movs, apagar) {
+  const ligados = movs.filter(m => m.descontado && contaLigada(m));
+  if (!ligados.length) { confirmar(titulo, 'Apagar', apagar); return; }
+  const nomes = [...new Set(ligados.map(m => contaLigada(m).c.nome))].join(', ');
+  const soma = ligados.reduce((t, m) => t + m.descontado, 0);
+  acoes(titulo, [
+    { texto: soma > 0 ? `Apagar e devolver ${euro(soma)} a ${nomes}` : `Apagar e acertar ${nomes}`, perigo: true,
+      fn: () => { ligados.forEach(m => ajustarDesconto(m, null)); apagar(); }, desfazer: 'Apagado' },
+    { texto: `Apagar só aqui (${nomes} ${nomes.includes(',') ? 'ficam iguais' : 'fica igual'})`, perigo: true, fn: apagar, desfazer: 'Apagado' },
+  ]);
 }
 /** O grupo deste tipo com este nome; se não existir, é criado no fim. */
 function grupoChamado(nome, tipo) {
@@ -1269,7 +1308,7 @@ function grupoChamado(nome, tipo) {
  * origem: 'ficheiro' (Importar do ficheiro), 'colado' (Colar do atalho: o atalho copia todos os movimentos que guardou)
  * ou 'link'. Cada movimento fica com a data e a hora em que foi registado no atalho, mesmo que entre dias depois.
  */
-function importarAtalho(texto, origem = 'ficheiro', nomeFicheiro = '') {
+function importarAtalho(texto, origem = 'ficheiro', nomeFicheiro = '', deNovo = ficheiroAtalho) {
   const voltar = pontoDeRetorno();
   // Desfazer tira os movimentos, mas as linhas ficam como vistas: senão voltavam a entrar da próxima vez
   const desfaz = () => {
@@ -1302,11 +1341,11 @@ function importarAtalho(texto, origem = 'ficheiro', nomeFicheiro = '') {
     // "João (Amigos)": quando há duas pessoas com o mesmo nome, a lista do atalho junta o grupo
     const fichas = gruposDe(m.grupo).flatMap(g => g.fichas.map(f => [f, g]));
     let f = (fichas.find(([f, g]) => norm(`${f.nome} (${g.nome})`) === norm(m.nome)) || fichas.find(([f]) => norm(f.nome) === norm(m.nome)) || [])[0];
-    let ligada = null;
+    let ligada = null, descontado = 0;
     if (m.grupo === 'gastos') {
       const conta = db.contas.find(c => norm(c.nome) === norm(m.nome));
       if (!conta) semConta.add(m.nome);
-      else if (descontar(conta, m.valor, m.data, m.quando)) ligada = conta;
+      else { ligada = conta; if (descontar(conta, m.valor, m.data, m.quando)) descontado = m.valor; }
       // o item em Gastos tem o nome da conta, escrito como está em Contas
       if (!f) grupoChamado('Dia a dia', 'gastos').fichas.push(f = { id: uid(), nome: conta ? conta.nome : m.nome, nota: '', movimentos: [] });
     } else if (!f) {
@@ -1314,13 +1353,13 @@ function importarAtalho(texto, origem = 'ficheiro', nomeFicheiro = '') {
       nomesNovos++;
     }
     const mov = { id: uid(), valor: m.tipo === 'menos' ? -m.valor : m.valor, desc: m.desc, data: m.data };
-    if (ligada) ligarConta(mov, ligada, m.valor, m.data);
+    if (ligada) ligarConta(mov, ligada, descontado, m.data, m.quando);
     f.movimentos.push(mov);
     db.atalho.push(chave); novos++; ultimo = { m, f };
   }
-  if (!novos && !jaVistas && !linhas.some(l => dataAtalho(l))) {
+  if (!novos && !jaVistas && !linhas.some(l => { const p = l.split(';'); return p.length >= 3 && dataAtalho(p[0].trim()); })) {
     voltar();
-    if (origem === 'ficheiro') ficheiroEstranho(texto, nomeFicheiro);
+    if (origem === 'ficheiro') ficheiroEstranho(texto, nomeFicheiro, deNovo);
     else toast(origem === 'link' ? 'O link do atalho não tem um movimento válido' : 'O que está copiado não é do atalho. Corre o atalho e volta a colar.');
     return;
   }
@@ -1339,7 +1378,7 @@ function importarAtalho(texto, origem = 'ficheiro', nomeFicheiro = '') {
   if (!novos && jaVistas && !maus) { toast(origem === 'link' ? 'Este movimento já estava guardado' : 'Já estava tudo na app'); return; }
   const curta = t => t.length > 40 ? t.slice(0, 39) + '…' : t;
   const naoPercebi = maus ? `não percebi ${maus === 1 ? 'uma linha' : `${maus} linhas`}: «${curta(primeiroMau)}»` : '';
-  if (!novos) { toast(naoPercebi ? `Nada de novo · ${naoPercebi}` : 'Não há movimentos novos', maus ? desfaz : null); return; }
+  if (!novos) { toast(naoPercebi ? `Nada de novo · ${naoPercebi}` : 'Não há movimentos novos'); return; }
   toast([`${novos} ${novos === 1 ? 'movimento importado' : 'movimentos importados'}`,
     nomesNovos ? `${nomesNovos} ${nomesNovos === 1 ? 'pessoa nova' : 'pessoas novas'} em «Do atalho»` : '',
     semConta.size ? `sem conta «${[...semConta].join('», «')}» em Contas` : '',
@@ -1384,22 +1423,28 @@ function folhaAtalho() {
  * cada um com a sua data. Não depende do que está copiado. Só aceita texto, para o iPhone abrir logo os Ficheiros.
  */
 function ficheiroAtalho() {
-  escolherFicheiro('.txt,text/plain', async f => importarAtalho(await lerFicheiro(f), 'ficheiro', f.name));
+  escolherFicheiro('.txt,text/plain', async f => {
+    const t = await lerFicheiro(f);
+    if (t.trim().startsWith('{')) importar(t); else importarAtalho(t, 'ficheiro', f.name);
+  });
 }
 /** O ficheiro escolhido não tem movimentos do atalho: mostra o que tem (e deixa copiá-lo), para se perceber porquê. */
-function ficheiroEstranho(texto, nome) {
+function ficheiroEstranho(texto, nome, deNovo = ficheiroAtalho) {
   const linhas = String(texto).split(/\r\n?|\n/).filter(l => l.trim());
   const amostra = linhas.slice(0, 6).map(l => l.length > 90 ? l.slice(0, 89) + '…' : l).join('\n');
-  const outro = nome && !/^atalho( ?\(?\d+\)?)?\.txt$/i.test(nome);
+  const deRepor = deNovo === repor, outro = !deRepor && nome && !/^atalho( ?\(?\d+\)?)?\.txt$/i.test(nome);
   abrir({
-    tipo: 'folha', titulo: linhas.length ? 'Este ficheiro não tem movimentos do atalho' : 'O ficheiro está vazio', ok: 'Escolher outro ficheiro',
-    corpo: `<p class="texto" style="padding:0 2px 14px">${outro ? `Escolheste <b>${esc(nome)}</b>. O do atalho chama-se <b>atalho.txt</b> e está em iCloud Drive → Atalhos → Dinheiro. ` : ''}${linhas.length
+    tipo: 'folha', ok: 'Escolher outro ficheiro',
+    titulo: !linhas.length ? 'O ficheiro está vazio' : deRepor ? 'Este ficheiro não é uma cópia da app' : 'Este ficheiro não tem movimentos do atalho',
+    corpo: `<p class="texto" style="padding:0 2px 14px">${deRepor
+      ? 'As cópias de segurança chamam-se <b>dinheiro-…json</b> (Mais → Guardar cópia de segurança). Também se pode escolher aqui o <b>atalho.txt</b>.' + (linhas.length ? ' Este ficheiro começa assim:' : '')
+      : (outro ? `Escolheste <b>${esc(nome)}</b>. O do atalho chama-se <b>atalho.txt</b> e está em iCloud Drive → Atalhos → Dinheiro. ` : '') + (linhas.length
       ? 'Cada linha do atalho começa pela data, assim: <code>2026-10-09T15:58:12;gasto;Revolut;2;café</code>. Este ficheiro começa assim:'
-      : 'Corre o atalho uma vez (Dívida ou Gasto) e volta a escolher <b>atalho.txt</b>.'}</p>
+      : 'Corre o atalho uma vez (Dívida ou Gasto) e volta a escolher <b>atalho.txt</b>.')}</p>
       ${linhas.length ? `<section class="cartao"><p class="texto"><code style="white-space:pre-wrap;display:block">${esc(amostra)}</code></p>
         <div class="botoes-linha"><button class="btn-sec" data-a="copiar-amostra">Copiar o que tem</button></div></section>` : ''}`,
     amostra: String(texto).slice(0, 4000),
-    guardar: () => { fechar(); ficheiroAtalho(); return false; },
+    guardar: () => { fechar(); deNovo(); return false; },
   });
 }
 /** O atalho também copia todos os movimentos que guardou; aqui entram só os que a app ainda não tem. */
@@ -1497,6 +1542,7 @@ document.addEventListener('click', e => {
     case 'hist': folhaHist(+id); return;
     case 'apagar-hist': {
       const c = db.contas.find(c => c.id === ui.ficha.contas), desfaz = pontoDeRetorno();
+      desligarData(c, c.hist[+id].data);
       c.hist.splice(+id, 1); ordenarHist(c);
       guardar(); fechar(); render(); toast('Registo apagado', desfaz); return;
     }
@@ -1519,7 +1565,7 @@ document.addEventListener('click', e => {
       const g = db.grupos.find(g => g.id === id);
       acoes(g.nome, [
         { texto: 'Mudar nome', fn: () => pedirNome('Mudar nome', g.nome, n => { g.nome = n; }) },
-        { texto: 'Apagar grupo', perigo: true, fn: () => confirmar(`Apagar "${g.nome}" e tudo o que tem dentro?`, 'Apagar', () => { db.grupos = db.grupos.filter(x => x !== g); }) },
+        { texto: 'Apagar grupo', perigo: true, fn: () => apagarComContas(`Apagar "${g.nome}" e tudo o que tem dentro?`, g.fichas.flatMap(f => f.movimentos), () => { db.grupos = db.grupos.filter(x => x !== g); }) },
       ]);
       return;
     }
@@ -1527,9 +1573,9 @@ document.addEventListener('click', e => {
       const [g, f] = naFicha();
       const botoes = [{ texto: 'Mudar nome', fn: () => pedirNome('Mudar nome', f.nome, n => { f.nome = n; }) }];
       if (f.movimentos.length) botoes.push({ texto: 'Apagar todos os movimentos', perigo: true,
-        fn: () => confirmar(`Apagar todos os movimentos de ${f.nome}?`, 'Apagar', () => { f.movimentos = []; }) });
+        fn: () => apagarComContas(`Apagar todos os movimentos de ${f.nome}?`, f.movimentos, () => { f.movimentos = []; }) });
       botoes.push({ texto: g.tipo === 'dividas' ? 'Apagar pessoa' : 'Apagar item', perigo: true,
-        fn: () => confirmar(`Apagar ${f.nome} e os seus movimentos?`, 'Apagar', () => { g.fichas = g.fichas.filter(x => x !== f); ui.ficha[ui.tab] = null; }) });
+        fn: () => apagarComContas(`Apagar ${f.nome} e os seus movimentos?`, f.movimentos, () => { g.fichas = g.fichas.filter(x => x !== f); ui.ficha[ui.tab] = null; }) });
       acoes(f.nome, botoes);
       return;
     }
@@ -1537,7 +1583,7 @@ document.addEventListener('click', e => {
     case 'novo-mov': folhaMov(null); return;
     case 'mov': folhaMov(id); return;
     case 'apagar-mov': {
-      const [, f] = naFicha(), m = f.movimentos.find(m => m.id === id), l = m && contaLigada(m);
+      const [, f] = naFicha(), m = f.movimentos.find(m => m.id === id), l = m?.descontado && contaLigada(m);
       const apagar = devolver => () => { if (devolver) ajustarDesconto(m, null); f.movimentos = f.movimentos.filter(x => x !== m); };
       if (l) {
         const d = m.descontado;
@@ -1700,7 +1746,7 @@ document.addEventListener('visibilitychange', async () => {
   const antes = toques;
   const v = await paginaNoServidor();
   // se entretanto se tocou em algo (ex.: "Escolher atalho.txt" já abriu os Ficheiros), fica para a próxima vez
-  if (v !== null && v !== versaoAberta && toques === antes && (!camada || camada.pergunta)) location.reload();
+  if (v !== null && v !== versaoAberta && toques === antes && Date.now() > escolhaAte && (!camada || camada.pergunta)) location.reload();
 });
 </script>
 </body>
