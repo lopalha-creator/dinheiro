@@ -1,5 +1,6 @@
-// Guarda a app em cache para abrir sem internet. Tenta sempre a rede primeiro, para receber atualizações.
-const CACHE = 'dinheiro-v5';
+// Guarda a app em cache para abrir sem internet. Vai sempre primeiro ao servidor para receber as atualizações,
+// sem usar a cache do browser (o GitHub Pages deixa guardar as páginas 10 minutos).
+const CACHE = 'dinheiro-v6';
 const FICHEIROS = ['./', './index.html', './manifest.webmanifest', './icon-180.png', './icon-192.png', './icon-512.png', './fonts/manrope.woff2'];
 
 self.addEventListener('install', e => {
@@ -17,11 +18,15 @@ self.addEventListener('activate', e => {
 
 self.addEventListener('fetch', e => {
   if (e.request.method !== 'GET') return;
+  const url = new URL(e.request.url);
+  // "no-cache": confirma sempre com o servidor. Um pedido de navegação não se pode copiar com opções, daí o URL.
+  const pedido = url.origin !== location.origin ? e.request
+    : e.request.mode === 'navigate' ? new Request(url.href, { cache: 'no-cache', credentials: 'same-origin' })
+    : new Request(e.request, { cache: 'no-cache' });
   e.respondWith(
-    fetch(e.request)
+    fetch(pedido)
       .then(r => {
-        const copia = r.clone();
-        caches.open(CACHE).then(c => c.put(e.request, copia));
+        if (r.ok) { const copia = r.clone(); caches.open(CACHE).then(c => c.put(e.request, copia)); }
         return r;
       })
       .catch(() => caches.match(e.request, { ignoreSearch: true }))

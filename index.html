@@ -1549,7 +1549,20 @@ document.documentElement.classList.toggle('oculto', ui.oculto);
 render();
 lerLinkAtalho();
 navigator.storage?.persist?.();
-if ('serviceWorker' in navigator) navigator.serviceWorker.register('sw.js').catch(() => {});
+if ('serviceWorker' in navigator) navigator.serviceWorker.register('sw.js', { updateViaCache: 'none' }).catch(() => {});
+
+// O iPhone deixa a app aberta em segundo plano e, ao voltar, mostra a página antiga sem a recarregar.
+// Por isso, quando a app volta ao ecrã, compara a página no servidor com a que tinha ao abrir e recarrega se mudou
+// (não recarrega com uma folha aberta, para não perder o que se está a escrever).
+const assinatura = t => { let h = 0; for (let i = 0; i < t.length; i++) h = (h * 31 + t.charCodeAt(i)) | 0; return h; };
+const paginaNoServidor = () => fetch('index.html', { cache: 'no-store' }).then(r => r.ok ? r.text() : null).then(t => t && assinatura(t)).catch(() => null);
+let versaoAberta = null;
+paginaNoServidor().then(v => { versaoAberta = v; });
+document.addEventListener('visibilitychange', async () => {
+  if (document.visibilityState !== 'visible' || versaoAberta === null) return;
+  const v = await paginaNoServidor();
+  if (v !== null && v !== versaoAberta && !camada) location.reload();
+});
 </script>
 </body>
 </html>
