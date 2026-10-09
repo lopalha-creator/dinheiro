@@ -12,7 +12,7 @@
 			<key>WFWorkflowActionParameters</key>
 			<dict>
 				<key>WFCommentActionText</key>
-				<string>Pessoas das dívidas, uma por linha. Para as trocar: na app Dinheiro, Mais → Atalho do iPhone → Copiar (Pessoas), e cola no Texto a seguir.</string>
+				<string>Pessoas das dívidas, uma por linha, com os nomes como estão na app Dinheiro (Mais → Atalho do iPhone → Copiar).</string>
 			</dict>
 		</dict>
 		<dict>
@@ -23,7 +23,7 @@
 				<key>CustomOutputName</key>
 				<string>textoPessoas</string>
 				<key>UUID</key>
-				<string>1f956830-62d3-4da2-8199-7d2dd9bbcb53</string>
+				<string>6e6f30f7-87df-4d25-aafc-42ed15b36cfb</string>
 				<key>WFTextActionText</key>
 				<string>Mãe
 Pai</string>
@@ -39,7 +39,7 @@ Pai</string>
 				<key>Show-text</key>
 				<true/>
 				<key>UUID</key>
-				<string>811f52be-6b3b-4d19-8ade-e975263dfe3d</string>
+				<string>54fa059e-0844-408d-82ab-311b123161ba</string>
 				<key>WFTextSeparator</key>
 				<string>New Lines</string>
 				<key>text</key>
@@ -53,7 +53,7 @@ Pai</string>
 								<key>OutputName</key>
 								<string>textoPessoas</string>
 								<key>OutputUUID</key>
-								<string>1f956830-62d3-4da2-8199-7d2dd9bbcb53</string>
+								<string>6e6f30f7-87df-4d25-aafc-42ed15b36cfb</string>
 								<key>Type</key>
 								<string>ActionOutput</string>
 							</dict>
@@ -72,7 +72,7 @@ Pai</string>
 			<key>WFWorkflowActionParameters</key>
 			<dict>
 				<key>WFCommentActionText</key>
-				<string>Contas dos gastos, uma por linha. Os nomes têm de ser iguais aos das contas na app.</string>
+				<string>Contas dos gastos, uma por linha, com os nomes como estão na app.</string>
 			</dict>
 		</dict>
 		<dict>
@@ -83,7 +83,7 @@ Pai</string>
 				<key>CustomOutputName</key>
 				<string>textoContas</string>
 				<key>UUID</key>
-				<string>7cf927df-fd5f-4a5e-b246-40a845ecd4eb</string>
+				<string>4449b9e6-cf17-4191-bb33-29daf3af050c</string>
 				<key>WFTextActionText</key>
 				<string>Revolut
 Carteira
@@ -100,7 +100,7 @@ Conta corrente</string>
 				<key>Show-text</key>
 				<true/>
 				<key>UUID</key>
-				<string>53283726-9adc-4764-86dd-4d721910c24b</string>
+				<string>2f937db6-f003-43b9-8bd5-9554990ed480</string>
 				<key>WFTextSeparator</key>
 				<string>New Lines</string>
 				<key>text</key>
@@ -114,7 +114,7 @@ Conta corrente</string>
 								<key>OutputName</key>
 								<string>textoContas</string>
 								<key>OutputUUID</key>
-								<string>7cf927df-fd5f-4a5e-b246-40a845ecd4eb</string>
+								<string>4449b9e6-cf17-4191-bb33-29daf3af050c</string>
 								<key>Type</key>
 								<string>ActionOutput</string>
 							</dict>
@@ -135,7 +135,7 @@ Conta corrente</string>
 				<key>CustomOutputName</key>
 				<string>Text</string>
 				<key>UUID</key>
-				<string>abf8b18c-9b5b-40c0-a57f-f08e2b2bc060</string>
+				<string>a711c033-47f6-448c-97b2-c7790fb90078</string>
 				<key>WFTextActionText</key>
 				<string></string>
 			</dict>
@@ -152,7 +152,7 @@ Conta corrente</string>
 						<key>OutputName</key>
 						<string>Text</string>
 						<key>OutputUUID</key>
-						<string>abf8b18c-9b5b-40c0-a57f-f08e2b2bc060</string>
+						<string>a711c033-47f6-448c-97b2-c7790fb90078</string>
 						<key>Type</key>
 						<string>ActionOutput</string>
 					</dict>
@@ -162,7 +162,83 @@ Conta corrente</string>
 				<key>WFSerializationType</key>
 				<string>WFTextTokenAttachment</string>
 				<key>WFVariableName</key>
-				<string>registo</string>
+				<string>tipo</string>
+			</dict>
+		</dict>
+		<dict>
+			<key>WFWorkflowActionIdentifier</key>
+			<string>is.workflow.actions.gettext</string>
+			<key>WFWorkflowActionParameters</key>
+			<dict>
+				<key>CustomOutputName</key>
+				<string>Text 1</string>
+				<key>UUID</key>
+				<string>be0c3710-05e9-42ab-b522-58aa23f3ff94</string>
+				<key>WFTextActionText</key>
+				<string></string>
+			</dict>
+		</dict>
+		<dict>
+			<key>WFWorkflowActionIdentifier</key>
+			<string>is.workflow.actions.setvariable</string>
+			<key>WFWorkflowActionParameters</key>
+			<dict>
+				<key>WFInput</key>
+				<dict>
+					<key>Value</key>
+					<dict>
+						<key>OutputName</key>
+						<string>Text 1</string>
+						<key>OutputUUID</key>
+						<string>be0c3710-05e9-42ab-b522-58aa23f3ff94</string>
+						<key>Type</key>
+						<string>ActionOutput</string>
+					</dict>
+					<key>WFSerializationType</key>
+					<string>WFTextTokenAttachment</string>
+				</dict>
+				<key>WFSerializationType</key>
+				<string>WFTextTokenAttachment</string>
+				<key>WFVariableName</key>
+				<string>nome</string>
+			</dict>
+		</dict>
+		<dict>
+			<key>WFWorkflowActionIdentifier</key>
+			<string>is.workflow.actions.gettext</string>
+			<key>WFWorkflowActionParameters</key>
+			<dict>
+				<key>CustomOutputName</key>
+				<string>Text 2</string>
+				<key>UUID</key>
+				<string>3bc00be5-8baa-4082-a382-709f89ea568b</string>
+				<key>WFTextActionText</key>
+				<string></string>
+			</dict>
+		</dict>
+		<dict>
+			<key>WFWorkflowActionIdentifier</key>
+			<string>is.workflow.actions.setvariable</string>
+			<key>WFWorkflowActionParameters</key>
+			<dict>
+				<key>WFInput</key>
+				<dict>
+					<key>Value</key>
+					<dict>
+						<key>OutputName</key>
+						<string>Text 2</string>
+						<key>OutputUUID</key>
+						<string>3bc00be5-8baa-4082-a382-709f89ea568b</string>
+						<key>Type</key>
+						<string>ActionOutput</string>
+					</dict>
+					<key>WFSerializationType</key>
+					<string>WFTextTokenAttachment</string>
+				</dict>
+				<key>WFSerializationType</key>
+				<string>WFTextTokenAttachment</string>
+				<key>WFVariableName</key>
+				<string>quantia</string>
 			</dict>
 		</dict>
 		<dict>
@@ -171,7 +247,7 @@ Conta corrente</string>
 			<key>WFWorkflowActionParameters</key>
 			<dict>
 				<key>GroupingIdentifier</key>
-				<string>75766aee-b942-44f5-a644-5c0ce9f28e19</string>
+				<string>173a03df-1deb-4b84-b0be-d4559504ebed</string>
 				<key>WFControlFlowMode</key>
 				<integer>0</integer>
 				<key>WFMenuItems</key>
@@ -179,10 +255,6 @@ Conta corrente</string>
 					<dict>
 						<key>WFValue</key>
 						<string>Dívida</string>
-					</dict>
-					<dict>
-						<key>WFValue</key>
-						<string>Dívida negativa</string>
 					</dict>
 					<dict>
 						<key>WFValue</key>
@@ -199,7 +271,7 @@ Conta corrente</string>
 			<key>WFWorkflowActionParameters</key>
 			<dict>
 				<key>GroupingIdentifier</key>
-				<string>75766aee-b942-44f5-a644-5c0ce9f28e19</string>
+				<string>173a03df-1deb-4b84-b0be-d4559504ebed</string>
 				<key>WFControlFlowMode</key>
 				<integer>1</integer>
 				<key>WFMenuItemAttributedTitle</key>
@@ -216,7 +288,7 @@ Conta corrente</string>
 				<key>CustomOutputName</key>
 				<string>quem</string>
 				<key>UUID</key>
-				<string>1beb23d2-1a14-474b-bb2c-a0263b157245</string>
+				<string>b038d2ca-9a48-496f-875e-4f96739b5513</string>
 				<key>WFChooseFromListActionPrompt</key>
 				<string>Quem?</string>
 				<key>WFInput</key>
@@ -226,7 +298,7 @@ Conta corrente</string>
 						<key>OutputName</key>
 						<string>listaPessoas</string>
 						<key>OutputUUID</key>
-						<string>811f52be-6b3b-4d19-8ade-e975263dfe3d</string>
+						<string>54fa059e-0844-408d-82ab-311b123161ba</string>
 						<key>Type</key>
 						<string>ActionOutput</string>
 					</dict>
@@ -237,31 +309,205 @@ Conta corrente</string>
 		</dict>
 		<dict>
 			<key>WFWorkflowActionIdentifier</key>
+			<string>is.workflow.actions.nothing</string>
+		</dict>
+		<dict>
+			<key>WFWorkflowActionIdentifier</key>
+			<string>is.workflow.actions.ask</string>
+			<key>WFWorkflowActionParameters</key>
+			<dict>
+				<key>CustomOutputName</key>
+				<string>quantiaDivida</string>
+				<key>UUID</key>
+				<string>3ecd5216-38ba-443c-897f-bb55443966df</string>
+				<key>WFAskActionPrompt</key>
+				<string>Quantia</string>
+				<key>WFInputType</key>
+				<string>Number</string>
+			</dict>
+		</dict>
+		<dict>
+			<key>WFWorkflowActionIdentifier</key>
+			<string>is.workflow.actions.choosefrommenu</string>
+			<key>WFWorkflowActionParameters</key>
+			<dict>
+				<key>GroupingIdentifier</key>
+				<string>24e102a8-6da4-4c1d-98f4-d97c6639eb16</string>
+				<key>WFControlFlowMode</key>
+				<integer>0</integer>
+				<key>WFMenuItems</key>
+				<array>
+					<dict>
+						<key>WFValue</key>
+						<string>Devem-me (+)</string>
+					</dict>
+					<dict>
+						<key>WFValue</key>
+						<string>Devo eu (−)</string>
+					</dict>
+				</array>
+				<key>WFMenuPrompt</key>
+				<string>Quem deve?</string>
+			</dict>
+		</dict>
+		<dict>
+			<key>WFWorkflowActionIdentifier</key>
+			<string>is.workflow.actions.choosefrommenu</string>
+			<key>WFWorkflowActionParameters</key>
+			<dict>
+				<key>GroupingIdentifier</key>
+				<string>24e102a8-6da4-4c1d-98f4-d97c6639eb16</string>
+				<key>WFControlFlowMode</key>
+				<integer>1</integer>
+				<key>WFMenuItemAttributedTitle</key>
+				<string>Devem-me (+)</string>
+				<key>WFMenuItemTitle</key>
+				<string>Devem-me (+)</string>
+			</dict>
+		</dict>
+		<dict>
+			<key>WFWorkflowActionIdentifier</key>
 			<string>is.workflow.actions.gettext</string>
 			<key>WFWorkflowActionParameters</key>
 			<dict>
 				<key>CustomOutputName</key>
-				<string>Text 1</string>
+				<string>Text 3</string>
 				<key>UUID</key>
-				<string>4ad09fe8-ef70-43b3-8e2a-06e0081f5708</string>
+				<string>fb8fbe88-ead1-4603-ad59-32f34ded7d85</string>
+				<key>WFTextActionText</key>
+				<string>mais</string>
+			</dict>
+		</dict>
+		<dict>
+			<key>WFWorkflowActionIdentifier</key>
+			<string>is.workflow.actions.setvariable</string>
+			<key>WFWorkflowActionParameters</key>
+			<dict>
+				<key>WFInput</key>
+				<dict>
+					<key>Value</key>
+					<dict>
+						<key>OutputName</key>
+						<string>Text 3</string>
+						<key>OutputUUID</key>
+						<string>fb8fbe88-ead1-4603-ad59-32f34ded7d85</string>
+						<key>Type</key>
+						<string>ActionOutput</string>
+					</dict>
+					<key>WFSerializationType</key>
+					<string>WFTextTokenAttachment</string>
+				</dict>
+				<key>WFSerializationType</key>
+				<string>WFTextTokenAttachment</string>
+				<key>WFVariableName</key>
+				<string>tipo</string>
+			</dict>
+		</dict>
+		<dict>
+			<key>WFWorkflowActionIdentifier</key>
+			<string>is.workflow.actions.nothing</string>
+		</dict>
+		<dict>
+			<key>WFWorkflowActionIdentifier</key>
+			<string>is.workflow.actions.choosefrommenu</string>
+			<key>WFWorkflowActionParameters</key>
+			<dict>
+				<key>GroupingIdentifier</key>
+				<string>24e102a8-6da4-4c1d-98f4-d97c6639eb16</string>
+				<key>WFControlFlowMode</key>
+				<integer>1</integer>
+				<key>WFMenuItemAttributedTitle</key>
+				<string>Devo eu (−)</string>
+				<key>WFMenuItemTitle</key>
+				<string>Devo eu (−)</string>
+			</dict>
+		</dict>
+		<dict>
+			<key>WFWorkflowActionIdentifier</key>
+			<string>is.workflow.actions.gettext</string>
+			<key>WFWorkflowActionParameters</key>
+			<dict>
+				<key>CustomOutputName</key>
+				<string>Text 4</string>
+				<key>UUID</key>
+				<string>85131bc9-de7d-4f2a-bf67-87c96e99052c</string>
+				<key>WFTextActionText</key>
+				<string>menos</string>
+			</dict>
+		</dict>
+		<dict>
+			<key>WFWorkflowActionIdentifier</key>
+			<string>is.workflow.actions.setvariable</string>
+			<key>WFWorkflowActionParameters</key>
+			<dict>
+				<key>WFInput</key>
+				<dict>
+					<key>Value</key>
+					<dict>
+						<key>OutputName</key>
+						<string>Text 4</string>
+						<key>OutputUUID</key>
+						<string>85131bc9-de7d-4f2a-bf67-87c96e99052c</string>
+						<key>Type</key>
+						<string>ActionOutput</string>
+					</dict>
+					<key>WFSerializationType</key>
+					<string>WFTextTokenAttachment</string>
+				</dict>
+				<key>WFSerializationType</key>
+				<string>WFTextTokenAttachment</string>
+				<key>WFVariableName</key>
+				<string>tipo</string>
+			</dict>
+		</dict>
+		<dict>
+			<key>WFWorkflowActionIdentifier</key>
+			<string>is.workflow.actions.nothing</string>
+		</dict>
+		<dict>
+			<key>WFWorkflowActionIdentifier</key>
+			<string>is.workflow.actions.choosefrommenu</string>
+			<key>WFWorkflowActionParameters</key>
+			<dict>
+				<key>GroupingIdentifier</key>
+				<string>24e102a8-6da4-4c1d-98f4-d97c6639eb16</string>
+				<key>UUID</key>
+				<string>328103f7-047d-4990-8862-ecd7bda83957</string>
+				<key>WFControlFlowMode</key>
+				<integer>2</integer>
+			</dict>
+		</dict>
+		<dict>
+			<key>WFWorkflowActionIdentifier</key>
+			<string>is.workflow.actions.nothing</string>
+		</dict>
+		<dict>
+			<key>WFWorkflowActionIdentifier</key>
+			<string>is.workflow.actions.gettext</string>
+			<key>WFWorkflowActionParameters</key>
+			<dict>
+				<key>CustomOutputName</key>
+				<string>Text 5</string>
+				<key>UUID</key>
+				<string>69f6e5b6-0f69-4d73-a43c-9e8cec26c666</string>
 				<key>WFTextActionText</key>
 				<dict>
 					<key>Value</key>
 					<dict>
 						<key>attachmentsByRange</key>
 						<dict>
-							<key>{5, 1}</key>
+							<key>{0, 1}</key>
 							<dict>
 								<key>OutputName</key>
 								<string>quem</string>
 								<key>OutputUUID</key>
-								<string>1beb23d2-1a14-474b-bb2c-a0263b157245</string>
+								<string>b038d2ca-9a48-496f-875e-4f96739b5513</string>
 								<key>Type</key>
 								<string>ActionOutput</string>
 							</dict>
 						</dict>
 						<key>string</key>
-						<string>mais;￼</string>
+						<string>￼</string>
 					</dict>
 					<key>WFSerializationType</key>
 					<string>WFTextTokenString</string>
@@ -278,9 +524,9 @@ Conta corrente</string>
 					<key>Value</key>
 					<dict>
 						<key>OutputName</key>
-						<string>Text 1</string>
+						<string>Text 5</string>
 						<key>OutputUUID</key>
-						<string>4ad09fe8-ef70-43b3-8e2a-06e0081f5708</string>
+						<string>69f6e5b6-0f69-4d73-a43c-9e8cec26c666</string>
 						<key>Type</key>
 						<string>ActionOutput</string>
 					</dict>
@@ -290,53 +536,7 @@ Conta corrente</string>
 				<key>WFSerializationType</key>
 				<string>WFTextTokenAttachment</string>
 				<key>WFVariableName</key>
-				<string>registo</string>
-			</dict>
-		</dict>
-		<dict>
-			<key>WFWorkflowActionIdentifier</key>
-			<string>is.workflow.actions.nothing</string>
-		</dict>
-		<dict>
-			<key>WFWorkflowActionIdentifier</key>
-			<string>is.workflow.actions.choosefrommenu</string>
-			<key>WFWorkflowActionParameters</key>
-			<dict>
-				<key>GroupingIdentifier</key>
-				<string>75766aee-b942-44f5-a644-5c0ce9f28e19</string>
-				<key>WFControlFlowMode</key>
-				<integer>1</integer>
-				<key>WFMenuItemAttributedTitle</key>
-				<string>Dívida negativa</string>
-				<key>WFMenuItemTitle</key>
-				<string>Dívida negativa</string>
-			</dict>
-		</dict>
-		<dict>
-			<key>WFWorkflowActionIdentifier</key>
-			<string>is.workflow.actions.choosefromlist</string>
-			<key>WFWorkflowActionParameters</key>
-			<dict>
-				<key>CustomOutputName</key>
-				<string>quemNeg</string>
-				<key>UUID</key>
-				<string>20238997-83ca-46a3-9f1e-7f475b5c49a1</string>
-				<key>WFChooseFromListActionPrompt</key>
-				<string>Quem?</string>
-				<key>WFInput</key>
-				<dict>
-					<key>Value</key>
-					<dict>
-						<key>OutputName</key>
-						<string>listaPessoas</string>
-						<key>OutputUUID</key>
-						<string>811f52be-6b3b-4d19-8ade-e975263dfe3d</string>
-						<key>Type</key>
-						<string>ActionOutput</string>
-					</dict>
-					<key>WFSerializationType</key>
-					<string>WFTextTokenAttachment</string>
-				</dict>
+				<string>nome</string>
 			</dict>
 		</dict>
 		<dict>
@@ -345,27 +545,27 @@ Conta corrente</string>
 			<key>WFWorkflowActionParameters</key>
 			<dict>
 				<key>CustomOutputName</key>
-				<string>Text 2</string>
+				<string>Text 6</string>
 				<key>UUID</key>
-				<string>c3b85d75-e34d-4e22-a748-2b1061ee29c4</string>
+				<string>c1897069-c314-4810-9f05-e00c9c9729b6</string>
 				<key>WFTextActionText</key>
 				<dict>
 					<key>Value</key>
 					<dict>
 						<key>attachmentsByRange</key>
 						<dict>
-							<key>{6, 1}</key>
+							<key>{0, 1}</key>
 							<dict>
 								<key>OutputName</key>
-								<string>quemNeg</string>
+								<string>quantiaDivida</string>
 								<key>OutputUUID</key>
-								<string>20238997-83ca-46a3-9f1e-7f475b5c49a1</string>
+								<string>3ecd5216-38ba-443c-897f-bb55443966df</string>
 								<key>Type</key>
 								<string>ActionOutput</string>
 							</dict>
 						</dict>
 						<key>string</key>
-						<string>menos;￼</string>
+						<string>￼</string>
 					</dict>
 					<key>WFSerializationType</key>
 					<string>WFTextTokenString</string>
@@ -382,9 +582,9 @@ Conta corrente</string>
 					<key>Value</key>
 					<dict>
 						<key>OutputName</key>
-						<string>Text 2</string>
+						<string>Text 6</string>
 						<key>OutputUUID</key>
-						<string>c3b85d75-e34d-4e22-a748-2b1061ee29c4</string>
+						<string>c1897069-c314-4810-9f05-e00c9c9729b6</string>
 						<key>Type</key>
 						<string>ActionOutput</string>
 					</dict>
@@ -394,7 +594,7 @@ Conta corrente</string>
 				<key>WFSerializationType</key>
 				<string>WFTextTokenAttachment</string>
 				<key>WFVariableName</key>
-				<string>registo</string>
+				<string>quantia</string>
 			</dict>
 		</dict>
 		<dict>
@@ -407,7 +607,7 @@ Conta corrente</string>
 			<key>WFWorkflowActionParameters</key>
 			<dict>
 				<key>GroupingIdentifier</key>
-				<string>75766aee-b942-44f5-a644-5c0ce9f28e19</string>
+				<string>173a03df-1deb-4b84-b0be-d4559504ebed</string>
 				<key>WFControlFlowMode</key>
 				<integer>1</integer>
 				<key>WFMenuItemAttributedTitle</key>
@@ -424,7 +624,7 @@ Conta corrente</string>
 				<key>CustomOutputName</key>
 				<string>conta</string>
 				<key>UUID</key>
-				<string>da13bbf1-c917-4c85-8d93-b8f9021531d9</string>
+				<string>be87f3e4-8d99-4262-9df4-3210454fd5ea</string>
 				<key>WFChooseFromListActionPrompt</key>
 				<string>De onde?</string>
 				<key>WFInput</key>
@@ -434,7 +634,7 @@ Conta corrente</string>
 						<key>OutputName</key>
 						<string>listaContas</string>
 						<key>OutputUUID</key>
-						<string>53283726-9adc-4764-86dd-4d721910c24b</string>
+						<string>2f937db6-f003-43b9-8bd5-9554990ed480</string>
 						<key>Type</key>
 						<string>ActionOutput</string>
 					</dict>
@@ -445,31 +645,88 @@ Conta corrente</string>
 		</dict>
 		<dict>
 			<key>WFWorkflowActionIdentifier</key>
+			<string>is.workflow.actions.nothing</string>
+		</dict>
+		<dict>
+			<key>WFWorkflowActionIdentifier</key>
+			<string>is.workflow.actions.ask</string>
+			<key>WFWorkflowActionParameters</key>
+			<dict>
+				<key>CustomOutputName</key>
+				<string>quantiaGasto</string>
+				<key>UUID</key>
+				<string>8632ac45-39b5-493c-aa56-a36bd8a72fb2</string>
+				<key>WFAskActionPrompt</key>
+				<string>Quantia</string>
+				<key>WFInputType</key>
+				<string>Number</string>
+			</dict>
+		</dict>
+		<dict>
+			<key>WFWorkflowActionIdentifier</key>
 			<string>is.workflow.actions.gettext</string>
 			<key>WFWorkflowActionParameters</key>
 			<dict>
 				<key>CustomOutputName</key>
-				<string>Text 3</string>
+				<string>Text 7</string>
 				<key>UUID</key>
-				<string>67f2f421-f0c2-40ee-b961-157c2228ad21</string>
+				<string>3ac1ab09-583d-487e-bed2-9e6ee49208c3</string>
+				<key>WFTextActionText</key>
+				<string>gasto</string>
+			</dict>
+		</dict>
+		<dict>
+			<key>WFWorkflowActionIdentifier</key>
+			<string>is.workflow.actions.setvariable</string>
+			<key>WFWorkflowActionParameters</key>
+			<dict>
+				<key>WFInput</key>
+				<dict>
+					<key>Value</key>
+					<dict>
+						<key>OutputName</key>
+						<string>Text 7</string>
+						<key>OutputUUID</key>
+						<string>3ac1ab09-583d-487e-bed2-9e6ee49208c3</string>
+						<key>Type</key>
+						<string>ActionOutput</string>
+					</dict>
+					<key>WFSerializationType</key>
+					<string>WFTextTokenAttachment</string>
+				</dict>
+				<key>WFSerializationType</key>
+				<string>WFTextTokenAttachment</string>
+				<key>WFVariableName</key>
+				<string>tipo</string>
+			</dict>
+		</dict>
+		<dict>
+			<key>WFWorkflowActionIdentifier</key>
+			<string>is.workflow.actions.gettext</string>
+			<key>WFWorkflowActionParameters</key>
+			<dict>
+				<key>CustomOutputName</key>
+				<string>Text 8</string>
+				<key>UUID</key>
+				<string>632702b0-88fd-4312-a9e1-7bc93e739322</string>
 				<key>WFTextActionText</key>
 				<dict>
 					<key>Value</key>
 					<dict>
 						<key>attachmentsByRange</key>
 						<dict>
-							<key>{6, 1}</key>
+							<key>{0, 1}</key>
 							<dict>
 								<key>OutputName</key>
 								<string>conta</string>
 								<key>OutputUUID</key>
-								<string>da13bbf1-c917-4c85-8d93-b8f9021531d9</string>
+								<string>be87f3e4-8d99-4262-9df4-3210454fd5ea</string>
 								<key>Type</key>
 								<string>ActionOutput</string>
 							</dict>
 						</dict>
 						<key>string</key>
-						<string>gasto;￼</string>
+						<string>￼</string>
 					</dict>
 					<key>WFSerializationType</key>
 					<string>WFTextTokenString</string>
@@ -486,9 +743,9 @@ Conta corrente</string>
 					<key>Value</key>
 					<dict>
 						<key>OutputName</key>
-						<string>Text 3</string>
+						<string>Text 8</string>
 						<key>OutputUUID</key>
-						<string>67f2f421-f0c2-40ee-b961-157c2228ad21</string>
+						<string>632702b0-88fd-4312-a9e1-7bc93e739322</string>
 						<key>Type</key>
 						<string>ActionOutput</string>
 					</dict>
@@ -498,7 +755,65 @@ Conta corrente</string>
 				<key>WFSerializationType</key>
 				<string>WFTextTokenAttachment</string>
 				<key>WFVariableName</key>
-				<string>registo</string>
+				<string>nome</string>
+			</dict>
+		</dict>
+		<dict>
+			<key>WFWorkflowActionIdentifier</key>
+			<string>is.workflow.actions.gettext</string>
+			<key>WFWorkflowActionParameters</key>
+			<dict>
+				<key>CustomOutputName</key>
+				<string>Text 9</string>
+				<key>UUID</key>
+				<string>b18b6144-8668-4e5a-b8bd-a86ab1e46f27</string>
+				<key>WFTextActionText</key>
+				<dict>
+					<key>Value</key>
+					<dict>
+						<key>attachmentsByRange</key>
+						<dict>
+							<key>{0, 1}</key>
+							<dict>
+								<key>OutputName</key>
+								<string>quantiaGasto</string>
+								<key>OutputUUID</key>
+								<string>8632ac45-39b5-493c-aa56-a36bd8a72fb2</string>
+								<key>Type</key>
+								<string>ActionOutput</string>
+							</dict>
+						</dict>
+						<key>string</key>
+						<string>￼</string>
+					</dict>
+					<key>WFSerializationType</key>
+					<string>WFTextTokenString</string>
+				</dict>
+			</dict>
+		</dict>
+		<dict>
+			<key>WFWorkflowActionIdentifier</key>
+			<string>is.workflow.actions.setvariable</string>
+			<key>WFWorkflowActionParameters</key>
+			<dict>
+				<key>WFInput</key>
+				<dict>
+					<key>Value</key>
+					<dict>
+						<key>OutputName</key>
+						<string>Text 9</string>
+						<key>OutputUUID</key>
+						<string>b18b6144-8668-4e5a-b8bd-a86ab1e46f27</string>
+						<key>Type</key>
+						<string>ActionOutput</string>
+					</dict>
+					<key>WFSerializationType</key>
+					<string>WFTextTokenAttachment</string>
+				</dict>
+				<key>WFSerializationType</key>
+				<string>WFTextTokenAttachment</string>
+				<key>WFVariableName</key>
+				<string>quantia</string>
 			</dict>
 		</dict>
 		<dict>
@@ -511,9 +826,9 @@ Conta corrente</string>
 			<key>WFWorkflowActionParameters</key>
 			<dict>
 				<key>GroupingIdentifier</key>
-				<string>75766aee-b942-44f5-a644-5c0ce9f28e19</string>
+				<string>173a03df-1deb-4b84-b0be-d4559504ebed</string>
 				<key>UUID</key>
-				<string>6a5507d8-15f9-4fea-82f8-c10bdd5f64de</string>
+				<string>366fd703-1647-4c4a-989b-771ad79ab5e7</string>
 				<key>WFControlFlowMode</key>
 				<integer>2</integer>
 			</dict>
@@ -532,28 +847,9 @@ Conta corrente</string>
 			<key>WFWorkflowActionParameters</key>
 			<dict>
 				<key>CustomOutputName</key>
-				<string>valor</string>
-				<key>UUID</key>
-				<string>e3c9baec-4a64-4acc-9a14-c7e6db5cde06</string>
-				<key>WFAskActionPrompt</key>
-				<string>Valor</string>
-				<key>WFInputType</key>
-				<string>Number</string>
-			</dict>
-		</dict>
-		<dict>
-			<key>WFWorkflowActionIdentifier</key>
-			<string>is.workflow.actions.nothing</string>
-		</dict>
-		<dict>
-			<key>WFWorkflowActionIdentifier</key>
-			<string>is.workflow.actions.ask</string>
-			<key>WFWorkflowActionParameters</key>
-			<dict>
-				<key>CustomOutputName</key>
 				<string>descricao</string>
 				<key>UUID</key>
-				<string>44efda52-86ac-4868-a607-cfa03b491190</string>
+				<string>e328a46c-1ad6-42ab-b7e2-db591cf974e2</string>
 				<key>WFAllowsMultilineText</key>
 				<false/>
 				<key>WFAskActionDefaultAnswer</key>
@@ -572,7 +868,7 @@ Conta corrente</string>
 				<key>CustomOutputName</key>
 				<string>agora</string>
 				<key>UUID</key>
-				<string>19310963-6c71-4d76-af10-4a585f325ef1</string>
+				<string>60b96845-5241-4808-8e96-0e33573a0d74</string>
 				<key>WFDateActionMode</key>
 				<string>Current Date</string>
 			</dict>
@@ -585,7 +881,7 @@ Conta corrente</string>
 				<key>CustomOutputName</key>
 				<string>data</string>
 				<key>UUID</key>
-				<string>13a43a8a-44c3-4a16-93f6-a8a04b172cf5</string>
+				<string>064715d1-a6ef-4947-a25f-38910da712e5</string>
 				<key>WFDate</key>
 				<dict>
 					<key>Value</key>
@@ -597,7 +893,7 @@ Conta corrente</string>
 								<key>OutputName</key>
 								<string>agora</string>
 								<key>OutputUUID</key>
-								<string>19310963-6c71-4d76-af10-4a585f325ef1</string>
+								<string>60b96845-5241-4808-8e96-0e33573a0d74</string>
 								<key>Type</key>
 								<string>ActionOutput</string>
 							</dict>
@@ -624,7 +920,7 @@ Conta corrente</string>
 				<key>CustomOutputName</key>
 				<string>linha</string>
 				<key>UUID</key>
-				<string>1d02f13a-5b72-46a2-80f3-a60075cd6357</string>
+				<string>6c609a67-9564-4b13-875b-90869f692b30</string>
 				<key>WFTextActionText</key>
 				<dict>
 					<key>Value</key>
@@ -636,7 +932,7 @@ Conta corrente</string>
 								<key>OutputName</key>
 								<string>data</string>
 								<key>OutputUUID</key>
-								<string>13a43a8a-44c3-4a16-93f6-a8a04b172cf5</string>
+								<string>064715d1-a6ef-4947-a25f-38910da712e5</string>
 								<key>Type</key>
 								<string>ActionOutput</string>
 							</dict>
@@ -645,29 +941,34 @@ Conta corrente</string>
 								<key>Type</key>
 								<string>Variable</string>
 								<key>VariableName</key>
-								<string>registo</string>
+								<string>tipo</string>
 							</dict>
 							<key>{4, 1}</key>
 							<dict>
-								<key>OutputName</key>
-								<string>valor</string>
-								<key>OutputUUID</key>
-								<string>e3c9baec-4a64-4acc-9a14-c7e6db5cde06</string>
 								<key>Type</key>
-								<string>ActionOutput</string>
+								<string>Variable</string>
+								<key>VariableName</key>
+								<string>nome</string>
 							</dict>
 							<key>{6, 1}</key>
+							<dict>
+								<key>Type</key>
+								<string>Variable</string>
+								<key>VariableName</key>
+								<string>quantia</string>
+							</dict>
+							<key>{8, 1}</key>
 							<dict>
 								<key>OutputName</key>
 								<string>descricao</string>
 								<key>OutputUUID</key>
-								<string>44efda52-86ac-4868-a607-cfa03b491190</string>
+								<string>e328a46c-1ad6-42ab-b7e2-db591cf974e2</string>
 								<key>Type</key>
 								<string>ActionOutput</string>
 							</dict>
 						</dict>
 						<key>string</key>
-						<string>￼;￼;￼;￼</string>
+						<string>￼;￼;￼;￼;￼</string>
 					</dict>
 					<key>WFSerializationType</key>
 					<string>WFTextTokenString</string>
@@ -690,7 +991,7 @@ Conta corrente</string>
 						<key>OutputName</key>
 						<string>linha</string>
 						<key>OutputUUID</key>
-						<string>1d02f13a-5b72-46a2-80f3-a60075cd6357</string>
+						<string>6c609a67-9564-4b13-875b-90869f692b30</string>
 						<key>Type</key>
 						<string>ActionOutput</string>
 					</dict>
@@ -712,16 +1013,21 @@ Conta corrente</string>
 						<dict>
 							<key>{0, 1}</key>
 							<dict>
-								<key>OutputName</key>
-								<string>valor</string>
-								<key>OutputUUID</key>
-								<string>e3c9baec-4a64-4acc-9a14-c7e6db5cde06</string>
 								<key>Type</key>
-								<string>ActionOutput</string>
+								<string>Variable</string>
+								<key>VariableName</key>
+								<string>nome</string>
+							</dict>
+							<key>{3, 1}</key>
+							<dict>
+								<key>Type</key>
+								<string>Variable</string>
+								<key>VariableName</key>
+								<string>quantia</string>
 							</dict>
 						</dict>
 						<key>string</key>
-						<string>￼ €</string>
+						<string>￼: ￼ €</string>
 					</dict>
 					<key>WFSerializationType</key>
 					<string>WFTextTokenString</string>
