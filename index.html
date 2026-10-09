@@ -273,11 +273,9 @@ const numero = c => {
 const numSinal = c => (c < 0 ? '-' : '') + numero(c);
 const cor = c => c > 0 ? 'pos' : c < 0 ? 'neg' : 'zero';
 
-/** Lê "15,32", "1.044,50", "2 543,49 €" ou somas como "115,82 + 4,60 - 60". Devolve cêntimos ou null. */
+/** Lê "15,32", "1.044,50", "1.200", "2 543,49 €" ou somas como "115,82 + 4,60 - 60". Devolve cêntimos ou null. */
 function lerValor(texto) {
-  let s = String(texto).replace(/−/g, '-').replace(/[^0-9,.+\-]/g, '');
-  if (s.includes(',') && s.includes('.')) s = s.replace(/\./g, '');
-  s = s.replace(/,/g, '.');
+  const s = String(texto).replace(/−/g, '-').replace(/[^0-9,.+\-]/g, '');
   if (!s) return null;
   const termos = [];
   let atual = '';
@@ -287,7 +285,11 @@ function lerValor(texto) {
   }
   termos.push(atual);
   let total = 0;
-  for (const t of termos) {
+  for (let t of termos) {
+    // "1.044,50" e "1,200.5": o último separador é o das décimas. "1.200" (pontos de 3 em 3 algarismos) são milhares.
+    if (t.includes(',') && t.includes('.')) t = t.lastIndexOf(',') > t.lastIndexOf('.') ? t.replace(/\./g, '') : t.replace(/,/g, '');
+    else if (/^[+-]?[1-9]\d{0,2}(\.\d{3})+$/.test(t)) t = t.replace(/\./g, '');
+    t = t.replace(/,/g, '.');
     if (!/^[+-]?(\d+\.?\d*|\.\d+)$/.test(t)) return null;
     total += Math.round(parseFloat(t) * 100);
   }
@@ -1112,6 +1114,7 @@ function colar() {
 //   2026-10-09T11:02:40+01:00;menos;João;5;café         (dívida negativa: desconta)
 //   2026-10-09T12:15:03+01:00;gasto;Revolut;23,4;gasolina (gasto: sai do saldo da conta)
 // isto é: data;tipo;quem ou de que conta;valor;descrição. Também aceita data;tipo;"12,50 Mãe jantar".
+// A data pode vir em ISO (como acima), curta ("09/10/26, 10:30") ou por extenso ("9 de outubro de 2026").
 // A app não consegue ler o ficheiro sozinha: é escolhido em "Importar do atalho" e só entram as linhas novas.
 const norm = s => String(s).normalize('NFD').replace(/\p{M}/gu, '').toLowerCase().replace(/\s+/g, ' ').trim();
 
@@ -1120,7 +1123,8 @@ const norm = s => String(s).normalize('NFD').replace(/\p{M}/gu, '').toLowerCase(
  * (o mais comprido, em qualquer posição, e pode ter números, como "Interrail 2026"); depois, o valor.
  */
 function lerTextoAtalho(texto, nomes) {
-  const pal = texto.trim().split(/\s+/).filter(Boolean), conhecidos = new Set(nomes.map(norm));
+  const pal = texto.trim().replace(/(\d)\s(?=\d{3}(?:[.,]\d+)?(?:\s|€|$))/g, '$1').split(/\s+/).filter(p => p && !/^(€|eur)$/i.test(p));
+  const conhecidos = new Set(nomes.map(norm));
   let nome = '', resto = pal;
   for (let n = pal.length; n > 0 && !nome; n--) {
     for (let i = 0; i + n <= pal.length; i++) {
@@ -1137,23 +1141,45 @@ function lerTextoAtalho(texto, nomes) {
   if (!nome) nome = resto.shift() || '';
   return { valor, nome, desc: resto.join(' ') };
 }
+/** Valor escrito pelo atalho. Os Atalhos não põem zeros no fim, por isso "1,200" só pode ser mil e duzentos. */
+function valorAtalho(texto) {
+  const s = String(texto).replace(/[^\d,.+\-−]/g, '');
+  return /^[+-]?[1-9]\d{0,2}(,\d{3})+$/.test(s) ? lerValor(s.replace(/,/g, '')) : lerValor(s);
+}
+/** A data no início da linha: ISO ("2026-10-09T10:30…"), curta ("09/10/26, 10:30") ou por extenso ("9 de outubro de 2026"). */
+function dataAtalho(texto) {
+  let d = null, m;
+  if ((m = texto.match(/^(\d{4})-(\d{2})-(\d{2})/))) d = m[0];
+  else if ((m = texto.match(/^(\d{1,2})[/.-](\d{1,2})[/.-](\d{4}|\d{2})(?!\d)/)))
+    d = `${m[3].length === 2 ? '20' + m[3] : m[3]}-${m[2].padStart(2, '0')}-${m[1].padStart(2, '0')}`;
+  else if ((m = norm(texto).match(/^(?:[a-z-]+,? )?(\d{1,2}) de ([a-z]+)(?: de (\d{4}))?/))) {
+    const mes = MESES_LONGOS.map(norm).indexOf(m[2]);
+    if (mes >= 0) d = `${m[3] || hoje().slice(0, 4)}-${String(mes + 1).padStart(2, '0')}-${m[1].padStart(2, '0')}`;
+  }
+  return d && isoDe(diaDe(d)) === d ? d : null; // recusa datas impossíveis, como 31/02
+}
 function lerLinhaAtalho(linha) {
   const p = linha.split(';').map(x => x.trim());
   if (p.length < 3) return null;
+  // só os tipos conhecidos: um engano (ex.: "meno") não pode passar a somar dinheiro
   const t = norm(p[1]);
-  const tipo = t.includes('gast') ? 'gasto' : t.includes('negativ') || /^(menos|desc|-|−)/.test(t) ? 'menos' : 'mais';
+  const tipo = t.includes('gast') ? 'gasto' : /neg|^(menos|desc|-|−)|[-−]$/.test(t) ? 'menos' : /^(mais|divida|deve|\+)/.test(t) ? 'mais' : null;
+  if (!tipo) return null;
   const grupo = tipo === 'gasto' ? 'gastos' : 'dividas';
-  const r = p.length >= 5 && lerValor(p[3])
-    ? { valor: Math.abs(lerValor(p[3])), nome: p[2], desc: p.slice(4).join(';') }
-    : lerTextoAtalho(p.slice(2).join(';'), gruposDe(grupo).flatMap(g => g.fichas.map(f => f.nome)));
+  const nomes = gruposDe(grupo).flatMap(g => g.fichas.map(f => f.nome)).concat(tipo === 'gasto' ? db.contas.map(c => c.nome) : []);
+  // data;tipo;nome;valor;descrição — se o 4.º campo parece um número (ou está vazio), é este formato
+  const v = p.length >= 5 && /^[-+−\d\s.,€]*$/.test(p[3]) ? valorAtalho(p[3]) : undefined;
+  const r = v === undefined ? lerTextoAtalho(p.slice(2).join(';'), nomes) : v ? { valor: Math.abs(v), nome: p[2], desc: p.slice(4).join(';') } : null;
   if (!r || !r.valor || !r.nome) return null;
-  return { ...r, tipo, grupo, data: /^\d{4}-\d{2}-\d{2}/.test(p[0]) ? p[0].slice(0, 10) : hoje() };
+  const data = dataAtalho(p[0]);
+  return { ...r, tipo, grupo, data: data || hoje(), semData: !data };
 }
 /**
  * Tira um gasto ao saldo da conta, no histórico, na data do gasto. Os registos de datas posteriores ficam
  * como estão: foram escritos à mão depois do gasto, por isso já o incluem.
  */
 function descontar(c, valor, data) {
+  if (data < c.hist[0].data) return; // o primeiro registo foi escrito depois do gasto e já o inclui
   let h = c.hist.find(x => x.data === data);
   if (!h) {
     const antes = c.hist.filter(x => x.data < data);
@@ -1170,19 +1196,29 @@ function grupoChamado(nome, tipo) {
 }
 function importarAtalho(texto) {
   const desfaz = pontoDeRetorno();
-  if (!Array.isArray(db.atalho)) db.atalho = []; // linhas já importadas (com o n.º da repetição, para linhas iguais)
-  const vistas = new Set(db.atalho), repeticoes = new Map(), semConta = new Set();
-  let novos = 0, nomesNovos = 0, maus = 0, jaVistas = 0;
-  for (const bruta of String(texto).split(/\r?\n/)) {
-    const linha = bruta.trim();
-    if (!linha) continue;
+  if (!Array.isArray(db.atalho)) db.atalho = [];         // linhas já importadas (com o n.º da repetição, para linhas iguais)
+  if (!Array.isArray(db.atalhoMaus)) db.atalhoMaus = []; // linhas que não percebi e de que já avisei
+  // Uma descrição escrita em várias linhas chega partida: os pedaços sem os ";" juntam-se à linha anterior.
+  const linhas = [];
+  for (const bruta of String(texto).replace(/^﻿/, '').split(/\r\n?|\n/)) {
+    const l = bruta.trim();
+    if (!l) continue;
+    if (linhas.length && l.split(';').length < 3) linhas[linhas.length - 1] += ' ' + l; else linhas.push(l);
+  }
+  const vistas = new Set([...db.atalho, ...db.atalhoMaus]), repeticoes = new Map(), semConta = new Set();
+  let novos = 0, nomesNovos = 0, maus = 0, jaVistas = 0, semData = 0, primeiroMau = '';
+  for (const linha of linhas) {
     const k = (repeticoes.get(linha) || 0) + 1;
     repeticoes.set(linha, k);
     const chave = `${linha}#${k}`;
     if (vistas.has(chave)) { jaVistas++; continue; }
+    vistas.add(chave);
     const m = lerLinhaAtalho(linha);
-    if (!m) { maus++; continue; }
-    let f = gruposDe(m.grupo).flatMap(g => g.fichas).find(f => norm(f.nome) === norm(m.nome));
+    if (!m) { maus++; primeiroMau ||= linha.replace(/^[^;]*;/, ''); db.atalhoMaus.push(chave); continue; }
+    if (m.semData) semData++;
+    // "João (Amigos)": quando há duas pessoas com o mesmo nome, a lista do atalho junta o grupo
+    const fichas = gruposDe(m.grupo).flatMap(g => g.fichas.map(f => [f, g]));
+    let f = (fichas.find(([f, g]) => norm(`${f.nome} (${g.nome})`) === norm(m.nome)) || fichas.find(([f]) => norm(f.nome) === norm(m.nome)) || [])[0];
     if (m.grupo === 'gastos') {
       const conta = db.contas.find(c => norm(c.nome) === norm(m.nome));
       if (conta) descontar(conta, m.valor, m.data); else semConta.add(m.nome);
@@ -1193,23 +1229,31 @@ function importarAtalho(texto) {
       nomesNovos++;
     }
     f.movimentos.push({ id: uid(), valor: m.tipo === 'menos' ? -m.valor : m.valor, desc: m.desc, data: m.data });
-    db.atalho.push(chave); vistas.add(chave); novos++;
+    db.atalho.push(chave); novos++;
   }
-  if (!novos && !jaVistas && maus) { toast('Este ficheiro não parece ser do atalho'); return; }
+  if (!novos && !jaVistas && !linhas.some(l => dataAtalho(l))) { desfaz(); toast('Este ficheiro não parece ser do atalho'); return; }
   gravarPref('atalho', hoje());
   guardar(); render();
-  if (!novos) { toast(maus ? `Nada de novo · ${maus} ${maus === 1 ? 'linha que não percebi' : 'linhas que não percebi'}` : 'Não há movimentos novos'); return; }
+  const curta = t => t.length > 40 ? t.slice(0, 39) + '…' : t;
+  const naoPercebi = maus ? `não percebi ${maus === 1 ? 'uma linha' : `${maus} linhas`}: «${curta(primeiroMau)}»` : '';
+  if (!novos) { toast(naoPercebi ? `Nada de novo · ${naoPercebi}` : 'Não há movimentos novos'); return; }
   toast([`${novos} ${novos === 1 ? 'movimento importado' : 'movimentos importados'}`,
     nomesNovos ? `${nomesNovos} ${nomesNovos === 1 ? 'pessoa nova' : 'pessoas novas'} em «Do atalho»` : '',
     semConta.size ? `sem conta «${[...semConta].join('», «')}» em Contas` : '',
-    maus ? `${maus} ${maus === 1 ? 'linha que não percebi' : 'linhas que não percebi'}` : ''].filter(Boolean).join(' · '), desfaz);
+    semData ? `${semData} sem data (ficou a de hoje)` : '',
+    naoPercebi].filter(Boolean).join(' · '), desfaz);
 }
 
 /** Os nomes que o atalho mostra: as pessoas das dívidas ou as contas. Um por linha, para colar numa ação Texto. */
-const nomesAtalho = tipo => [...new Set(tipo === 'contas' ? db.contas.map(c => c.nome) : gruposDe('dividas').flatMap(g => g.fichas.map(f => f.nome)))];
+function nomesAtalho(tipo) {
+  if (tipo === 'contas') return [...new Set(db.contas.map(c => c.nome))];
+  const fs = gruposDe('dividas').flatMap(g => g.fichas.map(f => [f.nome, g.nome]));
+  const repetido = n => fs.filter(([x]) => norm(x) === norm(n)).length > 1;
+  return [...new Set(fs.map(([n, g]) => repetido(n) ? `${n} (${g})` : n))];
+}
 
 function folhaAtalho() {
-  const lista = tipo => { const n = nomesAtalho(tipo); return n.length ? esc(n.join(' · ')) : 'Ainda não há nenhum.'; };
+  const lista = tipo => { const n = nomesAtalho(tipo); return n.length ? esc(n.join(' · ')) : tipo === 'contas' ? 'Ainda não há contas.' : 'Ainda não há pessoas.'; };
   abrir({
     tipo: 'folha', titulo: 'Atalho do iPhone', ok: 'Importar do atalho',
     corpo: `<p class="texto" style="padding:0 2px 14px">Aponta dívidas e gastos sem abrir a app, até com o iPhone bloqueado. Tocas num botão, escolhes <b>Dívida</b>, <b>Dívida negativa</b> ou <b>Gasto</b>, depois quem (ou de que conta), o valor e a descrição. O atalho guarda tudo num ficheiro do iCloud Drive; aqui, tocas em <b>Importar do atalho</b>.</p>
@@ -1217,26 +1261,26 @@ function folhaAtalho() {
       <section class="cartao">${cabCartao('Contas', '<button class="lig" data-a="copiar-nomes" data-id="contas">Copiar</button>')}<p class="texto">${lista('contas')}</p></section>
       <section class="cartao">${cabCartao('1. Criar o atalho (só uma vez)')}<ol class="passos">
         <li>Na app <b>Atalhos</b>, toca em <b>+</b> e chama-lhe <b>Dinheiro</b>.</li>
-        <li>Adiciona <b>Escolher do menu</b>, com a pergunta «Dinheiro» e três opções: <b>Dívida</b>, <b>Dívida negativa</b> e <b>Gasto</b>.</li>
-        <li>Dentro de <b>Dívida</b>, adiciona por esta ordem:<br>
-          · <b>Texto</b>: cola as pessoas (botão <b>Copiar</b> em cima), uma por linha;<br>
-          · <b>Dividir texto</b>, por <b>Novas linhas</b>;<br>
+        <li>Adiciona <b>Escolher do menu</b>, com a pergunta «Dinheiro» e três opções: <b>Dívida</b>, <b>Dívida negativa</b> e <b>Gasto</b>. Por baixo das opções aparece sozinho o marcador <b>Terminar menu</b>.</li>
+        <li>Dentro de <b>Dívida</b>, põe estas quatro ações. As ações novas vão para o fim do atalho: mantém o dedo em cada uma e arrasta-a para dentro de Dívida.<br>
+          · <b>Texto</b>: cola as pessoas (botão <b>Copiar</b>, em cima), uma por linha, sem linhas em branco;<br>
+          · <b>Dividir texto</b>, com o separador <b>Novas linhas</b>;<br>
           · <b>Escolher da lista</b>, com a pergunta «Quem?»;<br>
-          · <b>Texto</b>: escreve <code>mais;</code> e junta a variável <b>Item escolhido</b>.</li>
-        <li>Dentro de <b>Dívida negativa</b>, faz o mesmo, mas o último Texto começa por <code>menos;</code>. Podes copiar as quatro ações da Dívida.</li>
+          · <b>Texto</b>: escreve <code>mais;</code> e junta a variável que sai de Escolher da lista (<b>Item escolhido</b>).</li>
+        <li>Dentro de <b>Dívida negativa</b>, faz o mesmo, mas o último Texto começa por <code>menos;</code>. Podes duplicar as quatro ações da Dívida e arrastá-las.</li>
         <li>Dentro de <b>Gasto</b>, faz o mesmo com as contas (deixa só as que queres, como Revolut, Carteira e Conta corrente), a pergunta «De onde?» e o último Texto a começar por <code>gasto;</code>.</li>
         <li>Depois de <b>Terminar menu</b>, adiciona <b>Pedir entrada</b> (tipo Número) com a pergunta «Valor» e, a seguir, <b>Definir variável</b> com o nome <b>Valor</b>.</li>
-        <li>Adiciona <b>Pedir entrada</b> (tipo Texto) com a pergunta «Descrição» e <b>Definir variável</b> com o nome <b>Descrição</b>.</li>
-        <li>Adiciona <b>Data atual</b> e depois <b>Formatar data</b>, com o formato <b>ISO 8601</b> e a hora incluída.</li>
-        <li>Adiciona <b>Texto</b> com as quatro variáveis separadas por ponto e vírgula, tocando em cada uma: <code>Data formatada;Resultado do menu;Valor;Descrição</code></li>
-        <li>Adiciona <b>Acrescentar ao ficheiro de texto</b> («Append to Text File»): o texto é o do passo anterior, o ficheiro é <code>Dinheiro/atalho.txt</code> e <b>Criar nova linha</b> fica ligado.</li>
+        <li>Adiciona <b>Pedir entrada</b> (tipo Texto) com a pergunta «Descrição» e <b>Definir variável</b> com o nome <b>Descrição</b>. Quando não quiseres descrição, basta tocar em OK.</li>
+        <li>Adiciona <b>Data atual</b> e depois <b>Formatar data</b>: em Formato da data escolhe <b>ISO 8601</b> e liga a opção da hora.</li>
+        <li>Adiciona <b>Texto</b> com as quatro variáveis separadas por ponto e vírgula: <code>Data formatada;Resultado do menu;Valor;Descrição</code>. Se uma variável não aparecer por cima do teclado, toca em <b>Selecionar variável</b> e depois na ação que a dá (para o Resultado do menu, toca em Terminar menu).</li>
+        <li>Adiciona a ação que acrescenta texto a um ficheiro (procura «ficheiro de texto»; em inglês, «Append to Text File»): o texto é o do passo anterior, a pasta fica <b>Atalhos</b>, o caminho é <code>Dinheiro/atalho.txt</code> e <b>Criar nova linha</b> fica ligado.</li>
         <li>Se quiseres uma confirmação, junta <b>Mostrar notificação</b> com «Guardado».</li>
-      </ol><p class="texto">Os nomes das ações podem mudar um pouco com a versão do iOS: procura pela palavra principal.</p></section>
+      </ol><p class="texto">Os nomes das ações podem mudar um pouco com a versão do iOS: procura pela palavra principal. Quando juntares pessoas ou contas na app, volta aqui, toca em <b>Copiar</b> e substitui a lista no atalho.</p></section>
       <section class="cartao">${cabCartao('2. Pôr no ecrã bloqueado')}<ol class="passos">
-        <li>No ecrã bloqueado, mantém o dedo e toca em <b>Personalizar</b> → <b>Ecrã bloqueado</b>.</li>
-        <li>Tira o botão da lanterna ou da câmara com <b>−</b>, toca em <b>+</b> e escolhe <b>Atalho</b> → <b>Dinheiro</b>.</li>
-        <li>Também o podes pôr no Centro de Controlo ou no botão de ação.</li>
-      </ol><p class="texto">Ao tocar no botão, as perguntas aparecem num cartão no topo do ecrã. Para guardar no ficheiro, o iPhone pode pedir o Face ID.</p></section>
+        <li>Com o iPhone desbloqueado, mas ainda no ecrã bloqueado, mantém o dedo e toca em <b>Personalizar</b> → <b>Ecrã bloqueado</b>.</li>
+        <li>Tira o botão da lanterna ou da câmara com <b>−</b>, toca em <b>+</b>, escolhe <b>Atalho</b>, toca em <b>Escolher</b>, seleciona <b>Dinheiro</b> e toca em <b>OK</b>.</li>
+        <li>Também o podes pôr na <b>Central de controlo</b> (<b>+</b> no canto superior esquerdo → Adicionar um controlo → Atalho) ou no <b>botão de ação</b> (Definições → Botão de ação → Atalho).</li>
+      </ol><p class="texto">Ao tocar no botão, as perguntas aparecem num cartão no topo do ecrã; não toques fora do cartão, que isso cancela. Para guardar no ficheiro, o iPhone pode pedir o Face ID. Se der erro na primeira vez, cria a pasta <b>Dinheiro</b> em Ficheiros → iCloud Drive → Atalhos.</p></section>
       <section class="cartao">${cabCartao('3. Passar para a app')}
       <p class="texto">Toca em <b>Importar do atalho</b> e escolhe <b>atalho.txt</b> (iCloud Drive → Atalhos → Dinheiro). Podes escolher sempre o mesmo ficheiro: só entram os movimentos novos.</p>
       <p class="texto">As dívidas entram na pessoa com esse nome. Os gastos saem do saldo da conta com esse nome e aparecem em Gastos, no grupo «Dia a dia».</p></section>`,
