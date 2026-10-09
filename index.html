@@ -3,6 +3,8 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-status-bar-style" content="default">
 <meta name="apple-mobile-web-app-title" content="Dinheiro">
 <meta name="theme-color" content="#f3f4f8" media="(prefers-color-scheme: light)">
@@ -379,6 +381,7 @@ const ic = {
   ficheiro: ico('<path d="M14 3.5H7A1.5 1.5 0 0 0 5.5 5v14A1.5 1.5 0 0 0 7 20.5h10a1.5 1.5 0 0 0 1.5-1.5V8z"/><path d="M14 3.5V8h4.5M12 11v6M9.5 14.5 12 17l2.5-2.5"/>'),
   sobe: ico('<path d="M7 17 17 7M9 7h8v8"/>'),
   desce: ico('<path d="M7 7l10 10M17 9v8H9"/>'),
+  colar: ico('<rect x="5.5" y="4.5" width="13" height="16" rx="2.5"/><path d="M9.5 4.5V4a1 1 0 0 1 1-1h3a1 1 0 0 1 1 1v.5M9 11h6M9 15h4"/>'),
   igual: ico('<path d="M6 10h12M6 14h12"/>'),
   olho: ico('<path d="M2.5 12S6 5.5 12 5.5 21.5 12 21.5 12 18 18.5 12 18.5 2.5 12 2.5 12z"/><circle cx="12" cy="12" r="3"/>'),
   olhoFechado: ico('<path d="M2.5 12S6 5.5 12 5.5 21.5 12 21.5 12 18 18.5 12 18.5 2.5 12 2.5 12z"/><circle cx="12" cy="12" r="3"/><path d="M4 4l16 16"/>'),
@@ -751,7 +754,7 @@ function vResumo() {
     <div class="heroi-centro"><div class="heroi-rot">Total · contas e dívidas</div>
       <div class="valor-g">${euroG(tc + td)}</div>
       ${ev ? `<span class="pilula">${esc(ev.texto)} ${esc(ev.quando)}</span>` : ''}</div>
-    <div class="botoes-acao">${botaoAcao('rapido', ic.atualizar, 'Atualizar', 'contas')}${botaoAcao('rapido', ic.trocar, 'Dívida', 'dividas')}${botaoAcao('rapido', ic.gastos, 'Gasto', 'gastos')}${botaoAcao('menu-copias', ic.mais3, 'Mais')}</div>
+    <div class="botoes-acao">${botaoAcao('colar-atalho', ic.colar, 'Colar')}${botaoAcao('rapido', ic.atualizar, 'Atualizar', 'contas')}${botaoAcao('rapido', ic.trocar, 'Dívida', 'dividas')}${botaoAcao('rapido', ic.gastos, 'Gasto', 'gastos')}${botaoAcao('menu-copias', ic.mais3, 'Mais')}</div>
   </header>`;
   if (vazio) {
     h += `<section class="cartao">${cabCartao('Começar')}
@@ -759,7 +762,6 @@ function vResumo() {
       <button class="linha acao" data-a="colar">${avatarIcone(ic.mais)}Colar os meus dados</button>
       <button class="linha acao" data-a="repor">${avatarIcone(ic.ficheiro)}Importar de um ficheiro</button></section>`;
   } else {
-    if (emEcraInteiro()) h += cartaoSafari();
     if (lerPref('atalho', '') && lerPref('atalho', '') !== 'oculto') h += cartaoAtalho();
     h += ev ? cartaoEvolucao(ev) : cartaoTexto('Evolução', 'O gráfico aparece à medida que atualizas o valor das contas.');
   }
@@ -1098,12 +1100,12 @@ function colar() {
   abrir({
     tipo: 'folha', titulo: 'Colar dados', ok: 'Importar',
     corpo: `<div class="cartao"><textarea id="f-dados" class="nota" style="padding-top:14px" rows="8" placeholder="Toca aqui, mantém o dedo e escolhe Colar" autocomplete="off" autocorrect="off" spellcheck="false"></textarea></div>
-      <p class="rodape">Copia o texto da cópia de segurança (por exemplo, no Mac) e cola-o aqui.</p>`,
+      <p class="rodape">Cola aqui o que o atalho copiou, ou o texto de uma cópia de segurança.</p>`,
     guardar: () => {
       const t = $('#f-dados').value;
       if (!t.trim()) return erro('#f-dados');
       camada = null; $('#camada').innerHTML = ''; document.documentElement.classList.remove('travado');
-      importar(t);
+      if (t.trim().startsWith('{')) importar(t); else importarAtalho(t, 'colado');
       return false;
     },
   });
@@ -1205,8 +1207,11 @@ function grupoChamado(nome, tipo) {
   if (!g) db.grupos.push(g = { id: uid(), nome, tipo, fichas: [] });
   return g;
 }
-/** deLink: veio do link que o atalho abre (um movimento de cada vez), em vez do ficheiro. */
-function importarAtalho(texto, deLink = false) {
+/**
+ * origem: 'ficheiro' (Importar do ficheiro), 'colado' (Colar do atalho: o atalho copia todos os movimentos que guardou)
+ * ou 'link'. Cada movimento fica com a data e a hora em que foi registado no atalho, mesmo que entre dias depois.
+ */
+function importarAtalho(texto, origem = 'ficheiro') {
   const desfaz = pontoDeRetorno();
   if (!Array.isArray(db.atalho)) db.atalho = [];         // linhas já importadas (com o n.º da repetição, para linhas iguais)
   if (!Array.isArray(db.atalhoMaus)) db.atalhoMaus = []; // linhas que não percebi e de que já avisei
@@ -1244,19 +1249,24 @@ function importarAtalho(texto, deLink = false) {
     f.movimentos.push({ id: uid(), valor: m.tipo === 'menos' ? -m.valor : m.valor, desc: m.desc, data: m.data });
     db.atalho.push(chave); novos++; ultimo = { m, f };
   }
-  if (!novos && !jaVistas && !linhas.some(l => dataAtalho(l))) { desfaz(); toast(deLink ? 'O link do atalho não tem um movimento válido' : 'Este ficheiro não parece ser do atalho'); return; }
+  if (!novos && !jaVistas && !linhas.some(l => dataAtalho(l))) {
+    desfaz();
+    toast(origem === 'link' ? 'O link do atalho não tem um movimento válido' : origem === 'colado' ? 'O que está copiado não é do atalho. Corre o atalho e volta a colar.' : 'Este ficheiro não parece ser do atalho');
+    return;
+  }
   gravarPref('atalho', hoje());
   guardar();
-  if (deLink && novos === 1 && !maus) {
+  if (origem !== 'ficheiro' && novos === 1 && !maus) {
     // abre a pessoa ou o item, para se ver logo o movimento novo
     const { m, f } = ultimo;
     irPara(m.grupo); ui.ficha[m.grupo] = f.id; ui.anim = 'entra'; render(); scrollTo(0, 0);
     const valor = m.tipo === 'menos' ? '−' + euro(m.valor) : m.tipo === 'gasto' ? euro(m.valor) + ' gasto' : '+' + euro(m.valor);
-    toast(`Guardado: ${f.nome} ${valor}${semConta.size ? ` · sem conta «${m.nome}» em Contas` : ''}`, desfaz);
+    const quando = m.data === hoje() ? '' : ` · ${dataPT(m.data)}`;
+    toast(`Guardado: ${f.nome} ${valor}${quando}${semConta.size ? ` · sem conta «${m.nome}» em Contas` : ''}`, desfaz);
     return;
   }
   render();
-  if (deLink && !novos && jaVistas) { toast('Este movimento já estava guardado'); return; }
+  if (origem !== 'ficheiro' && !novos && jaVistas && !maus) { toast(origem === 'link' ? 'Este movimento já estava guardado' : 'Já estava tudo na app'); return; }
   const curta = t => t.length > 40 ? t.slice(0, 39) + '…' : t;
   const naoPercebi = maus ? `não percebi ${maus === 1 ? 'uma linha' : `${maus} linhas`}: «${curta(primeiroMau)}»` : '';
   if (!novos) { toast(naoPercebi ? `Nada de novo · ${naoPercebi}` : 'Não há movimentos novos', maus ? desfaz : null); return; }
@@ -1281,8 +1291,8 @@ const COMANDO_MAC = `cd ~/Downloads && curl -fsSL -o Dinheiro.shortcut ${URL_ATA
 function folhaAtalho() {
   const lista = tipo => { const n = nomesAtalho(tipo); return n.length ? esc(n.join(' · ')) : tipo === 'contas' ? 'Ainda não há contas.' : 'Ainda não há pessoas.'; };
   abrir({
-    tipo: 'folha', titulo: 'Atalho do iPhone', ok: 'Importar do ficheiro do atalho',
-    corpo: `<p class="texto" style="padding:0 2px 14px">Aponta dívidas e gastos sem abrir a app, até com o iPhone bloqueado: tocas num botão, escolhes <b>Dívida</b> ou <b>Gasto</b>, quem (ou de que conta), a quantia, se te devem ou se deves, e a descrição. No fim, o atalho abre a app no Safari e o movimento entra logo.</p>
+    tipo: 'folha', titulo: 'Atalho do iPhone', ok: 'Colar do atalho',
+    corpo: `<p class="texto" style="padding:0 2px 14px">Aponta dívidas e gastos sem abrir a app, até com o iPhone bloqueado: tocas num botão, escolhes <b>Dívida</b> ou <b>Gasto</b>, quem (ou de que conta), a quantia, se te devem ou se deves, e a descrição. O atalho guarda o movimento com a data e a hora e copia-o. Quando abrires a app, toca em <b>Colar</b> (no topo do início): entram os movimentos que faltam, cada um com a sua data.</p>
       <section class="cartao">${cabCartao('1. Instalar o atalho (no Mac, uma vez)')}
         <p class="texto">A Apple só deixa instalar atalhos assinados, e isso faz-se num Mac. Abre o <b>Terminal</b> (Cmd+Espaço, escreve «Terminal»), cola este comando e carrega em Enter. A app Atalhos abre: toca em <b>Adicionar atalho</b> e ele passa para o iPhone pelo iCloud.</p>
         <p class="texto"><code>${esc(COMANDO_MAC)}</code></p>
@@ -1290,27 +1300,22 @@ function folhaAtalho() {
       <section class="cartao">${cabCartao('2. Pôr no ecrã bloqueado')}<ol class="passos">
         <li>Com o iPhone desbloqueado, mas ainda no ecrã bloqueado, mantém o dedo e toca em <b>Personalizar</b> → <b>Ecrã bloqueado</b>.</li>
         <li>Tira o botão da lanterna ou da câmara com <b>−</b>, toca em <b>+</b>, escolhe <b>Atalho</b>, toca em <b>Escolher</b>, seleciona <b>Dinheiro</b> e toca em <b>OK</b>.</li>
-      </ol><p class="texto">As perguntas aparecem num cartão no topo do ecrã; não toques fora do cartão, que isso cancela. No fim, o iPhone pede o Face ID para abrir o Safari.</p></section>
+      </ol><p class="texto">As perguntas aparecem num cartão no topo do ecrã; não toques fora do cartão, que isso cancela. Para guardar o movimento, o iPhone pode pedir o Face ID.</p></section>
       <section class="cartao">${cabCartao('Pessoas', '<button class="lig" data-a="copiar-nomes" data-id="dividas">Copiar</button>')}<p class="texto">${lista('dividas')}</p>
         <p class="texto">O atalho tem a sua própria lista de pessoas e de contas (Revolut, Carteira, Conta corrente). Quando juntares alguém aqui, abre o atalho na app Atalhos e cola a lista nova no primeiro Texto.</p></section>
-      <section class="cartao">${cabCartao('Se o movimento não entrar')}
-        <p class="texto">O atalho também guarda cada movimento em <b>atalho.txt</b> (iCloud Drive → Atalhos → Dinheiro). Toca em <b>Importar do ficheiro do atalho</b> e escolhe esse ficheiro: só entram os que faltam.</p></section>`,
-    guardar: () => { fechar(); repor(); return false; },
+      <section class="cartao">${cabCartao('Se copiares outra coisa entretanto')}
+        <p class="texto">Os movimentos ficam guardados em <b>atalho.txt</b> (iCloud Drive → Atalhos → Dinheiro). Corre o atalho outra vez, ou usa <b>Mais → Importar do ficheiro do atalho</b> e escolhe esse ficheiro: só entram os que faltam.</p></section>`,
+    guardar: () => { fechar(); colarAtalho(); return false; },
   });
 }
 
-// A app aberta como "app web" (ecrã inteiro) tem os dados à parte do Safari e não recebe os links do atalho.
-const emEcraInteiro = () => navigator.standalone === true || matchMedia('(display-mode: standalone)').matches;
-function cartaoSafari() {
-  return `<section class="cartao">${cabCartao('Passar a app para o Safari')}
-    <p class="texto">Para o atalho guardar logo aqui, a app tem de abrir no Safari. Faz isto uma vez:</p>
-    <ol class="passos">
-      <li>Toca em <b>Guardar cópia</b> (em baixo) e guarda o ficheiro em Ficheiros.</li>
-      <li>Abre <b>lopalha-creator.github.io/dinheiro</b> no Safari e toca em <b>Importar de um ficheiro</b>, com essa cópia.</li>
-      <li>No Safari, toca em Partilhar → <b>Adicionar ao ecrã principal</b>, com <b>Abrir como app web</b> desligado.</li>
-      <li>Apaga este ícone antigo do ecrã principal.</li>
-    </ol>
-    <div class="botoes-linha"><button class="btn-pri" data-a="backup">Guardar cópia</button><button class="btn-sec" data-a="copiar-site">Copiar endereço</button></div></section>`;
+/** O atalho copia todos os movimentos que guardou; aqui entram só os que a app ainda não tem. */
+function colarAtalho() {
+  if (!navigator.clipboard?.readText) { colar(); return; }
+  navigator.clipboard.readText().then(t => {
+    if (!t.trim()) { toast('Não há nada copiado. Corre o atalho e volta a tocar em Colar.'); return; }
+    if (t.trim().startsWith('{')) importar(t); else importarAtalho(t, 'colado');
+  }, () => colar()); // sem autorização para ler: abre a folha para colar à mão
 }
 
 /** No início: primeiro um convite para criar o atalho; depois de usado, o botão para importar. */
@@ -1323,7 +1328,7 @@ function cartaoAtalho() {
   const n = diaDe(hoje()) - diaDe(ult);
   return `<section class="cartao">${cabCartao('Atalho do iPhone', '<button class="lig" data-a="atalho-ajuda">Ajuda</button>')}
     <p class="texto">Última importação: ${n <= 0 ? 'hoje' : n === 1 ? 'ontem' : `há ${n} dias`}.</p>
-    <div class="botoes-linha"><button class="btn-pri" data-a="repor">Importar do atalho</button></div></section>`;
+    <div class="botoes-linha"><button class="btn-pri" data-a="colar-atalho">Colar do atalho</button><button class="btn-sec" data-a="repor">Do ficheiro</button></div></section>`;
 }
 
 /** Aviso curto em baixo. Com "desfazer" (uma função), fica mais tempo e tem o botão Desfazer. */
@@ -1469,7 +1474,8 @@ document.addEventListener('click', e => {
     }
     case 'menu-copias':
       acoes('Mais', [
-        { texto: 'Importar do atalho', fn: repor },
+        { texto: 'Colar do atalho', fn: colarAtalho },
+        { texto: 'Importar do ficheiro do atalho', fn: repor },
         { texto: 'Atalho do iPhone', fn: folhaAtalho },
         { texto: 'Guardar cópia de segurança', fn: backup },
         { texto: 'Exportar em texto', fn: exportar },
@@ -1481,11 +1487,9 @@ document.addEventListener('click', e => {
     case 'backup': backup(); return;
     case 'repor': repor(); return;
     case 'atalho-ajuda': folhaAtalho(); return;
+    case 'colar-atalho': colarAtalho(); return;
     case 'copiar-comando':
       navigator.clipboard.writeText(COMANDO_MAC).then(() => toast('Comando copiado'), () => toast('Não foi possível copiar'));
-      return;
-    case 'copiar-site':
-      navigator.clipboard.writeText('https://lopalha-creator.github.io/dinheiro/').then(() => toast('Endereço copiado'), () => toast('Não foi possível copiar'));
       return;
     case 'copiar-nomes': {
       const n = nomesAtalho(id);
@@ -1541,7 +1545,7 @@ function lerLinkAtalho() {
   history.replaceState(null, '', location.pathname + location.search);
   let texto = m[1];
   try { texto = decodeURIComponent(texto.replace(/\+/g, ' ')); } catch {}
-  importarAtalho(texto, true);
+  importarAtalho(texto, 'link');
 }
 addEventListener('hashchange', lerLinkAtalho);
 
