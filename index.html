@@ -1083,6 +1083,13 @@ function importar(texto) {
   }
 }
 /** Escolher um ficheiro: uma cópia de segurança (JSON) substitui os dados; o ficheiro do atalho acrescenta movimentos. */
+/** Texto de um ficheiro em UTF-8 ou em UTF-16 (com ou sem a marca inicial), que é como alguns editores gravam. */
+async function lerFicheiro(f) {
+  const b = new Uint8Array(await f.arrayBuffer());
+  const utf16 = b[0] === 0xFF && b[1] === 0xFE ? 'utf-16le' : b[0] === 0xFE && b[1] === 0xFF ? 'utf-16be'
+    : b.length > 3 && b[1] === 0 && b[3] === 0 ? 'utf-16le' : b.length > 3 && b[0] === 0 && b[2] === 0 ? 'utf-16be' : null;
+  return new TextDecoder(utf16 || 'utf-8').decode(b).replace(/^\uFEFF/, '');
+}
 function repor() {
   // Sem filtro de tipo: no iPhone o filtro .json costuma deixar os ficheiros a cinzento.
   const i = document.createElement('input');
@@ -1091,8 +1098,8 @@ function repor() {
   i.onchange = async () => {
     const f = i.files[0]; i.remove();
     if (!f) return;
-    const t = await f.text();
-    if (t.trim().startsWith('{')) importar(t); else importarAtalho(t);
+    const t = await lerFicheiro(f);
+    if (t.trim().startsWith('{')) importar(t); else importarAtalho(t, 'ficheiro', f.name);
   };
   i.click();
 }
@@ -1151,15 +1158,22 @@ function valorAtalho(texto) {
   return /^[+-]?[1-9]\d{0,2}(,\d{3})+$/.test(s) ? lerValor(s.replace(/,/g, '')) : lerValor(s);
 }
 /** A data no início da linha: ISO ("2026-10-09T10:30…"), curta ("09/10/26, 10:30") ou por extenso ("9 de outubro de 2026"). */
+/** N.º do mês (0 a 11) de "outubro", "out", "out." ou "Oct"; −1 se não for um mês. */
+const MESES_EN = ['jan', 'feb', 'mar', 'apr', 'may', 'jun', 'jul', 'aug', 'sep', 'oct', 'nov', 'dec'];
+function mesDe(palavra) {
+  const p = norm(palavra), i = MESES.indexOf(p.slice(0, 3)), j = MESES_EN.indexOf(p.slice(0, 3));
+  const k = i >= 0 ? i : j;
+  return k >= 0 && (p.length === 3 || norm(MESES_LONGOS[k]) === p || ['january', 'february', 'march', 'april', 'june', 'july', 'august', 'september', 'october', 'november', 'december', 'sept'].includes(p)) ? k : -1;
+}
 function dataAtalho(texto) {
   let d = null, m;
   if ((m = texto.match(/^(\d{4})-(\d{2})-(\d{2})/))) d = m[0];
   else if ((m = texto.match(/^(\d{1,2})[/.-](\d{1,2})[/.-](\d{4}|\d{2})(?!\d)/)))
     d = `${m[3].length === 2 ? '20' + m[3] : m[3]}-${m[2].padStart(2, '0')}-${m[1].padStart(2, '0')}`;
-  else if ((m = norm(texto).match(/^(?:[a-z-]+,? )?(\d{1,2}) de ([a-z]+)(?: de (\d{4}))?/))) {
-    const mes = MESES_LONGOS.map(norm).indexOf(m[2]);
-    if (mes >= 0) d = `${m[3] || hoje().slice(0, 4)}-${String(mes + 1).padStart(2, '0')}-${m[1].padStart(2, '0')}`;
-  }
+  else if ((m = norm(texto).match(/^(?:[a-z-]+\.?,? )?(\d{1,2})(?: de)? ([a-z]+)\.?(?:,? (?:de )?(\d{4}))?/)) && mesDe(m[2]) >= 0)
+    d = `${m[3] || hoje().slice(0, 4)}-${String(mesDe(m[2]) + 1).padStart(2, '0')}-${m[1].padStart(2, '0')}`;
+  else if ((m = norm(texto).match(/^(?:[a-z]+,? )?([a-z]+)\.? (\d{1,2}),? (\d{4})/)) && mesDe(m[1]) >= 0)
+    d = `${m[3]}-${String(mesDe(m[1]) + 1).padStart(2, '0')}-${m[2].padStart(2, '0')}`;
   return d && isoDe(diaDe(d)) === d ? d : null; // recusa datas impossíveis, como 31/02
 }
 function tipoAtalho(texto) {
@@ -1211,7 +1225,7 @@ function grupoChamado(nome, tipo) {
  * origem: 'ficheiro' (Importar do ficheiro), 'colado' (Colar do atalho: o atalho copia todos os movimentos que guardou)
  * ou 'link'. Cada movimento fica com a data e a hora em que foi registado no atalho, mesmo que entre dias depois.
  */
-function importarAtalho(texto, origem = 'ficheiro') {
+function importarAtalho(texto, origem = 'ficheiro', nomeFicheiro = '') {
   const desfaz = pontoDeRetorno();
   if (!Array.isArray(db.atalho)) db.atalho = [];         // linhas já importadas (com o n.º da repetição, para linhas iguais)
   if (!Array.isArray(db.atalhoMaus)) db.atalhoMaus = []; // linhas que não percebi e de que já avisei
@@ -1251,7 +1265,8 @@ function importarAtalho(texto, origem = 'ficheiro') {
   }
   if (!novos && !jaVistas && !linhas.some(l => dataAtalho(l))) {
     desfaz();
-    toast(origem === 'link' ? 'O link do atalho não tem um movimento válido' : origem === 'colado' ? 'O que está copiado não é do atalho. Corre o atalho e volta a colar.' : 'Este ficheiro não parece ser do atalho');
+    if (origem === 'ficheiro') ficheiroEstranho(texto, nomeFicheiro);
+    else toast(origem === 'link' ? 'O link do atalho não tem um movimento válido' : 'O que está copiado não é do atalho. Corre o atalho e volta a colar.');
     return;
   }
   gravarPref('atalho', hoje());
@@ -1319,9 +1334,25 @@ function ficheiroAtalho() {
   document.body.appendChild(i);
   i.onchange = async () => {
     const f = i.files[0]; i.remove();
-    if (f) importarAtalho(await f.text());
+    if (f) importarAtalho(await lerFicheiro(f), 'ficheiro', f.name);
   };
   i.click();
+}
+/** O ficheiro escolhido não tem movimentos do atalho: mostra o que tem (e deixa copiá-lo), para se perceber porquê. */
+function ficheiroEstranho(texto, nome) {
+  const linhas = String(texto).split(/\r\n?|\n/).filter(l => l.trim());
+  const amostra = linhas.slice(0, 6).map(l => l.length > 90 ? l.slice(0, 89) + '…' : l).join('\n');
+  const outro = nome && !/^atalho( ?\(?\d+\)?)?\.txt$/i.test(nome);
+  abrir({
+    tipo: 'folha', titulo: linhas.length ? 'Este ficheiro não tem movimentos do atalho' : 'O ficheiro está vazio', ok: 'Escolher outro ficheiro',
+    corpo: `<p class="texto" style="padding:0 2px 14px">${outro ? `Escolheste <b>${esc(nome)}</b>. O do atalho chama-se <b>atalho.txt</b> e está em iCloud Drive → Atalhos → Dinheiro. ` : ''}${linhas.length
+      ? 'Cada linha do atalho começa pela data, assim: <code>2026-10-09T15:58:12;gasto;Revolut;2;café</code>. Este ficheiro começa assim:'
+      : 'Corre o atalho uma vez (Dívida ou Gasto) e volta a escolher <b>atalho.txt</b>.'}</p>
+      ${linhas.length ? `<section class="cartao"><p class="texto"><code style="white-space:pre-wrap;display:block">${esc(amostra)}</code></p>
+        <div class="botoes-linha"><button class="btn-sec" data-a="copiar-amostra">Copiar o que tem</button></div></section>` : ''}`,
+    amostra: String(texto).slice(0, 4000),
+    guardar: () => { fechar(); ficheiroAtalho(); return false; },
+  });
 }
 /** O atalho também copia todos os movimentos que guardou; aqui entram só os que a app ainda não tem. */
 function colarAtalho() {
@@ -1525,6 +1556,9 @@ document.addEventListener('click', e => {
     case 'atalho-ajuda': folhaAtalho(); return;
     case 'colar-atalho': colarAtalho(); return;
     case 'ficheiro-atalho': ficheiroAtalho(); return;
+    case 'copiar-amostra':
+      navigator.clipboard.writeText(camada?.amostra || '').then(() => toast('Copiado'), () => toast('Não foi possível copiar'));
+      return;
     case 'copiar-comando':
       navigator.clipboard.writeText(COMANDO_MAC).then(() => toast('Comando copiado'), () => toast('Não foi possível copiar'));
       return;
