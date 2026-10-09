@@ -1,0 +1,43 @@
+/*
+ * Atalho da app Dinheiro (https://lopalha-creator.github.io/dinheiro/).
+ * Pergunta Dívida, Dívida negativa ou Gasto; depois quem (ou de que conta), o valor e a descrição.
+ * Acrescenta uma linha a iCloud Drive/Atalhos/Dinheiro/atalho.txt, que a app lê em "Importar do atalho":
+ *   2026-10-09T10:30:15;mais;Mãe;12,5;jantar
+ */
+
+#include 'actions/calendar'
+#include 'actions/documents'
+
+#define name Dinheiro
+#define color blue
+#define glyph euroSign
+
+comment('Pessoas das dívidas, uma por linha. Para as trocar: na app Dinheiro, Mais → Atalho do iPhone → Copiar (Pessoas), e cola no Texto a seguir.')
+const textoPessoas = text("Mãe\nPai")
+const listaPessoas = splitText(textoPessoas, "\n")
+comment('Contas dos gastos, uma por linha. Os nomes têm de ser iguais aos das contas na app.')
+const textoContas = text("Revolut\nCarteira\nConta corrente")
+const listaContas = splitText(textoContas, "\n")
+
+@registo = ""
+menu "Dinheiro" {
+    item "Dívida":
+        const quem = chooseFromList(listaPessoas, "Quem?")
+        @registo = "mais;{quem}"
+    item "Dívida negativa":
+        const quemNeg = chooseFromList(listaPessoas, "Quem?")
+        @registo = "menos;{quemNeg}"
+    item "Gasto":
+        const conta = chooseFromList(listaContas, "De onde?")
+        @registo = "gasto;{conta}"
+}
+
+nothing()
+const valor = prompt("Valor", "Number")
+nothing()
+const descricao = prompt("Descrição", "Text", "", "false")
+const agora = currentDate()
+const data = formatDate(agora, "Custom", "yyyy-MM-dd'T'HH:mm:ss")
+const linha = text("{data};{@registo};{valor};{descricao}")
+appendToFile("Dinheiro/atalho.txt", linha)
+showNotification("{valor} €", "Guardado")
