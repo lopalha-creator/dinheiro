@@ -14,7 +14,7 @@
 #define glyph euroSign
 
 comment('Pessoas das dívidas, uma por linha, com os nomes como estão na app Dinheiro (Mais → Atalho do iPhone → Copiar).')
-const textoPessoas = text("Mãe\nPai")
+const textoPessoas = text("Pai\nMãe\nMafalda\nMiga\nCosta\nDuda\nMonti\nFranci\nGodinho\nLuigi\nCardoso\nMité")
 const listaPessoas = splitText(textoPessoas, "\n")
 comment('Contas dos gastos, uma por linha, com os nomes como estão na app.')
 const textoContas = text("Revolut\nCarteira\nConta corrente")
