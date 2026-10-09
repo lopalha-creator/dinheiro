@@ -85,9 +85,10 @@ h1 { font-size: 32px; font-weight: 800; letter-spacing: -.03em; line-height: 1.1
 .heroi-centro { text-align: center; padding: 4px 0 0; }
 .heroi .valor-g { font-size: 40px; margin: 2px 0 10px; }
 .heroi-rot { font-size: 14px; font-weight: 700; opacity: .85; }
+.heroi .acao-red { text-shadow: 0 1px 2px rgba(0,0,0,.28); }
 .valor-g { font-size: 44px; font-weight: 800; letter-spacing: -.035em; line-height: 1.1; margin: 4px 0 12px; overflow-wrap: anywhere; }
 .valor-g small, .valor-m small { font-size: .56em; font-weight: 800; letter-spacing: -.01em; }
-.pilula { display: inline-flex; align-items: center; gap: 6px; padding: 7px 14px; border-radius: 999px; font-size: 14px; font-weight: 700; }
+.pilula { display: inline-flex; align-items: center; gap: 6px; padding: 7px 14px; border-radius: 999px; font-size: 14px; font-weight: 700; text-wrap: balance; }
 
 /* botões de ação redondos */
 .botoes-acao { display: flex; justify-content: center; gap: 4px; margin-top: 16px; }
@@ -157,13 +158,14 @@ textarea.nota { display: block; padding: 4px 16px 14px; resize: none; min-height
 .tile { display: flex; flex-direction: column; gap: 4px; min-width: 0; min-height: 64px; padding: 12px 14px; border-radius: 16px; background: var(--fill); }
 .tile:active { background: var(--prem); }
 .tile-nome { font-size: 13px; font-weight: 700; color: var(--sec); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
-.tile .val { font-size: 18px; font-weight: 800; letter-spacing: -.02em; }
+.tile .val { font-size: 18px; font-weight: 800; letter-spacing: -.02em; overflow: hidden; text-overflow: ellipsis; }
+@media (max-width: 374px) { .tile .val.l { font-size: 15px; } .tile .val.xl { font-size: 14px; } }
 .tile.fora .val { color: var(--sec); }
 .mes-cab { display: flex; justify-content: space-between; padding: 14px 16px 4px; font-size: 13px; font-weight: 700; color: var(--sec); }
-.mes-cab:first-of-type { padding-top: 4px; }
-.conta-nota { font-size: 13px; color: var(--sec); padding: 6px 16px 12px; overflow-wrap: anywhere; }
+.cartao-cab + .mes-cab { padding-top: 4px; }
+.conta-nota { font-size: 13px; color: var(--sec); padding: 0 16px 6px; overflow-wrap: anywhere; }
 .nota-cartao { padding: 0; }
-.nota-cartao textarea.nota { padding: 14px 16px; min-height: 48px; }
+.nota-cartao textarea.nota { padding: 14px 16px; min-height: 48px; overflow: hidden; }
 .vazio { text-align: center; padding: 40px 24px; }
 .vazio p { font-size: 15px; color: var(--sec); margin-bottom: 14px; }
 .linha.opcao { font-weight: 600; }
@@ -200,7 +202,7 @@ code { font: 700 14px/1.3 ui-monospace, Menlo, monospace; background: var(--fill
 .comp span { min-width: 3px; }
 
 /* ocultar valores (para mostrar o ecrã a alguém) */
-.oculto :is(.val, .valor-g, .valor-m, .leg, .sub, .pilula, .graf text, .cartao-cab .dir, .conta-nota, .mes-cab span + span) { filter: blur(8px); }
+.oculto :is(.val, .valor-g, .valor-m, .leg, .sub, .pilula, .graf text, .cartao-cab .dir:not(:has(button)), .conta-nota, .mes-cab span + span, textarea.nota:not(:focus)) { filter: blur(8px); }
 
 /* barra de separadores */
 .tabs {
@@ -262,7 +264,8 @@ input[type=date] { width: auto; text-align: right; color: var(--acc); font-weigh
 .grupo-acoes.grelha > * + * { border-top: 0; }
 .grelha .titulo-acoes { grid-column: 1 / -1; padding: 14px 0 4px; }
 .grupo-acoes.grelha button { display: flex; flex-direction: column; align-items: center; gap: 6px; padding: 4px 0; font-size: 12px; font-weight: 700; color: var(--txt); min-width: 0; }
-.grelha button span:last-child { max-width: 100%; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.grelha button span:last-child { max-width: 100%; overflow-wrap: anywhere; line-height: 1.2; text-align: center; }
+@media (max-width: 359px) { .grupo-acoes.grelha { grid-template-columns: repeat(3, 1fr); } }
 .grelha .avatar { width: 48px; height: 48px; font-size: 16px; }
 .cancelar-acoes { flex: none; background: var(--cel); color: var(--txt); border-radius: 22px; }
 #camada.saindo .folha, #camada.saindo .folha-acoes { animation: desce .25s forwards; }
@@ -320,7 +323,7 @@ const mesAtual = () => hoje().slice(0, 7);
 
 // Todos os valores são guardados em cêntimos (inteiros) para não haver erros de arredondamento.
 const fmtEuro = new Intl.NumberFormat('pt-PT', { style: 'currency', currency: 'EUR' });
-const euro = c => fmtEuro.format(c / 100);
+const euro = c => fmtEuro.format(c / 100).replace('-', '−');
 const euroSinal = c => c > 0 ? '+' + euro(c) : c < 0 ? '−' + euro(-c) : euro(0);
 const numero = c => {
   const a = Math.abs(c);
@@ -662,7 +665,7 @@ function passoGraf(el, sentido) {
 function evolucao(pts, inicio, o = {}) {
   if (inicio == null) return null;
   const ate = Math.max(diaDe(hoje()), pts.length ? pts[pts.length - 1][0] : 0);
-  const [, texto, dias] = PERIODOS.find(p => p[0] === ui.periodo) || PERIODOS[3];
+  const [, texto, dias] = PERIODOS.find(p => p[0] === (o.periodo || ui.periodo)) || PERIODOS[3];
   const de = Math.max(inicio, ate - dias);
   if (de >= ate) return null;
   const r = recortar(pts, de, ate);
@@ -671,7 +674,7 @@ function evolucao(pts, inicio, o = {}) {
   return {
     texto: `${dv > 0 ? '▲' : dv < 0 ? '▼' : '='} ${euro(Math.abs(dv))}${pct}`,
     cls: cor(dv),
-    quando: de === ate - dias ? texto : 'desde ' + dataPT(isoDe(de)),
+    quando: de === ate - dias ? texto : 'desde ' + dataPT(isoDe(de)).replace(/ /g, '\u00a0'),
     graf: grafLinha(r, de, ate, o),
     filtros: `<div class="chips">${PERIODOS.map(([id]) =>
       `<button data-a="periodo" data-id="${id}" class="${ui.periodo === id ? 'on' : ''}">${id}</button>`).join('')}</div>`,
@@ -751,7 +754,8 @@ function euroG(c) {
   let a = '', b = '', depois = false;
   for (const p of fmtEuro.formatToParts(c / 100)) {
     if (p.type === 'decimal') depois = true;
-    if (depois) b += p.value; else a += p.value;
+    const v = p.type === 'minusSign' ? '−' : p.value;
+    if (depois) b += v; else a += v;
   }
   return `${esc(a)}<small>${esc(b)}</small>`;
 }
@@ -768,7 +772,7 @@ const cabTab = (titulo, menu) => `<div class="cab-tab"><h1>${esc(titulo)}</h1>${
 /** Separador ainda vazio: uma frase e o botão para começar. */
 const vazio = (texto, a, botao) => `<div class="vazio"><p>${esc(texto)}</p><button class="btn-pri" data-a="${a}">${esc(botao)}</button></div>`;
 const cabCartao = (titulo, dir = '') => `<div class="cartao-cab"><h2>${esc(titulo)}</h2>${dir}</div>`;
-const verTudo = (tab, texto) => `<button class="lig" data-a="tab" data-id="${tab}">${texto}</button>`;
+const verTudo = (tab, texto) => `<button class="lig" data-a="ver-todas" data-id="${tab}">${texto}</button>`;
 const botaoAcao = (a, icone, texto, id = '') =>
   `<button class="acao-red" data-a="${a}"${id ? ` data-id="${esc(id)}"` : ''}><span class="circ">${icone}</span>${esc(texto)}</button>`;
 
@@ -777,8 +781,8 @@ function linha(titulo, valor, o = {}) {
   const attrs = o.a ? ` data-a="${o.a}" data-id="${esc(o.id ?? '')}"${o.tipo ? ` data-tipo="${o.tipo}"` : ''}` : '';
   return `<${tag} class="linha"${attrs}>${o.avatar || ''}<div class="txt"><div class="tit ${o.tituloCls || ''}">${esc(titulo)}</div>${o.sub ? `<div class="sub">${esc(o.sub)}</div>` : ''}</div><div class="val ${o.cls || ''}">${valor}</div></${tag}>`;
 }
-function linhaOrdenar(nome, a, id, i, n) {
-  return `<div class="linha">${avatar(nome)}<div class="txt tit">${esc(nome)}</div>
+function linhaOrdenar(nome, a, id, i, n, slot = slotNome(nome)) {
+  return `<div class="linha">${avatar(nome, slot)}<div class="txt tit">${esc(nome)}</div>
     <button class="mini" data-a="${a}" data-id="${id}" data-d="-1" ${i === 0 ? 'disabled' : ''} aria-label="Subir">↑</button>
     <button class="mini" data-a="${a}" data-id="${id}" data-d="1" ${i === n - 1 ? 'disabled' : ''} aria-label="Descer">↓</button></div>`;
 }
@@ -799,13 +803,18 @@ function textoCopia() {
 }
 
 /** As contas, com o avatar na cor da barra de distribuição (a lista serve de legenda). */
+/** Cor do avatar de uma conta: a da sua parte na barra de distribuição (cinzento se está fora do total). */
+function slotConta(c) {
+  const noTotal = db.contas.filter(x => x.noTotal), j = noTotal.indexOf(c);
+  return j < 0 ? -1 : distribuicao(noTotal).slot(j);
+}
 function blocoContas() {
   const noTotal = db.contas.filter(c => c.noTotal), dist = distribuicao(noTotal);
   return dist.barra + db.contas.map(c => {
     const j = noTotal.indexOf(c);
     return linha(c.nome, euro(c.valor), {
       a: 'abrir', tipo: 'contas', id: c.id, cls: j < 0 ? 'sec' : '',
-      avatar: avatar(c.nome, j < 0 ? -1 : dist.slot(j)),
+      avatar: avatar(c.nome, slotConta(c)),
       sub: [c.nota, j < 0 ? 'fora do total' : dist.pct(j)].filter(Boolean).join(' · '),
     });
   }).join('');
@@ -836,7 +845,7 @@ function linhaMov(m, gasto) {
 function vResumo() {
   const tc = totalContas(), td = totalDividas();
   const vazio = !db.contas.length && db.grupos.every(g => !g.fichas.length);
-  const s = serieTotal(), ev = evolucao(s.pts, s.inicio, { rotulo: 'Evolução do total' });
+  const s = serieTotal(), ev = evolucao(s.pts, s.inicio, { periodo: 'Tudo', rotulo: 'Evolução do total' });
   const olho = `<button class="icbtn" data-a="ocultar" aria-label="${ui.oculto ? 'Mostrar valores' : 'Ocultar valores'}">${ui.oculto ? ic.olhoFechado : ic.olho}</button>`;
   const mais = `<button class="icbtn" data-a="mais" aria-label="Mais">${ic.mais3}</button>`;
   let h = `<header class="heroi">${barra({ titulo: 'Dinheiro', acoes: olho + mais })}
@@ -858,7 +867,7 @@ function vResumo() {
   if (pessoas.length) {
     const comSaldo = pessoas.filter(f => totalFicha(f)).sort((a, b) => Math.abs(totalFicha(b)) - Math.abs(totalFicha(a)));
     const devem = comSaldo.reduce((t, f) => t + Math.max(0, totalFicha(f)), 0), deves = -comSaldo.reduce((t, f) => t + Math.min(0, totalFicha(f)), 0);
-    h += `<section class="cartao">${cabCartao('Dívidas', verTudo('dividas', comSaldo.length > 4 ? `Ver todas (${comSaldo.length})` : 'Ver todas'))}` + (comSaldo.length
+    h += `<section class="cartao">${cabCartao('Dívidas', verTudo('dividas', pessoas.length > 4 ? `Ver todas (${pessoas.length})` : 'Ver todas'))}` + (comSaldo.length
       ? `<div class="duo"><div><div class="rot">Devem-te</div><div class="valor-m pos">${euroG(devem)}</div></div>` +
         (deves ? `<div><div class="rot">Deves</div><div class="valor-m neg">${euroG(deves)}</div></div>` : '') + '</div>' +
         comSaldo.slice(0, 4).map(f => linhaFicha(f, true)).join('')
@@ -866,8 +875,11 @@ function vResumo() {
   }
 
   // o saldo de cada conta, em quadrados
-  if (db.contas.length) h += `<section class="cartao">${cabCartao('Contas', `<span class="dir">${euro(tc)}</span>`)}<div class="mosaico">${db.contas.map(c =>
-    `<button class="tile${c.noTotal ? '' : ' fora'}" data-a="abrir" data-tipo="contas" data-id="${c.id}"><span class="tile-nome">${esc(c.nome)}</span><span class="val">${euro(c.valor)}</span></button>`).join('')}</div></section>`;
+  if (db.contas.length) h += `<section class="cartao">${cabCartao('Contas', `<span class="dir">${euro(tc)}</span>`)}<div class="mosaico">${db.contas.map(c => {
+    const v = euro(c.valor), tam = v.length > 13 ? ' xl' : v.length > 11 ? ' l' : '';
+    return `<button class="tile${c.noTotal ? '' : ' fora'}" data-a="abrir" data-tipo="contas" data-id="${c.id}"><span class="tile-nome">${esc(c.nome)}</span>` +
+      `<span class="val${tam}">${v}</span>${c.noTotal ? '' : '<span class="tile-nome">fora do total</span>'}</button>`;
+  }).join('')}</div></section>`;
 
   // o que se gastou este mês, nos itens com mais gastos
   const doMes = gruposDe('gastos').flatMap(g => g.fichas).map(f => [f, gastoMes(f)]).filter(([, v]) => v).sort((a, b) => b[1] - a[1]);
@@ -884,7 +896,7 @@ function vContas() {
   let h = cabTab('Contas', 'menu-contas');
   if (!n) return h + vazio('Ainda não há contas', 'nova-conta', 'Nova conta');
   h += `<div class="cab-valor"><div class="rot">Total nas contas</div><div class="valor-g">${euroG(totalContas())}</div></div>
-    <section class="cartao">${ui.ordenar ? db.contas.map((c, i) => linhaOrdenar(c.nome, 'mover-conta', c.id, i, n)).join('') : blocoContas()}</section>`;
+    <section class="cartao">${ui.ordenar ? db.contas.map((c, i) => linhaOrdenar(c.nome, 'mover-conta', c.id, i, n, slotConta(c))).join('') : blocoContas()}</section>`;
   const s = serieTotal(false), ev = !ui.ordenar && evolucao(s.pts, s.inicio, { rotulo: 'Evolução do total nas contas' });
   if (ev) h += cartaoEvolucao(ev);
   return h;
@@ -893,9 +905,8 @@ function vContas() {
 function vConta() {
   const c = db.contas.find(c => c.id === ui.ficha.contas);
   const ev = evolucao(acumular(eventosConta(c)), diaDe(c.hist[0].data), { rotulo: 'Evolução de ' + c.nome });
-  const noTotal = db.contas.filter(x => x.noTotal), j = noTotal.indexOf(c);
   const leg = [c.nota, c.noTotal ? '' : 'fora do total'].filter(Boolean).join(' · ');
-  let h = barra({ voltar: 'Contas' }) + `<div class="perfil">${avatar(c.nome, j < 0 ? -1 : distribuicao(noTotal).slot(j), 'grande')}<h1>${esc(c.nome)}</h1>
+  let h = barra({ voltar: 'Contas' }) + `<div class="perfil">${avatar(c.nome, slotConta(c), 'grande')}<h1>${esc(c.nome)}</h1>
     <div class="valor-g">${euroG(c.valor)}</div>${ev ? `<span class="pilula ${ev.cls}">${esc(ev.texto)} ${esc(ev.quando)}</span>` : ''}${leg ? `<div class="leg">${esc(leg)}</div>` : ''}
     <div class="botoes-acao">${botaoAcao('novo-hist', ic.atualizar, 'Atualizar')}${botaoAcao('editar-conta', ic.editar, 'Editar')}</div></div>`;
   h += `<section class="cartao">${cabCartao('Histórico')}` + c.hist.map((x, i) => {
@@ -933,7 +944,7 @@ function vGrupos(tipo) {
   }
   for (const g of gs) {
     const n = g.fichas.length, t = totalGrupo(g);
-    h += `<section class="cartao">${cabCartao(g.nome, `<span class="dir"><span class="${div ? cor(t) : ''}">${euro(t)}</span>
+    h += `<section class="cartao">${cabCartao(g.nome, `<span class="dir"><span class="val ${div ? cor(t) : 'sec'}">${euro(t)}</span>
       <button class="icbtn peq" data-a="menu-grupo" data-id="${g.id}" aria-label="Opções de ${esc(g.nome)}">${ic.mais3}</button></span>`)}` +
       g.fichas.map((f, i) => ui.ordenar ? linhaOrdenar(f.nome, 'mover-ficha', f.id, i, n) : linhaFicha(f, div)).join('') +
       (n || ui.ordenar ? '' : btnAdicionar('nova-ficha', div ? 'Adicionar pessoa' : 'Adicionar item', g.id)) + '</section>';
@@ -945,7 +956,7 @@ function vGrupos(tipo) {
       if (ev) h += cartaoEvolucao(ev);
     } else {
       const gm = grafGastosMes();
-      if (gm) h += cartaoGraf({ titulo: 'Por mês', valor: euroG(gm.atual.valor), leg: esc(`${gm.atual.nome} · média de ${euro(gm.media)} por mês`), graf: gm.graf });
+      if (gm) h += cartaoGraf({ titulo: 'Por mês', valor: euroG(gm.media), leg: 'média por mês', graf: gm.graf });
     }
   }
   return h;
@@ -959,10 +970,12 @@ function vFicha(tipo) {
   let h = barra({ voltar: div ? 'Dívidas' : 'Gastos' }) + `<div class="perfil">${avatar(f.nome, slotNome(f.nome), 'grande')}<h1>${esc(f.nome)}</h1>
     <div class="valor-g ${div ? cor(t) : ''}">${euroG(t)}</div><div class="leg">${esc(legenda)}</div>
     <div class="botoes-acao">${botaoAcao('novo-mov', ic.mais, 'Adicionar')}${saldar}${botaoAcao('menu-ficha', ic.mais3, 'Mais')}</div></div>`;
-  h += `<section class="cartao nota-cartao"><textarea class="nota" data-campo="nota" rows="${f.nota ? 3 : 1}" placeholder="Adicionar nota">${esc(f.nota)}</textarea></section>`;
+  h += `<section class="cartao nota-cartao"><textarea class="nota" data-campo="nota" rows="1" placeholder="Adicionar nota">${esc(f.nota)}</textarea></section>`;
   // os movimentos mais recentes em cima; nos gastos, separados por mês
   const movs = [...movOrdenados(f)].reverse();
   h += `<section class="cartao">${cabCartao('Movimentos')}`;
+  // nas dívidas, a conta como na nota não se perde
+  if (div && movs.length > 1) h += `<p class="conta-nota">${esc(expressao(f))} = ${esc(numSinal(t))}</p>`;
   if (!movs.length) h += btnAdicionar('novo-mov', 'Adicionar movimento');
   else if (div) h += movs.map(m => linhaMov(m, false)).join('');
   else {
@@ -976,8 +989,6 @@ function vFicha(tipo) {
       h += linhaMov(m, true);
     }
   }
-  // nas dívidas, a conta como na nota não se perde
-  if (div && movs.length > 1) h += `<p class="conta-nota">${esc(expressao(f))} = ${esc(numSinal(t))}</p>`;
   h += '</section>';
   if (div) {
     const graf = grafFicha(f, true);
@@ -995,6 +1006,8 @@ function vTabs() {
     `<button data-a="tab" data-id="${id}" class="${ui.tab === id ? 'on' : ''}">${ic[id]}<span>${nome}</span></button>`).join('')}</nav>`;
 }
 
+/** A caixa da nota cresce com o texto. */
+const alturaNota = t => { t.style.height = 'auto'; t.style.height = t.scrollHeight + 'px'; };
 function render() {
   const t = ui.tab;
   let html;
@@ -1008,6 +1021,7 @@ function render() {
   else { ui.ficha[t] = null; html = vGrupos(t); }
   $('#app').innerHTML = `<main class="pagina ${ui.anim}">${html}</main>${vTabs()}`;
   ui.anim = '';
+  document.querySelectorAll('textarea.nota').forEach(alturaNota);
 }
 
 /* ---------- folhas e menus ---------- */
@@ -1043,7 +1057,7 @@ const btnApagar = (a, id, texto) => `<section class="cartao"><button class="linh
 function vAcoes(c) {
   return `<div class="folha-acoes" role="dialog"><div class="grupo-acoes${c.grelha ? ' grelha' : ''}">
     ${c.titulo ? `<div class="titulo-acoes">${esc(c.titulo)}</div>` : ''}
-    ${c.botoes.map((b, i) => `<button data-a="acao" data-id="${i}" class="${b.perigo ? 'perigo' : ''}">${c.grelha ? avatar(b.texto) + `<span>${esc(b.texto)}</span>` : esc(b.texto)}</button>`).join('')}
+    ${c.botoes.map((b, i) => `<button data-a="acao" data-id="${i}" class="${b.perigo ? 'perigo' : ''}">${c.grelha ? avatar(b.texto, b.slot ?? slotNome(b.texto)) + `<span>${esc(b.texto)}</span>` : esc(b.texto)}</button>`).join('')}
     </div><button class="cancelar-acoes" data-a="fechar">Cancelar</button></div>`;
 }
 const acoes = (titulo, botoes) => abrir({ tipo: 'acoes', titulo, botoes });
@@ -1075,7 +1089,7 @@ const novaFicha = g => pedirNome(g.tipo === 'dividas' ? `Nova pessoa em ${g.nome
 /** Nova pessoa ou item a partir do ••• do separador: escolhe o grupo, se houver mais do que um. */
 function escolherGrupoNova() {
   const div = ui.tab === 'dividas', gs = gruposDe(ui.tab);
-  if (!gs.length) pedirNome('Novo grupo', '', n => { const g = { id: uid(), nome: n, tipo: ui.tab, fichas: [] }; db.grupos.push(g); setTimeout(() => novaFicha(g), 300); });
+  if (!gs.length) novaFicha(grupoChamado(div ? 'Pessoas' : 'Dia a dia', ui.tab));
   else if (gs.length === 1) novaFicha(gs[0]);
   else acoes(div ? 'Nova pessoa em' : 'Novo item em', gs.map(g => ({ texto: g.nome, fn: () => novaFicha(g) })));
 }
@@ -1557,11 +1571,11 @@ function ficheiroEstranho(texto, nome, deNovo = ficheiroAtalho) {
     tipo: 'folha', ok: 'Escolher outro ficheiro',
     titulo: !linhas.length ? (!deRepor && /\n/.test(texto) ? 'O atalho escreveu linhas em branco' : 'O ficheiro está vazio') : deRepor ? 'Este ficheiro não é uma cópia da app' : 'Este ficheiro não tem movimentos do atalho',
     corpo: `<p class="texto" style="padding:0 2px 14px">${deRepor
-      ? 'As cópias de segurança chamam-se <b>dinheiro-…json</b> (Mais → Guardar cópia de segurança). Também se pode escolher aqui o <b>atalho.txt</b>.' + (linhas.length ? ' Este ficheiro começa assim:' : '')
+      ? 'As cópias de segurança chamam-se <b>dinheiro-…json</b> (Início → ••• → Guardar cópia de segurança). Também se pode escolher aqui o <b>atalho.txt</b>.' + (linhas.length ? ' Este ficheiro começa assim:' : '')
       : (outro ? `Escolheste <b>${esc(nome)}</b>. O do atalho chama-se <b>atalho.txt</b> e está em iCloud Drive → Atalhos → Dinheiro. ` : '') + (linhas.length
       ? 'Cada linha do atalho começa pela data, assim: <code>2026-10-09T15:58:12;gasto;Revolut;2;café</code>. Este ficheiro começa assim:'
       : /\n/.test(texto)
-      ? 'O atalho escreveu linhas em branco: é a versão antiga, que não guardava o texto. Instala outra vez o atalho pelo Mac (Mais → Reinstalar o atalho no Mac) e regista de novo os movimentos que faltam.'
+      ? 'O atalho escreveu linhas em branco: é a versão antiga, que não guardava o texto. Instala outra vez o atalho pelo Mac (Início → ••• → Reinstalar o atalho no Mac) e regista de novo os movimentos que faltam.'
       : 'Corre o atalho uma vez (Dívida ou Gasto) e volta a escolher <b>atalho.txt</b>.')}</p>
       ${linhas.length ? `<section class="cartao"><p class="texto"><code style="white-space:pre-wrap;display:block">${esc(amostra)}</code></p>
         <div class="botoes-linha"><button class="btn-sec" data-a="copiar-amostra">Copiar o que tem</button></div></section>` : ''}`,
@@ -1627,6 +1641,7 @@ document.addEventListener('click', e => {
       else if (id === ui.tab) { scrollTo({ top: 0, behavior: 'smooth' }); return; }
       else irPara(id);
       render(); scrollTo(0, 0); return;
+    case 'ver-todas': irPara(id); ui.ficha[id] = null; render(); scrollTo(0, 0); return;
     case 'voltar':
       ui.ficha[ui.tab] = null; ui.anim = 'volta';
       render(); scrollTo(0, ui.scroll[ui.tab] || 0); return;
@@ -1666,7 +1681,7 @@ document.addEventListener('click', e => {
       acoes(div ? 'Dívidas' : 'Gastos', [
         { texto: div ? 'Nova pessoa' : 'Novo item', fn: escolherGrupoNova },
         { texto: 'Novo grupo', fn: () => pedirNome('Novo grupo', '', n => db.grupos.push({ id: uid(), nome: n, tipo: ui.tab, fichas: [] })) },
-        { texto: 'Ordenar', fn: () => { ui.ordenar = true; } },
+        ...(gruposDe(ui.tab).length > 1 || gruposDe(ui.tab).some(g => g.fichas.length > 1) ? [{ texto: 'Ordenar', fn: () => { ui.ordenar = true; } }] : []),
       ]);
       return;
     }
@@ -1685,7 +1700,7 @@ document.addEventListener('click', e => {
       // por exemplo, passar quem chegou pelo atalho a "Do atalho" para Pais ou Amigos
       const outros = gruposDe(g.tipo).filter(x => x !== g);
       if (outros.length) botoes.push({ texto: 'Mudar de grupo', fn: () => acoes(`Passar ${f.nome} para`, outros.map(x => ({
-        texto: x.nome, fn: () => { g.fichas = g.fichas.filter(y => y !== f); x.fichas.push(f); },
+        texto: x.nome, desfazer: `${f.nome} passou para ${x.nome}`, fn: () => { g.fichas = g.fichas.filter(y => y !== f); x.fichas.push(f); },
       }))) });
       if (f.movimentos.length) botoes.push({ texto: 'Apagar todos os movimentos', perigo: true,
         fn: () => apagarComContas(`Apagar todos os movimentos de ${f.nome}?`, f.movimentos, () => { f.movimentos = []; }) });
@@ -1749,7 +1764,7 @@ document.addEventListener('click', e => {
       const ir = (tipo, fid, folha) => () => { irPara(tipo); ui.ficha[tipo] = fid; render(); scrollTo(0, 0); folha(null); };
       if (id === 'contas') {
         if (!db.contas.length) { irPara('contas'); render(); folhaConta(null); return; }
-        abrir({ tipo: 'acoes', grelha: true, titulo: 'Atualizar o valor de', botoes: db.contas.map(c => ({ texto: c.nome, fn: ir('contas', c.id, folhaHist) })) });
+        abrir({ tipo: 'acoes', grelha: true, titulo: 'Atualizar o valor de', botoes: db.contas.map(c => ({ texto: c.nome, slot: slotConta(c), fn: ir('contas', c.id, folhaHist) })) });
         return;
       }
       const fichas = gruposDe(id).flatMap(g => g.fichas);
@@ -1791,6 +1806,7 @@ document.addEventListener('mousedown', e => { if (e.target.closest('.seg')) e.pr
 
 document.addEventListener('input', e => {
   if (e.target.dataset.campo !== 'nota') return;
+  alturaNota(e.target);
   const [, f] = acharFicha(ui.ficha[ui.tab]);
   if (f) { f.nota = e.target.value; guardar(); }
 });
