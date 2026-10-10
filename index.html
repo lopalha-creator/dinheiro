@@ -34,8 +34,9 @@
   --fonte: Manrope, -apple-system, BlinkMacSystemFont, system-ui, sans-serif;
   color-scheme: light dark;
 }
+/* tema escuro: o do iPhone (automático) ou escolhido em Definições */
 @media (prefers-color-scheme: dark) {
-  :root {
+  :root:not([data-tema="claro"]) {
     --bg: #000; --cel: #16171b; --txt: #fff; --sec: #8b8e99; --ter: #4a4d57;
     --sep: rgba(255,255,255,.08); --fill: rgba(255,255,255,.08); --prem: rgba(255,255,255,.06);
     --acc: #6b8aff; --acc-forte: #4b6bff; --acc-suave: rgba(107,138,255,.22); --verde: #3ddc84; --verm: #ff6369; --verm-suave: rgba(255,99,105,.16);
@@ -46,6 +47,18 @@
     --t1: #191c1f; --t2: #191c1f; --t3: #191c1f; --t4: #191c1f; --t5: #191c1f; --t6: #fff; --t7: #191c1f; --t8: #191c1f; --t0: #fff;
   }
 }
+:root[data-tema="escuro"] {
+  --bg: #000; --cel: #16171b; --txt: #fff; --sec: #8b8e99; --ter: #4a4d57;
+  --sep: rgba(255,255,255,.08); --fill: rgba(255,255,255,.08); --prem: rgba(255,255,255,.06);
+  --acc: #6b8aff; --acc-forte: #4b6bff; --acc-suave: rgba(107,138,255,.22); --verde: #3ddc84; --verm: #ff6369; --verm-suave: rgba(255,99,105,.16);
+  --barra: rgba(18,19,22,.86); --acoes: rgba(32,33,38,.96); --seg-on: #34363d; --toast: rgba(44,46,52,.96);
+  --sombra: none;
+  --h1: #2442e0; --h2: #5a2fd6; --h3: #b2367a; --h0: #121a6b;
+  --c1: #3987e5; --c2: #d95926; --c3: #199e70; --c4: #c98500; --c5: #d55181; --c6: #008300; --c7: #9085e9; --c8: #e66767; --c0: #636366;
+  --t1: #191c1f; --t2: #191c1f; --t3: #191c1f; --t4: #191c1f; --t5: #191c1f; --t6: #fff; --t7: #191c1f; --t8: #191c1f; --t0: #fff;
+  color-scheme: dark;
+}
+:root[data-tema="claro"] { color-scheme: light; }
 * { box-sizing: border-box; margin: 0; }
 html { -webkit-text-size-adjust: 100%; }
 html.travado { overflow: hidden; }
@@ -82,7 +95,13 @@ h1 { font-size: 32px; font-weight: 800; letter-spacing: -.03em; line-height: 1.1
     var(--h0);
 }
 .heroi .icbtn, .heroi .pilula, .heroi .acao-red .circ { background: rgba(255,255,255,.2); color: #fff; box-shadow: none; -webkit-backdrop-filter: blur(12px); backdrop-filter: blur(12px); }
-.heroi-centro { text-align: center; padding: 4px 0 0; }
+.heroi-slides { display: flex; margin: 0 -16px; overflow-x: auto; scroll-snap-type: x mandatory; scrollbar-width: none; overscroll-behavior-x: contain; }
+.heroi-slides::-webkit-scrollbar { display: none; }
+.slide { flex: 0 0 100%; min-width: 0; scroll-snap-align: center; text-align: center; padding: 4px 16px 0; }
+.pontos { display: flex; justify-content: center; gap: 6px; margin-top: 4px; }
+.pontos button { position: relative; width: 6px; height: 6px; border-radius: 3px; background: rgba(255,255,255,.45); transition: width .2s, background .2s; }
+.pontos button::after { content: ""; position: absolute; inset: -10px -6px; }
+.pontos .on { width: 18px; background: #fff; }
 .heroi .valor-g { font-size: 40px; margin: 2px 0 10px; }
 .heroi-rot { font-size: 14px; font-weight: 700; opacity: .85; }
 .heroi .acao-red { text-shadow: 0 1px 2px rgba(0,0,0,.28); }
@@ -151,7 +170,6 @@ button.linha:active, .grupo-acoes button:active, .cancelar-acoes:active { backgr
 textarea.nota { display: block; padding: 4px 16px 14px; resize: none; min-height: 46px; }
 
 /* peças do Início e das listas */
-.aviso { display: flex; align-items: center; justify-content: space-between; gap: 12px; min-height: 52px; padding: 8px 16px; margin-bottom: 12px; border-radius: 16px; background: var(--cel); box-shadow: var(--sombra); font-size: 14px; font-weight: 700; color: var(--sec); }
 .duo { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; padding: 2px 16px 10px; }
 .duo .valor-m { font-size: 22px; }
 .mosaico { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; padding: 4px 12px 12px; }
@@ -213,6 +231,8 @@ code { font: 700 14px/1.3 ui-monospace, Menlo, monospace; background: var(--fill
 }
 .tabs button { flex: 1; max-width: 120px; display: flex; flex-direction: column; align-items: center; gap: 3px; font-size: 11px; font-weight: 700; color: var(--sec); padding: 2px 0; }
 .tabs svg { width: 24px; height: 24px; stroke-width: 2; }
+.tabs .ic { position: relative; display: grid; }
+.tabs .alerta { position: absolute; top: -1px; right: -3px; width: 9px; height: 9px; border-radius: 50%; background: var(--verm); box-shadow: 0 0 0 2px var(--bg); }
 .tabs .on { color: var(--acc); }
 .tabs .on svg { stroke-width: 2.3; }
 
@@ -245,6 +265,7 @@ code { font: 700 14px/1.3 ui-monospace, Menlo, monospace; background: var(--fill
 .valor-grande { font-size: 36px; font-weight: 800; letter-spacing: -.03em; font-variant-numeric: tabular-nums; }
 input[type=date] { width: auto; text-align: right; color: var(--acc); font-weight: 700; }
 .seg { display: flex; background: var(--fill); border-radius: 999px; padding: 3px; margin-bottom: 14px; }
+.seg.tema { margin: 6px 16px 12px; }
 .seg button { flex: 1; text-align: center; padding: 10px 4px; border-radius: 999px; font-size: 15px; font-weight: 700; color: var(--sec); }
 .seg .on { background: var(--seg-on); color: var(--txt); box-shadow: 0 1px 4px rgba(0,0,0,.12); }
 .interruptor { appearance: none; -webkit-appearance: none; flex: none; width: 51px; height: 31px; border-radius: 16px; background: var(--fill); position: relative; transition: background .2s; }
@@ -459,16 +480,28 @@ const ic = {
   partilhar: ico('<path d="M12 15V4M7.5 8.5 12 4l4.5 4.5"/><path d="M8 11H6.5a2 2 0 0 0-2 2v5a2 2 0 0 0 2 2h11a2 2 0 0 0 2-2v-5a2 2 0 0 0-2-2H16"/>'),
   repor: ico('<path d="M4.5 12a7.5 7.5 0 1 0 2.2-5.3"/><path d="M4.5 4.5v4h4"/>'),
   portatil: ico('<rect x="4.5" y="5" width="15" height="10.5" rx="1.5"/><path d="M2.5 19h19"/>'),
+  definicoes: ico('<circle cx="12" cy="12" r="3"/><path d="M19.4 13.5a7.6 7.6 0 0 0 0-3l2-1.6-2-3.4-2.4 1a7.5 7.5 0 0 0-2.6-1.5L14 2.5h-4l-.4 2.5A7.5 7.5 0 0 0 7 6.5l-2.4-1-2 3.4 2 1.6a7.6 7.6 0 0 0 0 3l-2 1.6 2 3.4 2.4-1a7.5 7.5 0 0 0 2.6 1.5l.4 2.5h4l.4-2.5a7.5 7.5 0 0 0 2.6-1.5l2.4 1 2-3.4z"/>'),
   sino: ico('<path d="M6 16.5V11a6 6 0 0 1 12 0v5.5l1.5 1.5h-15z"/><path d="M10 20.5a2 2 0 0 0 4 0"/>'),
   olho: ico('<path d="M2.5 12S6 5.5 12 5.5 21.5 12 21.5 12 18 18.5 12 18.5 2.5 12 2.5 12z"/><circle cx="12" cy="12" r="3"/>'),
   olhoFechado: ico('<path d="M2.5 12S6 5.5 12 5.5 21.5 12 21.5 12 18 18.5 12 18.5 2.5 12 2.5 12z"/><circle cx="12" cy="12" r="3"/><path d="M4 4l16 16"/>'),
 };
+
+/* ---------- tema ---------- */
+// '' segue o iPhone; 'claro' ou 'escuro' escolhidos em Definições. A barra de cima do iPhone acompanha (theme-color).
+function aplicarTema() {
+  const t = lerPref('tema', ''), el = document.documentElement;
+  if (t) el.dataset.tema = t; else delete el.dataset.tema;
+  document.querySelectorAll('meta[name="theme-color"]').forEach(m => {
+    m.content = t ? (t === 'escuro' ? '#000000' : '#f3f4f8') : m.media.includes('dark') ? '#000000' : '#f3f4f8';
+  });
+}
 
 /* ---------- estado do ecrã ---------- */
 const lerPref = (k, def) => { try { return localStorage.getItem('dinheiro.' + k) ?? def; } catch { return def; } };
 const gravarPref = (k, v) => { try { localStorage.setItem('dinheiro.' + k, v); } catch {} };
 const ui = {
   tab: lerPref('tab', 'resumo'),
+  slide: 0, // no topo do Início: 0 = total nas contas, 1 = contas e dívidas
   ficha: { contas: null, dividas: null, gastos: null }, // conta ou ficha aberta em cada separador
   scroll: {},
   ordenar: false,
@@ -845,34 +878,25 @@ function linhaMov(m, gasto) {
 function vResumo() {
   const tc = totalContas(), td = totalDividas();
   const vazio = !db.contas.length && db.grupos.every(g => !g.fichas.length);
-  const s = serieTotal(), ev = evolucao(s.pts, s.inicio, { periodo: 'Tudo', rotulo: 'Evolução do total' });
   const olho = `<button class="icbtn" data-a="ocultar" aria-label="${ui.oculto ? 'Mostrar valores' : 'Ocultar valores'}">${ui.oculto ? ic.olhoFechado : ic.olho}</button>`;
-  const mais = `<button class="icbtn" data-a="mais" aria-label="Mais">${ic.mais3}</button>`;
-  let h = `<header class="heroi">${barra({ titulo: 'Dinheiro', acoes: olho + mais })}
-    <div class="heroi-centro"><div class="heroi-rot">Total · contas e dívidas</div>
-      <div class="valor-g">${euroG(tc + td)}</div>
-      ${ev ? `<span class="pilula">${esc(ev.texto)} ${esc(ev.quando)}</span>` : ''}</div>
+  // dois totais lado a lado: primeiro só as contas; a deslizar para o lado, contas e dívidas
+  const sc = serieTotal(false), st = serieTotal();
+  const totais = [
+    ['Total nas contas', tc, evolucao(sc.pts, sc.inicio, { periodo: 'Tudo', rotulo: 'Evolução das contas' })],
+    ['Contas e dívidas', tc + td, evolucao(st.pts, st.inicio, { periodo: 'Tudo', rotulo: 'Evolução do total' })],
+  ];
+  let h = `<header class="heroi">${barra({ titulo: 'Dinheiro', acoes: olho })}
+    <div class="heroi-slides">${totais.map(([rot, v, ev]) => `<div class="slide"><div class="heroi-rot">${rot}</div>
+      <div class="valor-g">${euroG(v)}</div>${ev ? `<span class="pilula">${esc(ev.texto)} ${esc(ev.quando)}</span>` : ''}</div>`).join('')}</div>
+    <div class="pontos">${totais.map(([rot], i) => `<button data-a="slide" data-id="${i}" class="${(ui.slide || 0) === i ? 'on' : ''}" aria-label="${rot}"></button>`).join('')}</div>
     <div class="botoes-acao">${botaoAcao('ficheiro-atalho', ic.ficheiro, 'Importar')}${botaoAcao('rapido', ic.atualizar, 'Atualizar', 'contas')}${botaoAcao('rapido', ic.dividas, 'Dívida', 'dividas')}${botaoAcao('rapido', ic.gastos, 'Gasto', 'gastos')}</div>
   </header>`;
   if (vazio) return h + `<section class="cartao">${cabCartao('Começar')}
     <button class="linha acao" data-a="colar">${avatarIcone(ic.colar)}Colar os meus dados</button>
     <button class="linha acao" data-a="repor">${avatarIcone(ic.repor)}Repor de um ficheiro</button></section>`;
 
-  // lembrete da cópia de segurança, só quando faz falta
-  const copia = lerPref('copia', null), dias = copia ? diaDe(hoje()) - diaDe(copia) : null;
-  if (dias === null || dias > 30) h += `<div class="aviso"><span>${dias === null ? 'Ainda não há cópia de segurança' : `Última cópia há ${dias} dias`}</span><button class="lig" data-a="backup">Guardar</button></div>`;
-
-  // quem te deve e a quem deves: as pessoas com saldo, das maiores para as menores
-  const pessoas = gruposDe('dividas').flatMap(g => g.fichas);
-  if (pessoas.length) {
-    const comSaldo = pessoas.filter(f => totalFicha(f)).sort((a, b) => Math.abs(totalFicha(b)) - Math.abs(totalFicha(a)));
-    const devem = comSaldo.reduce((t, f) => t + Math.max(0, totalFicha(f)), 0), deves = -comSaldo.reduce((t, f) => t + Math.min(0, totalFicha(f)), 0);
-    h += `<section class="cartao">${cabCartao('Dívidas', verTudo('dividas', pessoas.length > 4 ? `Ver todas (${pessoas.length})` : 'Ver todas'))}` + (comSaldo.length
-      ? `<div class="duo"><div><div class="rot">Devem-te</div><div class="valor-m pos">${euroG(devem)}</div></div>` +
-        (deves ? `<div><div class="rot">Deves</div><div class="valor-m neg">${euroG(deves)}</div></div>` : '') + '</div>' +
-        comSaldo.slice(0, 4).map(f => linhaFicha(f, true)).join('')
-      : '<p class="texto">Contas saldadas com todos.</p>') + '</section>';
-  }
+  const rec = recentes(5);
+  if (rec.length) h += `<section class="cartao">${cabCartao('Últimos movimentos')}${rec.map(linhaRecente).join('')}</section>`;
 
   // o saldo de cada conta, em quadrados
   if (db.contas.length) h += `<section class="cartao">${cabCartao('Contas', `<span class="dir">${euro(tc)}</span>`)}<div class="mosaico">${db.contas.map(c => {
@@ -886,8 +910,17 @@ function vResumo() {
   if (doMes.length) h += `<section class="cartao">${cabCartao(`Gastos em ${MESES_LONGOS[+mesAtual().slice(5) - 1]}`, `<span class="dir">${euro(doMes.reduce((t, [, v]) => t + v, 0))}</span>`)}` +
     doMes.slice(0, 3).map(([f, v]) => linha(f.nome, euro(v), { a: 'abrir', tipo: 'gastos', id: f.id, avatar: avatar(f.nome), sub: subUltimo(f) })).join('') + '</section>';
 
-  const rec = recentes(5);
-  if (rec.length) h += `<section class="cartao">${cabCartao('Últimos movimentos')}${rec.map(linhaRecente).join('')}</section>`;
+  // quem te deve e a quem deves: as pessoas com saldo, das maiores para as menores
+  const pessoas = gruposDe('dividas').flatMap(g => g.fichas);
+  if (pessoas.length) {
+    const comSaldo = pessoas.filter(f => totalFicha(f)).sort((a, b) => Math.abs(totalFicha(b)) - Math.abs(totalFicha(a)));
+    const devem = comSaldo.reduce((t, f) => t + Math.max(0, totalFicha(f)), 0), deves = -comSaldo.reduce((t, f) => t + Math.min(0, totalFicha(f)), 0);
+    h += `<section class="cartao">${cabCartao('Dívidas', verTudo('dividas', pessoas.length > 4 ? `Ver todas (${pessoas.length})` : 'Ver todas'))}` + (comSaldo.length
+      ? `<div class="duo"><div><div class="rot">Devem-te</div><div class="valor-m pos">${euroG(devem)}</div></div>` +
+        (deves ? `<div><div class="rot">Deves</div><div class="valor-m neg">${euroG(deves)}</div></div>` : '') + '</div>' +
+        comSaldo.slice(0, 4).map(f => linhaFicha(f, true)).join('')
+      : '<p class="texto">Contas saldadas com todos.</p>') + '</section>';
+  }
   return h;
 }
 
@@ -1001,9 +1034,9 @@ function vFicha(tipo) {
 }
 
 function vTabs() {
-  const tabs = [['resumo', 'Início'], ['contas', 'Contas'], ['dividas', 'Dívidas'], ['gastos', 'Gastos']];
+  const tabs = [['resumo', 'Início'], ['contas', 'Contas'], ['dividas', 'Dívidas'], ['gastos', 'Gastos'], ['definicoes', 'Definições']];
   return `<nav class="tabs">${tabs.map(([id, nome]) =>
-    `<button data-a="tab" data-id="${id}" class="${ui.tab === id ? 'on' : ''}">${ic[id]}<span>${nome}</span></button>`).join('')}</nav>`;
+    `<button data-a="tab" data-id="${id}" class="${ui.tab === id ? 'on' : ''}"><span class="ic">${ic[id]}${id === 'definicoes' && faltaCopia() ? '<i class="alerta" aria-label="Falta a cópia de segurança"></i>' : ''}</span><span>${nome}</span></button>`).join('')}</nav>`;
 }
 
 /** A caixa da nota cresce com o texto. */
@@ -1013,6 +1046,7 @@ function render() {
   let html;
   graficos.length = 0;
   if (t === 'resumo') html = vResumo();
+  else if (t === 'definicoes') html = vDefinicoes();
   else if (t === 'contas') {
     if (!db.contas.some(c => c.id === ui.ficha.contas)) ui.ficha.contas = null;
     html = ui.ficha.contas ? vConta() : vContas();
@@ -1022,6 +1056,8 @@ function render() {
   $('#app').innerHTML = `<main class="pagina ${ui.anim}">${html}</main>${vTabs()}`;
   ui.anim = '';
   document.querySelectorAll('textarea.nota').forEach(alturaNota);
+  const sl = $('.heroi-slides');
+  if (sl && ui.slide) sl.scrollLeft = sl.clientWidth * ui.slide; // o total que estava à vista
 }
 
 /* ---------- folhas e menus ---------- */
@@ -1526,30 +1562,39 @@ function nomesAtalho(tipo) {
 const URL_ATALHO = 'https://raw.githubusercontent.com/lopalha-creator/dinheiro/main/atalho/Dinheiro.shortcut';
 const COMANDO_MAC = `cd ~/Downloads && curl -fsSL -o Dinheiro.shortcut ${URL_ATALHO} && shortcuts sign -m anyone -i Dinheiro.shortcut -o Dinheiro-assinado.shortcut && open Dinheiro-assinado.shortcut`;
 
-/** Folha Mais: o atalho e as cópias de segurança, que se usam pouco. */
-function folhaMais() {
+/** A cópia de segurança faz falta: nunca houve, ou a última tem mais de 30 dias (e já há dados). */
+function faltaCopia() {
+  if (!db.contas.length && db.grupos.every(g => !g.fichas.length)) return false;
+  const d = lerPref('copia', null);
+  return !d || diaDe(hoje()) - diaDe(d) > 30;
+}
+
+/** Separador Definições: o tema, o atalho do iPhone e as cópias de segurança. */
+function vDefinicoes() {
   const ult = lerPref('atalho', ''), n = /^\d{4}-/.test(ult) ? diaDe(hoje()) - diaDe(ult) : null;
   const quando = n === null ? 'ainda nenhuma' : n <= 0 ? 'hoje' : n === 1 ? 'ontem' : `há ${n} dias`;
-  const np = nomesAtalho('dividas').length;
+  const np = nomesAtalho('dividas').length, tema = lerPref('tema', '');
   const opcao = (a, icone, texto, det = '', id = '') => `<button class="linha opcao" data-a="${a}"${id ? ` data-id="${id}"` : ''}>${avatarIcone(icone)}` +
     `<span class="txt">${esc(texto)}${det ? `<span class="det">${esc(det)}</span>` : ''}</span></button>`;
-  abrir({
-    tipo: 'folha', titulo: 'Mais', ok: false, mais: true,
-    corpo: `<section class="cartao">${cabCartao('Atalho do iPhone')}<p class="texto">Última importação: ${quando}.</p>
-        ${opcao('colar-atalho', ic.colar, 'Colar o que o atalho copiou')}
-        <label class="linha opcao">${avatarIcone(ic.sino)}<span class="txt">Perguntar ao abrir</span>
-          <input type="checkbox" class="interruptor" data-a="perguntar-atalho" ${lerPref('perguntarAtalho', '1') === '1' ? 'checked' : ''}></label>
-        ${opcao('copiar-nomes', ic.dividas, 'Copiar lista de pessoas', `${np} ${np === 1 ? 'pessoa' : 'pessoas'} · para o 1.º Texto do atalho`, 'dividas')}
-        <details><summary class="linha opcao">${avatarIcone(ic.portatil)}<span class="txt">Reinstalar o atalho no Mac</span><span class="chev">${ic.voltar}</span></summary>
-          <p class="texto">Cola no Terminal do Mac e toca em Adicionar atalho.</p>
-          <div class="botoes-linha"><button class="btn-sec" data-a="copiar-comando">Copiar comando</button></div></details></section>
-      <section class="cartao">${cabCartao('Cópia de segurança')}<p class="texto">${textoCopia()}</p>
-        ${opcao('backup', ic.guardar, 'Guardar cópia de segurança')}
-        ${opcao('exportar', ic.partilhar, 'Exportar em texto')}
-        ${opcao('repor', ic.repor, 'Repor de um ficheiro')}
-        ${opcao('colar', ic.colar, 'Repor colando texto')}</section>
-      <p class="rodape centro">Os dados ficam só neste iPhone.</p>`,
-  });
+  return `<div class="cab-tab"><h1>Definições</h1></div>
+    <section class="cartao">${cabCartao('Tema')}
+      <div class="seg tema">${[['', 'Automático'], ['claro', 'Claro'], ['escuro', 'Escuro']].map(([id, nome]) =>
+        `<button data-a="tema" data-id="${id}" class="${tema === id ? 'on' : ''}">${nome}</button>`).join('')}</div></section>
+    <section class="cartao">${cabCartao('Cópia de segurança')}<p class="texto">${textoCopia()}</p>
+      ${opcao('backup', ic.guardar, 'Guardar cópia de segurança')}
+      ${opcao('exportar', ic.partilhar, 'Exportar em texto')}
+      ${opcao('repor', ic.repor, 'Repor de um ficheiro')}
+      ${opcao('colar', ic.colar, 'Repor colando texto')}</section>
+    <section class="cartao">${cabCartao('Atalho do iPhone')}<p class="texto">Última importação: ${quando}.</p>
+      ${opcao('ficheiro-atalho', ic.ficheiro, 'Escolher atalho.txt')}
+      ${opcao('colar-atalho', ic.colar, 'Colar o que o atalho copiou')}
+      <label class="linha opcao">${avatarIcone(ic.sino)}<span class="txt">Perguntar ao abrir</span>
+        <input type="checkbox" class="interruptor" data-a="perguntar-atalho" ${lerPref('perguntarAtalho', '1') === '1' ? 'checked' : ''}></label>
+      ${opcao('copiar-nomes', ic.dividas, 'Copiar lista de pessoas', `${np} ${np === 1 ? 'pessoa' : 'pessoas'} · para o 1.º Texto do atalho`, 'dividas')}
+      <details><summary class="linha opcao">${avatarIcone(ic.portatil)}<span class="txt">Reinstalar o atalho no Mac</span><span class="chev">${ic.voltar}</span></summary>
+        <p class="texto">Cola no Terminal do Mac e toca em Adicionar atalho.</p>
+        <div class="botoes-linha"><button class="btn-sec" data-a="copiar-comando">Copiar comando</button></div></details></section>
+    <p class="rodape centro">Os dados ficam só neste iPhone.</p>`;
 }
 
 /**
@@ -1571,11 +1616,11 @@ function ficheiroEstranho(texto, nome, deNovo = ficheiroAtalho) {
     tipo: 'folha', ok: 'Escolher outro ficheiro',
     titulo: !linhas.length ? (!deRepor && /\n/.test(texto) ? 'O atalho escreveu linhas em branco' : 'O ficheiro está vazio') : deRepor ? 'Este ficheiro não é uma cópia da app' : 'Este ficheiro não tem movimentos do atalho',
     corpo: `<p class="texto" style="padding:0 2px 14px">${deRepor
-      ? 'As cópias de segurança chamam-se <b>dinheiro-…json</b> (Início → ••• → Guardar cópia de segurança). Também se pode escolher aqui o <b>atalho.txt</b>.' + (linhas.length ? ' Este ficheiro começa assim:' : '')
+      ? 'As cópias de segurança chamam-se <b>dinheiro-…json</b> (Definições → Guardar cópia de segurança). Também se pode escolher aqui o <b>atalho.txt</b>.' + (linhas.length ? ' Este ficheiro começa assim:' : '')
       : (outro ? `Escolheste <b>${esc(nome)}</b>. O do atalho chama-se <b>atalho.txt</b> e está em iCloud Drive → Atalhos → Dinheiro. ` : '') + (linhas.length
       ? 'Cada linha do atalho começa pela data, assim: <code>2026-10-09T15:58:12;gasto;Revolut;2;café</code>. Este ficheiro começa assim:'
       : /\n/.test(texto)
-      ? 'O atalho escreveu linhas em branco: é a versão antiga, que não guardava o texto. Instala outra vez o atalho pelo Mac (Início → ••• → Reinstalar o atalho no Mac) e regista de novo os movimentos que faltam.'
+      ? 'O atalho escreveu linhas em branco: é a versão antiga, que não guardava o texto. Instala outra vez o atalho pelo Mac (Definições → Reinstalar o atalho no Mac) e regista de novo os movimentos que faltam.'
       : 'Corre o atalho uma vez (Dívida ou Gasto) e volta a escolher <b>atalho.txt</b>.')}</p>
       ${linhas.length ? `<section class="cartao"><p class="texto"><code style="white-space:pre-wrap;display:block">${esc(amostra)}</code></p>
         <div class="botoes-linha"><button class="btn-sec" data-a="copiar-amostra">Copiar o que tem</button></div></section>` : ''}`,
@@ -1632,8 +1677,6 @@ document.addEventListener('click', e => {
   if (!b || b.disabled) return;
   const a = b.dataset.a, id = b.dataset.id;
   const naFicha = () => acharFicha(ui.ficha[ui.tab]);
-  // na folha Mais, as opções que abrem outra coisa (Ficheiros, partilhar, outra folha) fecham-na no mesmo toque
-  if (camada?.mais && ['backup', 'exportar', 'repor', 'colar', 'colar-atalho'].includes(a)) fechar();
 
   switch (a) {
     case 'tab':
@@ -1772,7 +1815,9 @@ document.addEventListener('click', e => {
       abrir({ tipo: 'acoes', grelha: true, titulo: id === 'dividas' ? 'Movimento de' : 'Gasto em', botoes: fichas.map(f => ({ texto: f.nome, fn: ir(id, f.id, folhaMov) })) });
       return;
     }
-    case 'mais': case 'menu-copias': folhaMais(); return;
+    case 'mais': case 'menu-copias': irPara('definicoes'); render(); scrollTo(0, 0); return;
+    case 'tema': gravarPref('tema', id); aplicarTema(); render(); return;
+    case 'slide': { const sl = $('.heroi-slides'); sl?.scrollTo({ left: sl.clientWidth * +id, behavior: 'smooth' }); return; }
     case 'perguntar-atalho':
       gravarPref('perguntarAtalho', b.checked ? '1' : '');
       toast(b.checked ? 'Vai perguntar ao abrir' : 'Já não pergunta ao abrir');
@@ -1831,6 +1876,14 @@ document.addEventListener('pointercancel', () => document.querySelectorAll('.gra
 document.addEventListener('pointerout', e => { const el = grafEm(e); if (el && e.pointerType === 'mouse' && !el.contains(e.relatedTarget)) esconder(el); });
 document.addEventListener('focusout', e => { if (e.target.matches?.('.graf')) esconder(e.target); });
 
+// Topo do Início: ao deslizar entre os dois totais, os pontos mostram qual está à vista.
+document.addEventListener('scroll', e => {
+  const sl = e.target;
+  if (!sl.classList?.contains('heroi-slides')) return;
+  ui.slide = Math.round(sl.scrollLeft / sl.clientWidth);
+  document.querySelectorAll('.pontos button').forEach((b, i) => b.classList.toggle('on', i === ui.slide));
+}, true);
+
 // Ao rodar o iPhone (ou mudar a largura da janela), os gráficos são redesenhados com a nova largura.
 let larguraAntes = innerWidth;
 addEventListener('resize', () => { if (innerWidth !== larguraAntes) { larguraAntes = innerWidth; render(); } });
@@ -1847,6 +1900,7 @@ function lerLinkAtalho() {
 addEventListener('hashchange', lerLinkAtalho);
 
 document.documentElement.classList.toggle('oculto', ui.oculto);
+aplicarTema();
 render();
 if (!location.hash.startsWith('#atalho=')) setTimeout(perguntarAtalho, 400); // com um link, o movimento que entra fica à vista
 lerLinkAtalho();
