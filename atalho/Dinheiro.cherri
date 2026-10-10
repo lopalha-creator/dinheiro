@@ -33,7 +33,7 @@ action 'ask' pedirLinha(text prompt: 'WFAskActionPrompt') {
     "WFAllowsMultilineText": false
 }
 
-comment('Pessoas das dívidas, uma por linha, com os nomes como estão na app Dinheiro (Mais → Atalho do iPhone → Copiar).')
+comment('Pessoas das dívidas, uma por linha, com os nomes como estão na app Dinheiro (Definições → Atalho do iPhone → Copiar lista de pessoas).')
 const textoPessoas = text("Pai\nMãe\nMafalda\nMiga\nCosta\nDuda\nMonti\nFranci\nGodinho\nLuigi\nCardoso\nMité")
 const listaPessoas = splitText(textoPessoas, "\n")
 comment('Contas dos gastos, uma por linha, com os nomes como estão na app.')

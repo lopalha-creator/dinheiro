@@ -95,10 +95,10 @@ h1 { font-size: 32px; font-weight: 800; letter-spacing: -.03em; line-height: 1.1
     var(--h0);
 }
 .heroi .icbtn, .heroi .pilula, .heroi .acao-red .circ { background: rgba(255,255,255,.2); color: #fff; box-shadow: none; -webkit-backdrop-filter: blur(12px); backdrop-filter: blur(12px); }
-.heroi-slides { display: flex; margin: 0 -16px; overflow-x: auto; scroll-snap-type: x mandatory; scrollbar-width: none; overscroll-behavior-x: contain; }
+.heroi-slides { display: flex; margin: 0 -16px -14px; padding-bottom: 14px; overflow-x: auto; scroll-snap-type: x mandatory; scrollbar-width: none; overscroll-behavior-x: contain; }
 .heroi-slides::-webkit-scrollbar { display: none; }
-.slide { flex: 0 0 100%; min-width: 0; scroll-snap-align: center; text-align: center; padding: 4px 16px 0; }
-.pontos { display: flex; justify-content: center; gap: 6px; margin-top: 4px; }
+.slide { flex: 0 0 100%; min-width: 0; scroll-snap-align: center; text-align: center; padding: 4px 16px 0; display: flex; flex-direction: column; align-items: center; justify-content: center; }
+.pontos { position: relative; display: flex; justify-content: center; gap: 6px; margin-top: 8px; }
 .pontos button { position: relative; width: 6px; height: 6px; border-radius: 3px; background: rgba(255,255,255,.45); transition: width .2s, background .2s; }
 .pontos button::after { content: ""; position: absolute; inset: -10px -6px; }
 .pontos .on { width: 18px; background: #fff; }
@@ -1244,7 +1244,8 @@ async function backup() {
   const nome = `dinheiro-${hoje()}.json`;
   const blob = new Blob([JSON.stringify(db, null, 2)], { type: 'application/json' });
   const ficheiro = new File([blob], nome, { type: 'application/json' });
-  const feito = () => { gravarPref('copia', hoje()); render(); };
+  const vazia = !db.contas.length && db.grupos.every(g => !g.fichas.length);
+  const feito = () => { if (!vazia) gravarPref('copia', hoje()); render(); }; // uma cópia sem dados não conta
   if (navigator.canShare?.({ files: [ficheiro] })) {
     try { await navigator.share({ files: [ficheiro] }); feito(); return; } catch (e) { if (e.name === 'AbortError') return; }
   }
@@ -1253,13 +1254,14 @@ async function backup() {
   setTimeout(() => URL.revokeObjectURL(a.href), 2000);
   feito();
 }
-function importar(texto) {
+function importar(texto, nome = '') {
   try {
     const d = JSON.parse(String(texto).trim());
     if (!Array.isArray(d.contas) || !Array.isArray(d.grupos) || !d.contas.every(c => Number.isFinite(c.valor)) ||
         !d.grupos.every(g => Array.isArray(g.fichas) && g.fichas.every(f => Array.isArray(f.movimentos)))) throw new Error();
     confirmar('Substituir todos os dados atuais por estes?', 'Substituir', () => {
       db = migrar(d); ui.ficha = { contas: null, dividas: null, gastos: null };
+      gravarPref('copia', String(nome).match(/\d{4}-\d{2}-\d{2}/)?.[0] || hoje()); // estes dados já estão numa cópia
     }, 'Dados importados');
     return true;
   } catch {
@@ -1267,7 +1269,6 @@ function importar(texto) {
     return false;
   }
 }
-/** Escolher um ficheiro: uma cópia de segurança (JSON) substitui os dados; o ficheiro do atalho acrescenta movimentos. */
 /** Abre os Ficheiros e entrega o ficheiro escolhido. No iPhone, Cancelar não avisa: o input fica até à próxima vez. */
 let escolhaAte = 0; // os Ficheiros estão abertos (até 2 minutos): a atualização automática espera
 function escolherFicheiro(accept, fn) {
@@ -1288,11 +1289,12 @@ async function lerFicheiro(f) {
     : b.length > 3 && b[1] === 0 && b[3] === 0 ? 'utf-16le' : b.length > 3 && b[0] === 0 && b[2] === 0 ? 'utf-16be' : null;
   return new TextDecoder(utf16 || 'utf-8').decode(b).replace(/^\uFEFF/, '');
 }
+/** Escolher um ficheiro: uma cópia de segurança (JSON) substitui os dados; o ficheiro do atalho acrescenta movimentos. */
 function repor() {
   // Sem filtro de tipo: no iPhone o filtro .json costuma deixar os ficheiros a cinzento.
   escolherFicheiro('', async f => {
     const t = await lerFicheiro(f);
-    if (t.trim().startsWith('{')) importar(t); else importarAtalho(t, 'ficheiro', f.name, repor);
+    if (t.trim().startsWith('{')) importar(t, f.name); else importarAtalho(t, 'ficheiro', f.name, repor);
   });
 }
 function colar() {
@@ -1604,7 +1606,7 @@ function vDefinicoes() {
 function ficheiroAtalho() {
   escolherFicheiro('.txt,text/plain', async f => {
     const t = await lerFicheiro(f);
-    if (t.trim().startsWith('{')) importar(t); else importarAtalho(t, 'ficheiro', f.name);
+    if (t.trim().startsWith('{')) importar(t, f.name); else importarAtalho(t, 'ficheiro', f.name);
   });
 }
 /** O ficheiro escolhido não tem movimentos do atalho: mostra o que tem (e deixa copiá-lo), para se perceber porquê. */
