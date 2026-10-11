@@ -115,6 +115,7 @@ h1 { font-size: 32px; font-weight: 800; letter-spacing: -.03em; line-height: 1.1
 .acao-red .circ { width: 48px; height: 48px; border-radius: 50%; display: grid; place-items: center; background: var(--cel); color: var(--acc); box-shadow: var(--sombra); transition: transform .15s; }
 .acao-red .circ svg { width: 22px; height: 22px; stroke-width: 2.1; }
 .acao-red:active .circ { transform: scale(.92); }
+@media (max-width: 359px) { .botoes-acao { gap: 0; } .acao-red { font-size: 12px; letter-spacing: -.01em; } }
 
 /* cartões e linhas */
 .cartao { background: var(--cel); border-radius: 20px; padding: 6px 0; margin-bottom: 12px; box-shadow: var(--sombra); overflow: hidden; }
@@ -266,6 +267,18 @@ code { font: 700 14px/1.3 ui-monospace, Menlo, monospace; background: var(--fill
 input[type=date] { width: auto; text-align: right; color: var(--acc); font-weight: 700; }
 .seg { display: flex; background: var(--fill); border-radius: 999px; padding: 3px; margin-bottom: 14px; }
 .seg.tema { margin: 6px 16px 12px; }
+select { font: inherit; font-weight: 700; color: var(--acc); background: none; border: 0; outline: 0; text-align: right; text-align-last: right; -webkit-appearance: none; appearance: none; max-width: 62%; }
+.quem { display: flex; flex-wrap: wrap; gap: 8px; padding: 8px 16px 14px; }
+.chip { padding: 8px 13px; border-radius: 999px; background: var(--fill); font-size: 14px; font-weight: 700; color: var(--txt); }
+.chip.novo { background: var(--acc-suave); color: var(--acc); }
+.nova-pessoa { display: flex; gap: 8px; flex-basis: 100%; }
+.nova-pessoa input { flex: 1; padding: 8px 13px; border-radius: 999px; background: var(--fill); font-size: 14px; font-weight: 600; }
+input.parte { flex: none; width: 96px; padding: 8px 10px; border-radius: 10px; background: var(--fill); text-align: right; font-weight: 700; font-variant-numeric: tabular-nums; }
+.mini.tirar { flex: none; width: 32px; height: 32px; border-radius: 50%; color: var(--sec); font-size: 18px; }
+.mini-espaco { flex: none; width: 32px; }
+#f-partes .linha + .linha::before { content: ""; position: absolute; top: 0; left: 66px; right: 0; border-top: .5px solid var(--sep); }
+#f-partes .linha { position: relative; }
+.rodape.neg { color: var(--verm); }
 .seg button { flex: 1; text-align: center; padding: 10px 4px; border-radius: 999px; font-size: 15px; font-weight: 700; color: var(--sec); }
 .seg .on { background: var(--seg-on); color: var(--txt); box-shadow: 0 1px 4px rgba(0,0,0,.12); }
 .interruptor { appearance: none; -webkit-appearance: none; flex: none; width: 51px; height: 31px; border-radius: 16px; background: var(--fill); position: relative; transition: background .2s; }
@@ -481,6 +494,7 @@ const ic = {
   repor: ico('<path d="M4.5 12a7.5 7.5 0 1 0 2.2-5.3"/><path d="M4.5 4.5v4h4"/>'),
   portatil: ico('<rect x="4.5" y="5" width="15" height="10.5" rx="1.5"/><path d="M2.5 19h19"/>'),
   definicoes: ico('<circle cx="12" cy="12" r="3"/><path d="M19.4 13.5a7.6 7.6 0 0 0 0-3l2-1.6-2-3.4-2.4 1a7.5 7.5 0 0 0-2.6-1.5L14 2.5h-4l-.4 2.5A7.5 7.5 0 0 0 7 6.5l-2.4-1-2 3.4 2 1.6a7.6 7.6 0 0 0 0 3l-2 1.6 2 3.4 2.4-1a7.5 7.5 0 0 0 2.6 1.5l.4 2.5h4l.4-2.5a7.5 7.5 0 0 0 2.6-1.5l2.4 1 2-3.4z"/>'),
+  dividir: ico('<path d="M12 20.5V13L6 7M12 13l6-6"/><path d="M6 11V7h4M18 11V7h-4"/>'),
   sino: ico('<path d="M6 16.5V11a6 6 0 0 1 12 0v5.5l1.5 1.5h-15z"/><path d="M10 20.5a2 2 0 0 0 4 0"/>'),
   olho: ico('<path d="M2.5 12S6 5.5 12 5.5 21.5 12 21.5 12 18 18.5 12 18.5 2.5 12 2.5 12z"/><circle cx="12" cy="12" r="3"/>'),
   olhoFechado: ico('<path d="M2.5 12S6 5.5 12 5.5 21.5 12 21.5 12 18 18.5 12 18.5 2.5 12 2.5 12z"/><circle cx="12" cy="12" r="3"/><path d="M4 4l16 16"/>'),
@@ -871,8 +885,9 @@ const linhaRecente = ({ m, f, g }) => {
 /** Um movimento dentro de uma pessoa ou item: descrição, data (e a conta, se foi descontado) e valor. */
 function linhaMov(m, gasto) {
   const v = valorMov(m, gasto), c = m.descontado && db.contas.find(c => c.id === m.conta);
+  const sub = [dataCurta(m.data), m.partilha ? 'partilhado' : '', c ? (m.descontado > 0 ? `pago com ${c.nome}` : `recebido em ${c.nome}`) : ''];
   return `<button class="linha mov" data-a="mov" data-id="${m.id}"><div class="txt"><div class="tit${m.desc ? '' : ' sec'}">${esc(m.desc || 'Sem descrição')}</div>` +
-    `<div class="sub">${esc(dataCurta(m.data) + (c ? ` · descontado em ${c.nome}` : ''))}</div></div><div class="val ${v.cls}">${v.texto}</div></button>`;
+    `<div class="sub">${esc(sub.filter(Boolean).join(' · '))}</div></div><div class="val ${v.cls}">${v.texto}</div></button>`;
 }
 
 function vResumo() {
@@ -889,7 +904,7 @@ function vResumo() {
     <div class="heroi-slides">${totais.map(([rot, v, ev]) => `<div class="slide"><div class="heroi-rot">${rot}</div>
       <div class="valor-g">${euroG(v)}</div>${ev ? `<span class="pilula">${esc(ev.texto)} ${esc(ev.quando)}</span>` : ''}</div>`).join('')}</div>
     <div class="pontos">${totais.map(([rot], i) => `<button data-a="slide" data-id="${i}" class="${(ui.slide || 0) === i ? 'on' : ''}" aria-label="${rot}"></button>`).join('')}</div>
-    <div class="botoes-acao">${botaoAcao('ficheiro-atalho', ic.ficheiro, 'Importar')}${botaoAcao('rapido', ic.atualizar, 'Atualizar', 'contas')}${botaoAcao('rapido', ic.dividas, 'Dívida', 'dividas')}${botaoAcao('rapido', ic.gastos, 'Gasto', 'gastos')}</div>
+    <div class="botoes-acao">${botaoAcao('ficheiro-atalho', ic.ficheiro, 'Importar')}${botaoAcao('rapido', ic.atualizar, 'Atualizar', 'contas')}${botaoAcao('rapido', ic.dividas, 'Dívida', 'dividas')}${botaoAcao('rapido', ic.gastos, 'Gasto', 'gastos')}${botaoAcao('partilha', ic.dividir, 'Dividir')}</div>
   </header>`;
   if (vazio) return h + `<section class="cartao">${cabCartao('Começar')}
     <button class="linha acao" data-a="colar">${avatarIcone(ic.colar)}Colar os meus dados</button>
@@ -1184,8 +1199,10 @@ function folhaMov(movId) {
   const [g, f] = acharFicha(ui.ficha[ui.tab]);
   const m = f.movimentos.find(m => m.id === movId), div = g.tipo === 'dividas';
   const neg = m ? m.valor < 0 : false;
+  // a conta onde o dinheiro saiu ou entrou: a do movimento; num gasto novo, a conta com o nome do item (ex.: Revolut)
+  const contaMov = m ? m.conta || '' : !div ? db.contas.find(c => norm(c.nome) === norm(f.nome))?.id || '' : '';
   abrir({
-    tipo: 'folha', titulo: m ? 'Editar movimento' : f.nome, sinal: neg, nome: f.nome, div,
+    tipo: 'folha', titulo: m ? 'Editar movimento' : f.nome, sinal: neg, nome: f.nome, div, mov: m,
     corpo: `<div class="seg" id="f-sinal">
         <button data-a="sinal" data-id="0" class="${neg ? '' : 'on'}">${div ? 'Deve-me  +' : 'Gasto'}</button>
         <button data-a="sinal" data-id="1" class="${neg ? 'on' : ''}">${div ? 'Devo eu  −' : 'Reembolso'}</button>
@@ -1194,26 +1211,47 @@ function folhaMov(movId) {
         <div class="linha campo-val"><input id="f-valor" class="valor-grande" inputmode="decimal" placeholder="0,00" value="${m ? numero(m.valor) : ''}" autocomplete="off" autofocus><span>€</span></div>
         <div class="linha"><input id="f-desc" placeholder="Descrição" value="${esc(m?.desc)}" autocomplete="off"></div>
         <label class="linha"><span class="txt">Data</span><input type="date" id="f-data" value="${m?.data || hoje()}"></label>
+        ${db.contas.length ? `<label class="linha"><span class="txt">Conta</span><select id="f-conta"><option value="">Nenhuma</option>${db.contas.map(c =>
+          `<option value="${c.id}"${c.id === contaMov ? ' selected' : ''}>${esc(c.nome)}</option>`).join('')}</select></label>` : ''}
       </div>
-      ${div ? '<p class="rodape" id="f-ajuda"></p>' : ''}`,
+      <p class="rodape" id="f-ajuda"></p>`,
     extra: m ? btnApagar('apagar-mov', m.id, 'Apagar movimento') : '',
     depois: ajudaSinal,
     guardar: () => {
       const v = lerValor($('#f-valor').value);
       if (v === null) return erro('#f-valor');
       const dados = { valor: camada.sinal ? -Math.abs(v) : v, desc: $('#f-desc').value.trim(), data: $('#f-data').value || hoje() };
-      const c = m?.conta && (dados.valor !== m.valor || dados.data !== m.data) ? ajustarDesconto(m, dados) : null;
-      if (m) Object.assign(m, dados); else f.movimentos.push({ id: uid(), ...dados });
-      if (c) toast(`${c.nome} também foi acertada: ${euro(c.valor)}`);
+      const c = db.contas.find(x => x.id === $('#f-conta')?.value) || null;
+      // numa despesa partilhada, a conta pagou o total: muda na mesma medida que a tua parte
+      const quanto = m?.partilha && m.descontado ? m.descontado + (dados.valor - m.valor) : dados.valor;
+      let mexeu = null;
+      if (m) {
+        const mesma = c && m.conta === c.id;
+        if (m.conta && (!mesma || dados.valor !== m.valor || dados.data !== m.data)) mexeu = ajustarDesconto(m, mesma ? dados : null);
+        Object.assign(m, dados);
+        if (c && !mesma) mexeu = ligarNova(m, c, quanto) || mexeu;
+      } else {
+        const novo = { id: uid(), ...dados };
+        if (c) mexeu = ligarNova(novo, c, dados.valor);
+        f.movimentos.push(novo);
+      }
+      if (mexeu) toast(`${mexeu.nome}: ${euro(mexeu.valor)}`);
       return true;
     },
   });
 }
+/** Debaixo do valor: o que o sinal faz à dívida e, com uma conta escolhida, se o dinheiro sai dela ou entra. */
 function ajudaSinal() {
   const el = $('#f-ajuda');
-  if (el) el.textContent = camada.sinal
-    ? `Tira ao que ${camada.nome} te deve: pagou-te, ou és tu que lhe deves.`
-    : `Soma ao que ${camada.nome} te deve.`;
+  if (!el) return;
+  const c = db.contas.find(x => x.id === $('#f-conta')?.value), v = lerValor($('#f-valor')?.value || ''), m = camada.mov;
+  // na tua parte de uma despesa partilhada, o que sai da conta é o total (que muda na mesma medida que a tua parte)
+  const quanto = m?.partilha && m.descontado && c?.id === m.conta && v !== null ? m.descontado + ((camada.sinal ? -Math.abs(v) : Math.abs(v)) - m.valor) : null;
+  const sai = quanto !== null ? quanto >= 0 : !camada.sinal, montante = quanto !== null ? quanto : v;
+  el.textContent = [
+    camada.div ? (camada.sinal ? `Tira ao que ${camada.nome} te deve: pagou-te, ou és tu que lhe deves.` : `Soma ao que ${camada.nome} te deve.`) : '',
+    c ? `${sai ? 'Sai' : 'Entra'}${montante ? ' ' + euro(Math.abs(montante)) : ''} ${sai ? 'de' : 'em'} ${c.nome}${quanto !== null ? ' (despesa partilhada)' : ''}.` : '',
+  ].filter(Boolean).join(' ');
 }
 
 /* ---------- exportar e cópias ---------- */
@@ -1444,13 +1482,112 @@ function ajustarDesconto(m, novo) {
   if (l.h) devolver(l.c, l.h, descontado);
   if (novo) {
     const q = quando ? novo.data + quando.slice(10) : null; // a mesma hora, no dia novo
-    ligarConta(m, l.c, descontar(l.c, novo.valor, novo.data, q) ? novo.valor : 0, novo.data, q);
+    // numa despesa partilhada, a conta pagou o total: muda na mesma medida que a tua parte
+    const quanto = m.partilha && descontado ? descontado + (novo.valor - m.valor) : novo.valor;
+    ligarConta(m, l.c, descontar(l.c, quanto, novo.data, q) ? quanto : 0, novo.data, q);
   }
   return l.c.valor !== antes ? l.c : null;
 }
-/** Um valor escrito à mão passa a valer por si: os gastos descontados nesse dia deixam de acertar a conta. */
+/** Liga um movimento a uma conta e mexe nela: "quanto" sai (ou entra, se for negativo). Devolve a conta, se mexeu. */
+function ligarNova(m, c, quanto) {
+  const q = m.data === hoje() ? agora() : null, ok = descontar(c, quanto, m.data, q);
+  ligarConta(m, c, ok ? quanto : 0, m.data, q);
+  return ok ? c : null;
+}
+/**
+ * Despesa partilhada: pagaste tudo de uma conta. Sai o total da conta, a tua parte fica em Gastos (no item com o
+ * nome da conta) e cada pessoa fica a dever a sua. Os movimentos ficam marcados com o mesmo "partilha".
+ */
+function folhaPartilha() {
+  const pessoas = gruposDe('dividas').flatMap(g => g.fichas);
+  const def = db.contas.find(c => c.id === lerPref('contaPartilha', '')) || db.contas[0];
+  abrir({
+    tipo: 'folha', titulo: 'Despesa partilhada',
+    corpo: `<div class="cartao">
+        <div class="linha campo-val"><input id="f-pago" class="valor-grande" inputmode="decimal" placeholder="Total pago" autocomplete="off" autofocus><span>€</span></div>
+        <div class="linha"><input id="f-desc" placeholder="Descrição (ex.: jantar)" autocomplete="off"></div>
+        <label class="linha"><span class="txt">Data</span><input type="date" id="f-data" value="${hoje()}"></label>
+        <label class="linha"><span class="txt">Pago com</span><select id="f-conta">${db.contas.map(c =>
+          `<option value="${c.id}"${c === def ? ' selected' : ''}>${esc(c.nome)}</option>`).join('')}<option value="">Nenhuma conta</option></select></label>
+      </div>
+      <div class="cartao">${cabCartao('Partes')}<div id="f-partes">${linhaParte('eu', 'Eu')}</div>
+        <div class="quem" id="f-quem">${pessoas.map(chipPessoa).join('')}<button class="chip novo" data-a="partilha-nova">+ Outra pessoa</button></div></div>
+      <p class="rodape" id="f-soma"></p>`,
+    guardar: guardarPartilha,
+  });
+  somaPartilha();
+}
+const linhaParte = (quem, nome) => `<div class="linha parte-linha" data-quem="${esc(quem)}">${avatar(nome)}<div class="txt tit">${esc(nome)}</div>` +
+  `<input class="parte" inputmode="decimal" placeholder="0,00" autocomplete="off" aria-label="Parte de ${esc(nome)}">` +
+  (quem === 'eu' ? '<span class="mini-espaco"></span>' : `<button class="mini tirar" data-a="partilha-tirar" aria-label="Tirar ${esc(nome)}">×</button>`) + '</div>';
+const chipPessoa = f => `<button class="chip" data-a="partilha-add" data-id="${f.id}">${esc(f.nome)}</button>`;
+/**
+ * As partes que não escreveste à mão dividem em partes iguais o que falta do total (os cêntimos que sobram ficam na
+ * primeira, que é a tua). Em baixo: quanto sai da conta, o gasto e o que te devem, ou quanto falta dividir.
+ */
+function somaPartilha() {
+  const total = lerValor($('#f-pago')?.value || '') || 0, ins = [...document.querySelectorAll('#f-partes .parte')];
+  const auto = ins.filter(i => !i.dataset.manual), resto = total - ins.filter(i => i.dataset.manual).reduce((t, i) => t + (lerValor(i.value) || 0), 0);
+  if (auto.length) {
+    const base = Math.floor(resto / auto.length), sobra = resto - base * auto.length;
+    auto.forEach((i, k) => { i.value = total && resto >= 0 ? numero(base + (k ? 0 : sobra)) : ''; });
+  }
+  const partes = ins.map(i => lerValor(i.value) || 0), soma = partes.reduce((a, b) => a + b, 0);
+  const c = db.contas.find(x => x.id === $('#f-conta')?.value), el = $('#f-soma');
+  el.classList.toggle('neg', !!total && soma !== total);
+  el.textContent = !total ? 'Escreve o total que pagaste e toca em quem estava contigo.'
+    : ins.length < 2 ? 'Toca em quem estava contigo.'
+    : soma < total ? `Falta dividir ${euro(total - soma)}.`
+    : soma > total ? `As partes passam o total em ${euro(soma - total)}.`
+    : `Sai ${euro(total)}${c ? ` de ${c.nome}` : ''} · gasto ${euro(partes[0])} · devem-te ${euro(total - partes[0])}`;
+}
+/** O item de Gastos com este nome (o da conta); se não houver, é criado em "Dia a dia". */
+function fichaGasto(nome) {
+  let f = gruposDe('gastos').flatMap(g => g.fichas).find(f => norm(f.nome) === norm(nome));
+  if (!f) grupoChamado('Dia a dia', 'gastos').fichas.push(f = { id: uid(), nome, nota: '', movimentos: [] });
+  return f;
+}
+function guardarPartilha() {
+  const total = lerValor($('#f-pago').value);
+  if (!total || total < 0) return erro('#f-pago');
+  somaPartilha();
+  const partes = [...document.querySelectorAll('#f-partes .parte-linha')].map(r =>
+    ({ quem: r.dataset.quem, nome: r.querySelector('.tit').textContent, valor: lerValor(r.querySelector('.parte').value) || 0 }));
+  if (partes.length < 2) { toast('Toca em quem estava contigo'); return false; }
+  if (partes.some(x => x.valor < 0) || partes.reduce((t, x) => t + x.valor, 0) !== total) { toast('As partes têm de somar o total'); return false; }
+  const desc = $('#f-desc').value.trim() || 'despesa partilhada', data = $('#f-data').value || hoje();
+  const c = db.contas.find(x => x.id === $('#f-conta').value), id = uid(), desfaz = pontoDeRetorno();
+  const [eu, ...outros] = partes;
+  // a tua parte é um gasto, e é ele que guarda o total que saiu da conta (para o poder corrigir ou apagar)
+  if (eu.valor || c) {
+    const mov = { id: uid(), valor: eu.valor, desc, data, partilha: id };
+    if (c) ligarNova(mov, c, total);
+    fichaGasto(c ? c.nome : 'Outros').movimentos.push(mov);
+  }
+  for (const o of outros) {
+    let f = o.quem.startsWith('novo:') ? null : acharFicha(o.quem)[1];
+    if (!f) {
+      const g = gruposDe('dividas').find(g => norm(g.nome) === 'amigos') || gruposDe('dividas')[0] || grupoChamado('Pessoas', 'dividas');
+      g.fichas.push(f = { id: uid(), nome: o.nome, nota: '', movimentos: [] });
+    }
+    if (o.valor) f.movimentos.push({ id: uid(), valor: o.valor, desc, data, partilha: id });
+  }
+  if (c) gravarPref('contaPartilha', c.id);
+  guardar(); fechar(); render();
+  toast(`Guardado${c ? ` · −${euro(total)} em ${c.nome}` : ''} · devem-te ${euro(total - eu.valor)}`, desfaz);
+  return false;
+}
+/** Apaga todos os movimentos de uma despesa partilhada e devolve à conta o que saiu dela. */
+function apagarPartilha(pid) {
+  for (const g of db.grupos) for (const f of g.fichas) {
+    f.movimentos.filter(m => m.partilha === pid && m.descontado).forEach(m => ajustarDesconto(m, null));
+    f.movimentos = f.movimentos.filter(m => m.partilha !== pid);
+  }
+}
+
+/** Um valor escrito à mão passa a valer por si: os movimentos descontados nesse dia deixam de acertar a conta. */
 function desligarData(c, data) {
-  for (const g of gruposDe('gastos')) for (const f of g.fichas) for (const m of f.movimentos)
+  for (const g of db.grupos) for (const f of g.fichas) for (const m of f.movimentos)
     if (m.conta === c.id && m.dataConta === data) for (const k of LIGACAO) delete m[k];
 }
 /** Apagar vários movimentos: se algum gasto do atalho foi descontado numa conta, pergunta se devolve o dinheiro. */
@@ -1725,6 +1862,7 @@ document.addEventListener('click', e => {
       const div = ui.tab === 'dividas';
       acoes(div ? 'Dívidas' : 'Gastos', [
         { texto: div ? 'Nova pessoa' : 'Novo item', fn: escolherGrupoNova },
+        ...(div ? [{ texto: 'Despesa partilhada', fn: folhaPartilha }] : []),
         { texto: 'Novo grupo', fn: () => pedirNome('Novo grupo', '', n => db.grupos.push({ id: uid(), nome: n, tipo: ui.tab, fichas: [] })) },
         ...(gruposDe(ui.tab).length > 1 || gruposDe(ui.tab).some(g => g.fichas.length > 1) ? [{ texto: 'Ordenar', fn: () => { ui.ordenar = true; } }] : []),
       ]);
@@ -1760,9 +1898,19 @@ document.addEventListener('click', e => {
     case 'apagar-mov': {
       const [, f] = naFicha(), m = f.movimentos.find(m => m.id === id), l = m?.descontado && contaLigada(m);
       const apagar = devolver => () => { if (devolver) ajustarDesconto(m, null); f.movimentos = f.movimentos.filter(x => x !== m); };
+      if (m?.partilha) {
+        // a conta que pagou o total está ligada ao gasto da tua parte
+        const g = db.grupos.flatMap(g => g.fichas).flatMap(x => x.movimentos).find(x => x.partilha === m.partilha && x.descontado && contaLigada(x));
+        const lg = g && contaLigada(g);
+        acoes('Esta despesa foi partilhada', [
+          { texto: 'Apagar a despesa toda' + (lg ? ` e devolver ${euro(g.descontado)} a ${lg.c.nome}` : ''), perigo: true, fn: () => apagarPartilha(m.partilha), desfazer: 'Despesa apagada' },
+          { texto: 'Apagar só este movimento' + (l ? ` (${l.c.nome} fica igual)` : ''), perigo: true, fn: apagar(false), desfazer: 'Movimento apagado' },
+        ]);
+        return;
+      }
       if (l) {
         const d = m.descontado;
-        acoes(`Este gasto veio do atalho e foi descontado em ${l.c.nome}`, [
+        acoes(`Este movimento mexeu em ${l.c.nome}`, [
           { texto: d < 0 ? `Apagar e tirar ${euro(-d)} a ${l.c.nome}` : `Apagar e devolver ${euro(d)} a ${l.c.nome}`, fn: apagar(true), desfazer: 'Movimento apagado' },
           { texto: `Apagar só aqui (${l.c.nome} fica igual)`, fn: apagar(false), desfazer: 'Movimento apagado' },
         ]);
@@ -1776,11 +1924,42 @@ document.addEventListener('click', e => {
       camada.sinal = id === '1';
       document.querySelectorAll('#f-sinal button').forEach(x => x.classList.toggle('on', x.dataset.id === id));
       ajudaSinal(); return;
-    case 'saldar': {
-      const [, f] = naFicha(), t = totalFicha(f), desfaz = pontoDeRetorno();
-      f.movimentos.push({ id: uid(), valor: -t, desc: t > 0 ? 'pagou' : 'paguei', data: hoje() });
-      toast('Conta saldada', desfaz);
-      break;
+    case 'saldar': { // pagou tudo (ou paguei tudo): o dinheiro pode entrar (ou sair) de uma conta
+      const [, f] = naFicha(), t = totalFicha(f);
+      const fazer = c => () => {
+        const mov = { id: uid(), valor: -t, desc: t > 0 ? 'pagou' : 'paguei', data: hoje() };
+        if (c) ligarNova(mov, c, mov.valor);
+        f.movimentos.push(mov);
+      };
+      if (!db.contas.length) { const desfaz = pontoDeRetorno(); fazer(null)(); toast('Conta saldada', desfaz); break; }
+      acoes(t > 0 ? `${f.nome} pagou ${euro(t)}. Entrou em que conta?` : `Pagaste ${euro(-t)} a ${f.nome}. Saiu de que conta?`, [
+        ...db.contas.map(c => ({ texto: c.nome, fn: fazer(c), desfazer: 'Conta saldada' })),
+        { texto: 'Não mexer nas contas', fn: fazer(null), desfazer: 'Conta saldada' },
+      ]);
+      return;
+    }
+    case 'partilha': folhaPartilha(); return;
+    case 'partilha-add': {
+      const f = acharFicha(id)[1];
+      if (f) { $('#f-partes').insertAdjacentHTML('beforeend', linhaParte(f.id, f.nome)); b.remove(); somaPartilha(); }
+      return;
+    }
+    case 'partilha-tirar': {
+      const r = b.closest('.parte-linha'), f = acharFicha(r.dataset.quem)[1];
+      r.remove();
+      if (f) $('#f-quem [data-a="partilha-nova"]').insertAdjacentHTML('beforebegin', chipPessoa(f));
+      somaPartilha(); return;
+    }
+    case 'partilha-nova':
+      if (!$('#f-nova')) b.insertAdjacentHTML('afterend', '<span class="nova-pessoa"><input id="f-nova" placeholder="Nome" autocomplete="off"><button class="chip novo" data-a="partilha-nova-ok">Juntar</button></span>');
+      $('#f-nova').focus(); return;
+    case 'partilha-nova-ok': {
+      const nome = $('#f-nova').value.trim();
+      if (!nome) { $('#f-nova').focus(); return; }
+      const f = gruposDe('dividas').flatMap(g => g.fichas).find(x => norm(x.nome) === norm(nome));
+      if (f) { $(`#f-quem [data-id="${f.id}"]`)?.remove(); if (!$(`#f-partes [data-quem="${f.id}"]`)) $('#f-partes').insertAdjacentHTML('beforeend', linhaParte(f.id, f.nome)); }
+      else $('#f-partes').insertAdjacentHTML('beforeend', linhaParte('novo:' + nome, nome));
+      b.closest('.nova-pessoa').remove(); somaPartilha(); return;
     }
 
     case 'fechar': fechar(); return;
@@ -1848,10 +2027,24 @@ document.addEventListener('click', e => {
   guardar(); render();
 });
 
+// No iPhone, escolher noutra lista (select) avisa com "change".
+document.addEventListener('change', e => {
+  if (e.target.id !== 'f-conta') return;
+  if ($('#f-soma')) somaPartilha();
+  if ($('#f-ajuda')) ajudaSinal();
+});
+
 // Os botões do seletor +/− não tiram o foco ao campo do valor (o teclado não fecha).
 document.addEventListener('mousedown', e => { if (e.target.closest('.seg')) e.preventDefault(); });
 
 document.addEventListener('input', e => {
+  const t = e.target;
+  if (t.closest?.('#camada')) {
+    if (t.classList.contains('parte')) t.dataset.manual = t.value.trim() ? '1' : '';
+    if ((t.matches('.parte, #f-pago') || t.id === 'f-conta') && $('#f-soma')) somaPartilha();
+    if (t.matches('#f-valor, #f-conta') && $('#f-ajuda')) ajudaSinal();
+    return;
+  }
   if (e.target.dataset.campo !== 'nota') return;
   alturaNota(e.target);
   const [, f] = acharFicha(ui.ficha[ui.tab]);
@@ -1863,6 +2056,7 @@ document.addEventListener('keydown', e => {
   if (graf && (e.key === 'ArrowLeft' || e.key === 'ArrowRight')) { e.preventDefault(); passoGraf(graf, e.key === 'ArrowRight' ? 1 : -1); return; }
   if (!camada) return;
   if (e.key === 'Escape') fechar();
+  if (e.key === 'Enter' && e.target.id === 'f-nova') { e.preventDefault(); $('[data-a="partilha-nova-ok"]').click(); return; }
   if (e.key === 'Enter' && camada.guardar && e.target.matches('#camada input')) {
     e.preventDefault(); $('[data-a="guardar-folha"]').click();
   }
