@@ -435,12 +435,13 @@ function migrar(d) {
     if (!Array.isArray(c.hist) || !c.hist.length) c.hist = [{ data: hoje(), valor: c.valor }];
     ordenarHist(c);
   }
+  if (!Array.isArray(d.transferencias)) d.transferencias = []; // movimentos entre contas
   d.versao = 2;
   return d;
 }
 
 let db = carregar();
-db = db ? migrar(db) : dadosIniciais();
+db = migrar(db || dadosIniciais());
 guardar();
 
 const totalFicha = f => f.movimentos.reduce((s, m) => s + m.valor, 0);
@@ -873,15 +874,17 @@ function blocoContas() {
 /** Os últimos movimentos de dívidas e gastos, do mais recente para o mais antigo. */
 function recentes(n) {
   const L = [];
-  for (const g of db.grupos) for (const f of g.fichas) f.movimentos.forEach((m, i) => L.push({ m, f, g, i }));
-  return L.sort((a, b) => a.m.data < b.m.data ? 1 : a.m.data > b.m.data ? -1 : b.i - a.i).slice(0, n);
+  for (const g of db.grupos) for (const f of g.fichas) f.movimentos.forEach((m, i) => L.push({ m, f, g, i, data: m.data }));
+  db.transferencias.forEach((t, i) => L.push({ t, i, data: t.data }));
+  return L.sort((a, b) => a.data < b.data ? 1 : a.data > b.data ? -1 : b.i - a.i).slice(0, n);
 }
 /**
  * Valor de um movimento numa lista, como num extrato: um gasto é dinheiro que sai (−, sem cor) e um reembolso
  * entra (+, a verde); nas dívidas, o sinal guardado (+ é o que te devem). O verde e o vermelho ficam para os saldos.
  */
 const valorMov = (m, gasto) => gasto ? { texto: euroSinal(-m.valor), cls: m.valor < 0 ? 'pos' : '' } : { texto: euroSinal(m.valor), cls: '' };
-const linhaRecente = ({ m, f, g }) => {
+const linhaRecente = ({ m, f, g, t }) => {
+  if (t) return linhaTransf(t, null);
   const v = valorMov(m, g.tipo === 'gastos');
   return linha(m.desc || f.nome, v.texto, { a: 'abrir', tipo: g.tipo, id: f.id, avatar: avatar(f.nome), sub: `${f.nome} · ${dataCurta(m.data)}`, cls: v.cls });
 };
@@ -959,14 +962,16 @@ function vConta() {
   const leg = [c.nota, c.noTotal ? '' : 'fora do total'].filter(Boolean).join(' · ');
   let h = barra({ voltar: 'Contas' }) + `<div class="perfil">${avatar(c.nome, slotConta(c), 'grande')}<h1>${esc(c.nome)}</h1>
     <div class="valor-g">${euroG(c.valor)}</div>${ev ? `<span class="pilula ${ev.cls}">${esc(ev.texto)} ${esc(ev.quando)}</span>` : ''}${leg ? `<div class="leg">${esc(leg)}</div>` : ''}
-    <div class="botoes-acao">${botaoAcao('novo-hist', ic.atualizar, 'Atualizar')}${botaoAcao('editar-conta', ic.editar, 'Editar')}</div></div>`;
+    <div class="botoes-acao">${botaoAcao('novo-hist', ic.atualizar, 'Atualizar')}${db.contas.length > 1 ? botaoAcao('transferir', ic.trocar, 'Transferir') : ''}${botaoAcao('editar-conta', ic.editar, 'Editar')}</div></div>`;
   h += `<section class="cartao">${cabCartao('Histórico')}` + c.hist.map((x, i) => {
     const dif = i ? x.valor - c.hist[i - 1].valor : null;
     return linha(dataCurta(x.data), euro(x.valor), {
       a: 'hist', id: i, avatar: avatarIcone(dif === null ? ic.contas : dif > 0 ? ic.sobe : dif < 0 ? ic.desce : ic.igual),
-      sub: dif === null ? 'valor inicial' : !dif ? 'sem alteração' : euroSinal(dif) + (x.auto ? ' · gastos do atalho' : ''),
+      sub: dif === null ? 'valor inicial' : !dif ? 'sem alteração' : euroSinal(dif) + (x.auto ? ' · movimentos' : ''),
     });
   }).reverse().join('') + '</section>';
+  const tr = db.transferencias.filter(t => t.de === c.id || t.para === c.id).sort((a, b) => a.data < b.data ? 1 : a.data > b.data ? -1 : 0);
+  if (tr.length) h += `<section class="cartao">${cabCartao('Transferências')}${tr.map(t => linhaTransf(t, c)).join('')}</section>`;
   if (ev) h += cartaoEvolucao(ev);
   return h;
 }
@@ -1608,8 +1613,61 @@ function apagarPartilha(pid) {
 
 /** Um valor escrito à mão passa a valer por si: os movimentos descontados nesse dia deixam de acertar a conta. */
 function desligarData(c, data) {
-  for (const g of db.grupos) for (const f of g.fichas) for (const m of f.movimentos)
-    if (m.conta === c.id && m.dataConta === data) for (const k of LIGACAO) delete m[k];
+  const lados = db.transferencias.flatMap(t => [t.saida, t.entrada]);
+  for (const m of [...db.grupos.flatMap(g => g.fichas.flatMap(f => f.movimentos)), ...lados])
+    if (m?.conta === c.id && m.dataConta === data) for (const k of LIGACAO) delete m[k];
+}
+
+/**
+ * Transferência entre contas: { id, valor, data, desc, de, para, saida, entrada }. A saída e a entrada estão ligadas
+ * cada uma à sua conta, como os movimentos (corrigir ou apagar devolve o dinheiro ao sítio). Não é gasto nem dívida.
+ */
+function folhaTransferir(id) {
+  if (db.contas.length < 2) { toast('Para transferir, precisas de duas contas'); return; }
+  const t = id && db.transferencias.find(x => x.id === id);
+  const de = t ? t.de : (ui.tab === 'contas' && ui.ficha.contas) || lerPref('transfDe', '') || db.contas[0].id;
+  const para = t ? t.para : db.contas.find(c => c.id !== de && c.id === lerPref('transfPara', ''))?.id || db.contas.find(c => c.id !== de).id;
+  const opcoes = sel => db.contas.map(c => `<option value="${c.id}"${c.id === sel ? ' selected' : ''}>${esc(c.nome)}</option>`).join('');
+  abrir({
+    tipo: 'folha', titulo: t ? 'Editar transferência' : 'Transferir',
+    corpo: `<div class="cartao">
+        <div class="linha campo-val"><input id="f-valor" class="valor-grande" inputmode="decimal" placeholder="0,00" value="${t ? numero(t.valor) : ''}" autocomplete="off" autofocus><span>€</span></div>
+        <label class="linha"><span class="txt">De</span><select id="f-de">${opcoes(de)}</select></label>
+        <label class="linha"><span class="txt">Para</span><select id="f-para">${opcoes(para)}</select></label>
+        <label class="linha"><span class="txt">Data</span><input type="date" id="f-data" value="${t?.data || hoje()}"></label>
+        <div class="linha"><input id="f-desc" placeholder="Descrição (ex.: levantamento)" value="${esc(t?.desc)}" autocomplete="off"></div>
+      </div>`,
+    extra: t ? btnApagar('apagar-transf', t.id, 'Apagar transferência') : '',
+    guardar: () => {
+      const v = lerValor($('#f-valor').value);
+      if (!v || v <= 0) return erro('#f-valor');
+      const a = db.contas.find(c => c.id === $('#f-de').value), b = db.contas.find(c => c.id === $('#f-para').value);
+      if (!a || !b || a === b) { toast('Escolhe duas contas diferentes'); return false; }
+      const desfaz = pontoDeRetorno(), data = $('#f-data').value || hoje();
+      if (t) desfazerTransf(t);
+      const n = t || { id: uid() };
+      Object.assign(n, { valor: v, data, desc: $('#f-desc').value.trim(), de: a.id, para: b.id, saida: { data }, entrada: { data } });
+      ligarNova(n.saida, a, v);
+      ligarNova(n.entrada, b, -v);
+      if (!t) db.transferencias.push(n);
+      gravarPref('transfDe', a.id); gravarPref('transfPara', b.id);
+      toast(`${euro(v)} de ${a.nome} para ${b.nome}`, desfaz);
+      return true;
+    },
+  });
+}
+/** Devolve às duas contas o que a transferência tinha mexido nelas. */
+function desfazerTransf(t) {
+  for (const lado of [t.saida, t.entrada]) if (lado?.descontado) ajustarDesconto(lado, null);
+}
+/** Uma transferência numa lista. Com a conta c, o valor tem o sinal dela (− sai, + entra). */
+function linhaTransf(t, c) {
+  const nome = id => db.contas.find(x => x.id === id)?.nome || '—', sai = c && t.de === c.id;
+  const caminho = c ? (sai ? `para ${nome(t.para)}` : `de ${nome(t.de)}`) : `${nome(t.de)} → ${nome(t.para)}`;
+  const tit = t.desc || (c ? caminho[0].toUpperCase() + caminho.slice(1) : 'Transferência');
+  const sub = [t.desc || !c ? caminho : '', dataCurta(t.data)].filter(Boolean).join(' · ');
+  return `<button class="linha" data-a="transf" data-id="${t.id}">${avatarIcone(ic.trocar)}<div class="txt"><div class="tit">${esc(tit)}</div>` +
+    `<div class="sub">${esc(sub)}</div></div><div class="val">${c ? euroSinal(sai ? -t.valor : t.valor) : euro(t.valor)}</div></button>`;
 }
 /** Apagar vários movimentos: se algum gasto do atalho foi descontado numa conta, pergunta se devolve o dinheiro. */
 function apagarComContas(titulo, movs, apagar) {
@@ -1859,8 +1917,19 @@ document.addEventListener('click', e => {
     case 'nova-conta': folhaConta(null); return;
     case 'editar-conta': folhaConta(ui.ficha.contas); return;
     case 'menu-contas':
-      acoes('Contas', [{ texto: 'Nova conta', fn: () => folhaConta(null) }, ...(db.contas.length > 1 ? [{ texto: 'Ordenar', fn: () => { ui.ordenar = true; } }] : [])]);
+      acoes('Contas', [{ texto: 'Nova conta', fn: () => folhaConta(null) },
+        ...(db.contas.length > 1 ? [{ texto: 'Transferir entre contas', fn: () => folhaTransferir(null) }, { texto: 'Ordenar', fn: () => { ui.ordenar = true; } }] : [])]);
       return;
+    case 'transferir': folhaTransferir(null); return;
+    case 'transf': folhaTransferir(id); return;
+    case 'apagar-transf': {
+      const t = db.transferencias.find(x => x.id === id);
+      if (!t) return;
+      const desfaz = pontoDeRetorno();
+      desfazerTransf(t);
+      db.transferencias = db.transferencias.filter(x => x !== t);
+      guardar(); fechar(); render(); toast('Transferência apagada', desfaz); return;
+    }
     case 'novo-hist': folhaHist(null); return;
     case 'hist': folhaHist(+id); return;
     case 'apagar-hist': {
