@@ -23,7 +23,7 @@
 :root {
   --bg: #f3f4f8; --cel: #fff; --txt: #191c1f; --sec: #6f7380; --ter: #b4b7c1;
   --sep: rgba(25,28,31,.08); --fill: rgba(25,28,31,.06); --prem: rgba(25,28,31,.05);
-  --acc: #2d5bff; --acc-forte: #2d5bff; --acc-suave: rgba(45,91,255,.18); --verde: #148043; --verm: #d1323c; --verm-suave: rgba(209,50,60,.12);
+  --acc: #2d5bff; --acc-forte: #2d5bff; --acc-suave: rgba(45,91,255,.18); --acc-trilho: rgba(45,91,255,.09); --verde: #148043; --verm: #d1323c; --verm-suave: rgba(209,50,60,.12);
   --barra: rgba(255,255,255,.86); --acoes: rgba(255,255,255,.96); --seg-on: #fff; --toast: rgba(25,28,31,.94);
   --sombra: 0 1px 2px rgba(25,28,31,.04), 0 6px 20px rgba(25,28,31,.05);
   /* gradiente do topo */
@@ -39,7 +39,7 @@
   :root:not([data-tema="claro"]) {
     --bg: #000; --cel: #16171b; --txt: #fff; --sec: #8b8e99; --ter: #4a4d57;
     --sep: rgba(255,255,255,.08); --fill: rgba(255,255,255,.08); --prem: rgba(255,255,255,.06);
-    --acc: #6b8aff; --acc-forte: #4b6bff; --acc-suave: rgba(107,138,255,.22); --verde: #3ddc84; --verm: #ff6369; --verm-suave: rgba(255,99,105,.16);
+    --acc: #6b8aff; --acc-forte: #4b6bff; --acc-suave: rgba(107,138,255,.22); --acc-trilho: rgba(107,138,255,.14); --verde: #3ddc84; --verm: #ff6369; --verm-suave: rgba(255,99,105,.16);
     --barra: rgba(18,19,22,.86); --acoes: rgba(32,33,38,.96); --seg-on: #34363d; --toast: rgba(44,46,52,.96);
     --sombra: none;
     --h1: #2442e0; --h2: #5a2fd6; --h3: #b2367a; --h0: #121a6b;
@@ -50,7 +50,7 @@
 :root[data-tema="escuro"] {
   --bg: #000; --cel: #16171b; --txt: #fff; --sec: #8b8e99; --ter: #4a4d57;
   --sep: rgba(255,255,255,.08); --fill: rgba(255,255,255,.08); --prem: rgba(255,255,255,.06);
-  --acc: #6b8aff; --acc-forte: #4b6bff; --acc-suave: rgba(107,138,255,.22); --verde: #3ddc84; --verm: #ff6369; --verm-suave: rgba(255,99,105,.16);
+  --acc: #6b8aff; --acc-forte: #4b6bff; --acc-suave: rgba(107,138,255,.22); --acc-trilho: rgba(107,138,255,.14); --verde: #3ddc84; --verm: #ff6369; --verm-suave: rgba(255,99,105,.16);
   --barra: rgba(18,19,22,.86); --acoes: rgba(32,33,38,.96); --seg-on: #34363d; --toast: rgba(44,46,52,.96);
   --sombra: none;
   --h1: #2442e0; --h2: #5a2fd6; --h3: #b2367a; --h0: #121a6b;
@@ -205,6 +205,16 @@ code { font: 700 14px/1.3 ui-monospace, Menlo, monospace; background: var(--fill
 .chips { display: flex; background: var(--fill); border-radius: 999px; padding: 2px; }
 .chips button { min-width: 36px; padding: 5px 10px; border-radius: 999px; font-size: 13px; font-weight: 700; color: var(--sec); text-align: center; }
 .chips .on { background: var(--seg-on); color: var(--txt); box-shadow: 0 1px 3px rgba(0,0,0,.12); }
+/* «Para onde vai»: cada item com a sua parte do total */
+.partes { margin-top: 6px; }
+.gasto-parte .txt { display: flex; flex-direction: column; gap: 2px; }
+.parte-l { display: flex; align-items: baseline; justify-content: space-between; gap: 12px; }
+.parte-l > :first-child { min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.parte-l .sub { margin-top: 0; }
+.pct { flex: none; font-size: 13px; font-weight: 700; color: var(--sec); font-variant-numeric: tabular-nums; }
+.medidor { height: 6px; margin-top: 6px; border-radius: 3px; background: var(--acc-trilho); overflow: hidden; }
+.medidor span { display: block; height: 100%; min-width: 3px; border-radius: 0 3px 3px 0; background: var(--acc); }
+.medidor.outros span { background: var(--ter); }
 .graf { position: relative; margin: 12px 16px 10px; touch-action: pan-y; -webkit-user-select: none; user-select: none; -webkit-touch-callout: none; outline: 0; border-radius: 8px; }
 .graf:focus-visible { box-shadow: 0 0 0 2px var(--acc); }
 .graf svg { display: block; overflow: visible; stroke: none; }
@@ -223,7 +233,7 @@ code { font: 700 14px/1.3 ui-monospace, Menlo, monospace; background: var(--fill
 .comp span { min-width: 3px; }
 
 /* ocultar valores (para mostrar o ecrã a alguém) */
-.oculto :is(.val, .valor-g, .valor-m, .leg, .sub, .pilula, .graf text, .cartao-cab .dir:not(:has(button)), .conta-nota, .mes-cab span + span, textarea.nota:not(:focus)) { filter: blur(8px); }
+.oculto :is(.val, .valor-g, .valor-m, .leg, .sub, .pct, .pilula, .graf text, .cartao-cab .dir:not(:has(button)), .conta-nota, .mes-cab span + span, textarea.nota:not(:focus)) { filter: blur(8px); }
 
 /* barra de separadores */
 .tabs {
@@ -639,7 +649,11 @@ function grafLinha(pts, de, ate, o = {}) {
   return `<div class="graf" data-g="${i}" tabindex="0" role="img" aria-label="${esc(desc)}"><svg width="${W}" height="${H + 22}" aria-hidden="true">${svg}</svg></div>`;
 }
 
-/** Colunas (uma por mês), com o último mês destacado. A ponta é arredondada, a base é direita. */
+/**
+ * Colunas (uma por mês, ou por dia), com a última destacada; com o.destaque = 'todos', ficam todas destacadas
+ * até se tocar numa. A ponta é arredondada, a base é direita. Os rótulos de x saltam colunas se não couberem;
+ * com o.rotulos, aparecem só nas colunas que têm "rot".
+ */
 function grafColunas(barras, o = {}) {
   const W = larguraGraf(), H = 150, topo = 8;
   const vals = barras.map(b => b.valor);
@@ -648,16 +662,17 @@ function grafColunas(barras, o = {}) {
   const banda = pw / barras.length, larg = Math.min(24, banda * .62);
   const py = v => topo + (e.hi - v) / (e.hi - e.lo) * ph, y0 = py(0);
   const salto = Math.ceil(26 / banda); // rótulos de x em meses alternados se não couberem
+  const on = j => o.destaque === 'todos' || j === barras.length - 1;
   let svg = grelha(e, pw, W, py, true);
   barras.forEach((b, i) => {
     const x = i * banda + (banda - larg) / 2, y1 = py(b.valor), h = Math.abs(y1 - y0);
     const r = Math.min(4, larg / 2, h), s = y1 < y0 ? 1 : -1;
     const d = h < .5 ? 'M0 0' : `M${r1(x)} ${r1(y0)}V${r1(y1 + s * r)}Q${r1(x)} ${r1(y1)} ${r1(x + r)} ${r1(y1)}H${r1(x + larg - r)}Q${r1(x + larg)} ${r1(y1)} ${r1(x + larg)} ${r1(y1 + s * r)}V${r1(y0)}Z`;
-    svg += `<path class="coluna${i === barras.length - 1 ? ' on' : ''}" d="${d}"/>`;
-    if ((barras.length - 1 - i) % salto === 0) svg += `<text x="${r1(x + larg / 2)}" y="${H + 16}" text-anchor="middle">${esc(b.rot)}</text>`;
+    svg += `<path class="coluna${on(i) ? ' on' : ''}" d="${d}"/>`;
+    if (o.rotulos ? b.rot : (barras.length - 1 - i) % salto === 0) svg += `<text x="${r1(x + larg / 2)}" y="${H + 16}" text-anchor="middle">${esc(b.rot)}</text>`;
   });
-  const i = graficos.push({ tipo: 'colunas', barras, banda }) - 1;
-  const desc = `${o.rotulo}: ` + barras.map(b => `${b.nome} ${euro(b.valor)}`).join(', ');
+  const i = graficos.push({ tipo: 'colunas', barras, banda, on }) - 1;
+  const desc = o.desc || `${o.rotulo}: ` + barras.map(b => `${b.nome} ${euro(b.valor)}`).join(', ');
   return `<div class="graf" data-g="${i}" tabindex="0" role="img" aria-label="${esc(desc)}"><svg width="${W}" height="${H + 22}" aria-hidden="true">${svg}</svg></div>`;
 }
 
@@ -692,7 +707,7 @@ function esconder(el) {
   const v = cartao.querySelector('[data-ler="valor"]'), l = cartao.querySelector('[data-ler="leg"]');
   [v.innerHTML, v.className, l.innerHTML] = g.orig;
   g.orig = null; g.atual = null;
-  if (g.tipo === 'colunas') el.querySelectorAll('.coluna').forEach((c, j) => c.classList.toggle('on', j === g.barras.length - 1));
+  if (g.tipo === 'colunas') el.querySelectorAll('.coluna').forEach((c, j) => c.classList.toggle('on', g.on(j)));
   el.classList.remove('ativo');
 }
 /** Setas do teclado: salta para a mudança (ou coluna) seguinte. */
@@ -727,10 +742,12 @@ function evolucao(pts, inicio, o = {}) {
     cls: cor(dv),
     quando: de === ate - dias ? texto : 'desde ' + dataPT(isoDe(de)).replace(/ /g, '\u00a0'),
     graf: grafLinha(r, de, ate, o),
-    filtros: `<div class="chips">${PERIODOS.map(([id]) =>
-      `<button data-a="periodo" data-id="${id}" class="${ui.periodo === id ? 'on' : ''}">${id}</button>`).join('')}</div>`,
+    filtros: chipsPeriodo(),
   };
 }
+/** Os filtros de período (1M, 3M, 1A, Tudo). A escolha é a mesma em todos os cartões e fica guardada. */
+const chipsPeriodo = () => `<div class="chips">${PERIODOS.map(([id]) =>
+  `<button data-a="periodo" data-id="${id}" class="${ui.periodo === id ? 'on' : ''}">${id}</button>`).join('')}</div>`;
 /** Evolução de uma pessoa (até hoje) ou de um gasto (do primeiro ao último movimento). */
 function grafFicha(f, div) {
   const pts = acumular(eventosFicha(f));
@@ -766,6 +783,104 @@ function grafGastosMes(fichas = gruposDe('gastos').flatMap(g => g.fichas), ateHo
     atual: doze[doze.length - 1],
     media: Math.round(doze.reduce((s, b) => s + b.valor, 0) / doze.length),
   };
+}
+
+/** Os movimentos de todos os itens de gastos (as transferências entre contas não entram aqui). */
+const movGastos = () => gruposDe('gastos').flatMap(g => g.fichas.flatMap(f => f.movimentos));
+const fmtDiaSemana = new Intl.DateTimeFormat('pt-PT', { weekday: 'long', day: 'numeric', month: 'long', timeZone: 'UTC' });
+
+/**
+ * «Este mês»: os gastos de cada dia do mês atual em colunas (o mês todo, para se ver quanto falta),
+ * o total do mês e a comparação com o mês passado até ao mesmo dia. Devolve null se ainda não há gastos.
+ */
+function esteMes() {
+  const movs = movGastos();
+  if (!movs.length) return null;
+  const h = hoje(), [a, m, d] = h.split('-').map(Number);
+  const [aa, ma] = m === 1 ? [a - 1, 12] : [a, m - 1];
+  const nDias = new Date(Date.UTC(a, m, 0)).getUTCDate(), nAnt = new Date(Date.UTC(aa, ma, 0)).getUTCDate();
+  const chave = h.slice(0, 7), chaveAnt = `${aa}-${String(ma).padStart(2, '0')}`;
+  const ate = Math.min(d, nAnt); // no mês passado conta até ao mesmo dia (ou o mês todo, se for mais curto)
+  const porDia = Array(nDias).fill(0);
+  let total = 0, ateHoje = 0, antes = 0, haAntes = false;
+  for (const x of movs) {
+    const k = x.data.slice(0, 7), dia = +x.data.slice(8, 10);
+    if (k === chave) { porDia[dia - 1] += x.valor; total += x.valor; if (dia <= d) ateHoje += x.valor; }
+    else if (k === chaveAnt) { haAntes = true; if (dia <= ate) antes += x.valor; }
+  }
+  // Só compara se os registos já cobriam o mês passado desde o dia 1 e há gastos nele:
+  // no mês em que se começa a usar a app, a comparação mostraria um aumento que não existiu.
+  const cobre = movs.some(x => x.data <= `${chaveAnt}-01`);
+  let leg;
+  if (haAntes && cobre) {
+    const dv = ateHoje - antes;
+    leg = `<span class="${dv > 0 ? 'neg' : dv < 0 ? 'pos' : ''}">${dv > 0 ? '▲' : dv < 0 ? '▼' : '='} ${euro(Math.abs(dv))}</span> face a ${MESES_LONGOS[ma - 1]}${d < nAnt ? `, até ao dia ${d}` : ''}`;
+  } else leg = esc(`média de ${euro(Math.round(ateHoje / d))} por dia`);
+  const barras = porDia.map((v, i) => ({
+    rot: i === 0 || (i + 1) % 5 === 0 ? String(i + 1) : '',
+    nome: fmtDiaSemana.format(new Date(Date.UTC(a, m - 1, i + 1))),
+    valor: v,
+  }));
+  const mes = MESES_LONGOS[m - 1];
+  const desc = `Gastos por dia em ${mes}: ` + (barras.filter(b => b.valor).map(b => `${b.nome} ${euro(b.valor)}`).join(', ') || 'nenhum');
+  return {
+    total, leg,
+    graf: porDia.some(v => v) ? grafColunas(barras, { destaque: 'todos', rotulos: true, desc })
+      : `<p class="texto">Ainda não há gastos em ${mes}.</p>`,
+  };
+}
+
+/**
+ * «Para onde vai»: o gasto de cada item no período escolhido, do maior para o menor, com a parte de cada um.
+ * Nos itens de uma conta (como os do atalho), as descrições que mais pesam dizem em quê.
+ * Com mais de 7 itens, os mais pequenos juntam-se em «Outros».
+ */
+function paraOndeVai() {
+  const itens = gruposDe('gastos').flatMap(g => g.fichas.map(f => [f, g]));
+  const movs = itens.flatMap(([f]) => f.movimentos);
+  if (!movs.length) return null;
+  const [, texto, dias] = PERIODOS.find(p => p[0] === ui.periodo) || PERIODOS[3];
+  const desde = diaDe(hoje()) - dias; // conta os últimos N dias, com hoje
+  const inicio = Math.min(...movs.map(m => diaDe(m.data)));
+  const repetido = n => itens.filter(([f]) => norm(f.nome) === norm(n)).length > 1;
+  let total = 0;
+  const partes = [];
+  for (const [f, g] of itens) {
+    const ms = f.movimentos.filter(m => diaDe(m.data) > desde);
+    const v = ms.reduce((s, m) => s + m.valor, 0);
+    total += v;
+    if (v <= 0) continue;
+    const porDesc = new Map(); // descrições juntas sem contar maiúsculas e acentos, escritas como da primeira vez
+    for (const m of ms) if (m.desc) {
+      const k = norm(m.desc), x = porDesc.get(k) || { texto: m.desc, v: 0 };
+      x.v += m.valor; porDesc.set(k, x);
+    }
+    const top = [...porDesc.values()].filter(x => x.v > 0).sort((p, q) => q.v - p.v).slice(0, 3).map(x => x.texto);
+    partes.push({ f, nome: repetido(f.nome) ? `${f.nome} (${g.nome})` : f.nome, valor: v,
+      sub: top.join(' · ') || `${ms.length} ${ms.length === 1 ? 'movimento' : 'movimentos'}` });
+  }
+  partes.sort((p, q) => q.valor - p.valor);
+  if (partes.length > 7) {
+    const resto = partes.splice(6);
+    partes.push({ outros: true, nome: 'Outros', valor: resto.reduce((s, p) => s + p.valor, 0), sub: `${resto.length} itens` });
+  }
+  const soma = partes.reduce((s, p) => s + p.valor, 0);
+  return {
+    total,
+    quando: inicio > desde ? 'desde ' + dataPT(isoDe(inicio)) : texto,
+    corpo: partes.length ? `<div class="partes">${partes.map(p => linhaOnde(p, soma)).join('')}</div>`
+      : '<p class="texto">Sem gastos neste período.</p>',
+  };
+}
+/** Uma linha de «Para onde vai»: nome e valor, as descrições e a percentagem, e a barra com a parte do total. */
+function linhaOnde(p, soma) {
+  const q = p.valor / soma;
+  const corpo = `${p.outros ? avatarIcone(ic.mais3) : avatar(p.f.nome)}<div class="txt">
+    <div class="parte-l"><span class="tit">${esc(p.nome)}</span><span class="val">${euro(p.valor)}</span></div>
+    <div class="parte-l"><span class="sub">${esc(p.sub)}</span><span class="pct">${fmtPct.format(q)}</span></div>
+    <div class="medidor${p.outros ? ' outros' : ''}" aria-hidden="true"><span style="width:${r1(q * 100)}%"></span></div></div>`;
+  return p.outros ? `<div class="linha gasto-parte">${corpo}</div>`
+    : `<button class="linha gasto-parte" data-a="abrir" data-tipo="gastos" data-id="${esc(p.f.id)}">${corpo}</button>`;
 }
 
 /**
@@ -994,9 +1109,16 @@ function vGrupos(tipo) {
     h += `<div class="cab-valor"><div class="rot">A receber</div><div class="valor-g ${cor(total)}">${euroG(total)}</div>
       ${devem || deves ? `<div class="leg">Devem-te ${euro(devem)}${deves ? ` · Deves ${euro(deves)}` : ''}</div>` : ''}</div>`;
   } else {
-    const mes = fichas.reduce((t, f) => t + gastoMes(f), 0), total = fichas.reduce((t, f) => t + totalFicha(f), 0), gm = grafGastosMes();
-    h += `<div class="cab-valor"><div class="rot">Gastos em ${MESES_LONGOS[+mesAtual().slice(5) - 1]}</div><div class="valor-g">${euroG(mes)}</div>
-      <div class="leg">${gm ? `média de ${euro(gm.media)} por mês · ` : ''}${euro(total)} no total</div></div>`;
+    // o mês atual tem o seu cartão («Este mês») logo abaixo, por isso em cima fica o total de sempre
+    const total = fichas.reduce((t, f) => t + totalFicha(f), 0), gm = grafGastosMes();
+    h += `<div class="cab-valor"><div class="rot">Total gasto</div><div class="valor-g">${euroG(total)}</div>
+      ${gm ? `<div class="leg">média de ${euro(gm.media)} por mês</div>` : ''}</div>`;
+    if (!ui.ordenar) {
+      const em = esteMes();
+      if (em) h += cartaoGraf({ titulo: 'Este mês', valor: euroG(em.total), leg: em.leg, graf: em.graf });
+      const pv = paraOndeVai();
+      if (pv) h += cartaoGraf({ titulo: 'Para onde vai', valor: euroG(pv.total), leg: esc(pv.quando), graf: pv.corpo, filtros: chipsPeriodo() });
+    }
   }
   for (const g of gs) {
     const n = g.fichas.length, t = totalGrupo(g);
