@@ -127,6 +127,8 @@ h1 { font-size: 32px; font-weight: 800; letter-spacing: -.03em; line-height: 1.1
 .linha { display: flex; align-items: center; gap: 12px; width: 100%; min-height: 56px; padding: 8px 16px; }
 .linha.mov { min-height: 52px; }
 .linha.mov .tit { font-weight: 600; }
+.linha.mov.pago .tit { color: var(--sec); }
+.linha.mov.pago .val { color: var(--sec); text-decoration: line-through; }
 button.linha:active, .grupo-acoes button:active, .cancelar-acoes:active { background: var(--prem); }
 .txt { flex: 1; min-width: 0; }
 .tit { font-weight: 700; overflow-wrap: anywhere; }
@@ -885,8 +887,8 @@ const linhaRecente = ({ m, f, g }) => {
 /** Um movimento dentro de uma pessoa ou item: descrição, data (e a conta, se foi descontado) e valor. */
 function linhaMov(m, gasto) {
   const v = valorMov(m, gasto), c = m.descontado && db.contas.find(c => c.id === m.conta);
-  const sub = [dataCurta(m.data), m.partilha ? 'partilhado' : '', c ? (m.descontado > 0 ? `pago com ${c.nome}` : `recebido em ${c.nome}`) : ''];
-  return `<button class="linha mov" data-a="mov" data-id="${m.id}"><div class="txt"><div class="tit${m.desc ? '' : ' sec'}">${esc(m.desc || 'Sem descrição')}</div>` +
+  const sub = [dataCurta(m.data), m.pago ? 'pago' : '', m.partilha ? 'partilhado' : '', c ? (m.descontado > 0 ? `pago com ${c.nome}` : `recebido em ${c.nome}`) : ''];
+  return `<button class="linha mov${m.pago ? ' pago' : ''}" data-a="mov" data-id="${m.id}"><div class="txt"><div class="tit${m.desc ? '' : ' sec'}">${esc(m.desc || 'Sem descrição')}</div>` +
     `<div class="sub">${esc(sub.filter(Boolean).join(' · '))}</div></div><div class="val ${v.cls}">${v.texto}</div></button>`;
 }
 
@@ -1215,7 +1217,10 @@ function folhaMov(movId) {
           `<option value="${c.id}"${c.id === contaMov ? ' selected' : ''}>${esc(c.nome)}</option>`).join('')}</select></label>` : ''}
       </div>
       <p class="rodape" id="f-ajuda"></p>`,
-    extra: m ? btnApagar('apagar-mov', m.id, 'Apagar movimento') : '',
+    extra: (m && div && !m.pagoDe ? (m.pago && f.movimentos.some(x => x.id === m.pago)
+        ? `<section class="cartao"><button class="linha acao" data-a="desmarcar-pago" data-id="${m.id}">${avatarIcone(ic.repor)}Desmarcar como pago</button></section>`
+        : `<section class="cartao"><button class="linha acao" data-a="marcar-pago" data-id="${m.id}">${avatarIcone(ic.certo)}Marcar como pago</button></section>`) : '') +
+      (m ? btnApagar('apagar-mov', m.id, 'Apagar movimento') : ''),
     depois: ajudaSinal,
     guardar: () => {
       const v = lerValor($('#f-valor').value);
@@ -1897,7 +1902,11 @@ document.addEventListener('click', e => {
     case 'mov': folhaMov(id); return;
     case 'apagar-mov': {
       const [, f] = naFicha(), m = f.movimentos.find(m => m.id === id), l = m?.descontado && contaLigada(m);
-      const apagar = devolver => () => { if (devolver) ajustarDesconto(m, null); f.movimentos = f.movimentos.filter(x => x !== m); };
+      const apagar = devolver => () => {
+        if (devolver) ajustarDesconto(m, null);
+        f.movimentos = f.movimentos.filter(x => x !== m);
+        for (const x of f.movimentos) { if (x.pago === m.id) delete x.pago; if (x.pagoDe === m.id) delete x.pagoDe; }
+      };
       if (m?.partilha) {
         // a conta que pagou o total está ligada ao gasto da tua parte
         const g = db.grupos.flatMap(g => g.fichas).flatMap(x => x.movimentos).find(x => x.partilha === m.partilha && x.descontado && contaLigada(x));
@@ -1937,6 +1946,30 @@ document.addEventListener('click', e => {
         { texto: 'Não mexer nas contas', fn: fazer(null), desfazer: 'Conta saldada' },
       ]);
       return;
+    }
+    case 'marcar-pago': { // só este movimento ficou pago: entra o pagamento dele (e o dinheiro, numa conta)
+      const [, f] = naFicha(), m = f.movimentos.find(x => x.id === id);
+      if (!m) return;
+      const fazer = c => () => {
+        const pag = { id: uid(), valor: -m.valor, desc: (m.valor > 0 ? 'pagou' : 'paguei') + (m.desc ? ': ' + m.desc : ''), data: hoje(), pagoDe: m.id };
+        if (c) ligarNova(pag, c, pag.valor);
+        f.movimentos.push(pag); m.pago = pag.id;
+      };
+      if (!db.contas.length) { const desfaz = pontoDeRetorno(); fazer(null)(); guardar(); fechar(); render(); toast('Marcado como pago', desfaz); return; }
+      const oque = m.desc ? ` (${m.desc})` : '';
+      acoes(m.valor > 0 ? `${f.nome} pagou ${euro(m.valor)}${oque}. Entrou em que conta?` : `Pagaste ${euro(-m.valor)}${oque} a ${f.nome}. Saiu de que conta?`, [
+        ...db.contas.map(c => ({ texto: c.nome, fn: fazer(c), desfazer: 'Marcado como pago' })),
+        { texto: 'Não mexer nas contas', fn: fazer(null), desfazer: 'Marcado como pago' },
+      ]);
+      return;
+    }
+    case 'desmarcar-pago': {
+      const [, f] = naFicha(), m = f.movimentos.find(x => x.id === id), pag = m && f.movimentos.find(x => x.id === m.pago);
+      if (!m) return;
+      const desfaz = pontoDeRetorno();
+      if (pag) { if (pag.descontado) ajustarDesconto(pag, null); f.movimentos = f.movimentos.filter(x => x !== pag); }
+      delete m.pago;
+      guardar(); fechar(); render(); toast('Já não está pago', desfaz); return;
     }
     case 'partilha': folhaPartilha(); return;
     case 'partilha-add': {
