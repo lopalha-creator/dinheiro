@@ -274,7 +274,8 @@ select { font: inherit; font-weight: 700; color: var(--acc); background: none; b
 .chip { padding: 8px 13px; border-radius: 999px; background: var(--fill); font-size: 14px; font-weight: 700; color: var(--txt); }
 .chip.novo { background: var(--acc-suave); color: var(--acc); }
 .nova-pessoa { display: flex; gap: 8px; flex-basis: 100%; }
-.nova-pessoa input { flex: 1; padding: 8px 13px; border-radius: 999px; background: var(--fill); font-size: 14px; font-weight: 600; }
+.nova-pessoa input { flex: 1; padding: 8px 13px; border-radius: 999px; background: var(--fill); font-size: 16px; font-weight: 600; }
+#f-partes .tit { white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
 input.parte { flex: none; width: 96px; padding: 8px 10px; border-radius: 10px; background: var(--fill); text-align: right; font-weight: 700; font-variant-numeric: tabular-nums; }
 .mini.tirar { flex: none; width: 32px; height: 32px; border-radius: 50%; color: var(--sec); font-size: 18px; }
 .mini-espaco { flex: none; width: 32px; }
@@ -1216,7 +1217,7 @@ function folhaMov(movId) {
         ${db.contas.length ? `<label class="linha"><span class="txt">Conta</span><select id="f-conta"><option value="">Nenhuma</option>${db.contas.map(c =>
           `<option value="${c.id}"${c.id === contaMov ? ' selected' : ''}>${esc(c.nome)}</option>`).join('')}</select></label>` : ''}
       </div>
-      <p class="rodape" id="f-ajuda"></p>`,
+      <p class="rodape" id="f-ajuda" aria-live="polite"></p>`,
     extra: (m && div && !m.pagoDe ? (m.pago && f.movimentos.some(x => x.id === m.pago)
         ? `<section class="cartao"><button class="linha acao" data-a="desmarcar-pago" data-id="${m.id}">${avatarIcone(ic.repor)}Desmarcar como pago</button></section>`
         : `<section class="cartao"><button class="linha acao" data-a="marcar-pago" data-id="${m.id}">${avatarIcone(ic.certo)}Marcar como pago</button></section>`) : '') +
@@ -1251,7 +1252,7 @@ function ajudaSinal() {
   if (!el) return;
   const c = db.contas.find(x => x.id === $('#f-conta')?.value), v = lerValor($('#f-valor')?.value || ''), m = camada.mov;
   // na tua parte de uma despesa partilhada, o que sai da conta é o total (que muda na mesma medida que a tua parte)
-  const quanto = m?.partilha && m.descontado && c?.id === m.conta && v !== null ? m.descontado + ((camada.sinal ? -Math.abs(v) : Math.abs(v)) - m.valor) : null;
+  const quanto = m?.partilha && m.descontado && c && v !== null ? m.descontado + ((camada.sinal ? -Math.abs(v) : Math.abs(v)) - m.valor) : null;
   const sai = quanto !== null ? quanto >= 0 : !camada.sinal, montante = quanto !== null ? quanto : v;
   el.textContent = [
     camada.div ? (camada.sinal ? `Tira ao que ${camada.nome} te deve: pagou-te, ou és tu que lhe deves.` : `Soma ao que ${camada.nome} te deve.`) : '',
@@ -1517,7 +1518,7 @@ function folhaPartilha() {
       </div>
       <div class="cartao">${cabCartao('Partes')}<div id="f-partes">${linhaParte('eu', 'Eu')}</div>
         <div class="quem" id="f-quem">${pessoas.map(chipPessoa).join('')}<button class="chip novo" data-a="partilha-nova">+ Outra pessoa</button></div></div>
-      <p class="rodape" id="f-soma"></p>`,
+      <p class="rodape" id="f-soma" aria-live="polite"></p>`,
     guardar: guardarPartilha,
   });
   somaPartilha();
@@ -1525,7 +1526,17 @@ function folhaPartilha() {
 const linhaParte = (quem, nome) => `<div class="linha parte-linha" data-quem="${esc(quem)}">${avatar(nome)}<div class="txt tit">${esc(nome)}</div>` +
   `<input class="parte" inputmode="decimal" placeholder="0,00" autocomplete="off" aria-label="Parte de ${esc(nome)}">` +
   (quem === 'eu' ? '<span class="mini-espaco"></span>' : `<button class="mini tirar" data-a="partilha-tirar" aria-label="Tirar ${esc(nome)}">×</button>`) + '</div>';
-const chipPessoa = f => `<button class="chip" data-a="partilha-add" data-id="${f.id}">${esc(f.nome)}</button>`;
+/** Junta às partes uma pessoa escrita à mão: uma que já existe (pelo nome), ou uma nova, uma vez só. */
+function juntarNome(nome) {
+  const f = gruposDe('dividas').flatMap(g => g.fichas).find(x => norm(x.nome) === norm(nome));
+  if (f) {
+    $(`#f-quem [data-id="${f.id}"]`)?.remove();
+    if (!$(`#f-partes [data-quem="${f.id}"]`)) $('#f-partes').insertAdjacentHTML('beforeend', linhaParte(f.id, f.nome));
+  } else if (![...document.querySelectorAll('#f-partes .parte-linha')].some(r => r.dataset.quem.startsWith('novo:') && norm(r.dataset.quem.slice(5)) === norm(nome))) {
+    $('#f-partes').insertAdjacentHTML('beforeend', linhaParte('novo:' + nome, nome));
+  }
+}
+const chipPessoa = f => `<button class="chip" data-a="partilha-add" data-id="${f.id}" aria-label="Juntar ${esc(f.nome)}">${esc(f.nome)}</button>`;
 /**
  * As partes que não escreveste à mão dividem em partes iguais o que falta do total (os cêntimos que sobram ficam na
  * primeira, que é a tua). Em baixo: quanto sai da conta, o gasto e o que te devem, ou quanto falta dividir.
@@ -1544,7 +1555,7 @@ function somaPartilha() {
     : ins.length < 2 ? 'Toca em quem estava contigo.'
     : soma < total ? `Falta dividir ${euro(total - soma)}.`
     : soma > total ? `As partes passam o total em ${euro(soma - total)}.`
-    : `Sai ${euro(total)}${c ? ` de ${c.nome}` : ''} · gasto ${euro(partes[0])} · devem-te ${euro(total - partes[0])}`;
+    : `${c ? `Sai ${euro(total)} de ${c.nome}` : `Total ${euro(total)}`} · gasto ${euro(partes[0])} · devem-te ${euro(total - partes[0])}`;
 }
 /** O item de Gastos com este nome (o da conta); se não houver, é criado em "Dia a dia". */
 function fichaGasto(nome) {
@@ -1555,6 +1566,8 @@ function fichaGasto(nome) {
 function guardarPartilha() {
   const total = lerValor($('#f-pago').value);
   if (!total || total < 0) return erro('#f-pago');
+  const escrito = $('#f-nova')?.value.trim(); // um nome escrito sem tocar em "Juntar"
+  if (escrito) { juntarNome(escrito); $('.nova-pessoa')?.remove(); }
   somaPartilha();
   const partes = [...document.querySelectorAll('#f-partes .parte-linha')].map(r =>
     ({ quem: r.dataset.quem, nome: r.querySelector('.tit').textContent, valor: lerValor(r.querySelector('.parte').value) || 0 }));
@@ -1563,23 +1576,26 @@ function guardarPartilha() {
   const desc = $('#f-desc').value.trim() || 'despesa partilhada', data = $('#f-data').value || hoje();
   const c = db.contas.find(x => x.id === $('#f-conta').value), id = uid(), desfaz = pontoDeRetorno();
   const [eu, ...outros] = partes;
+  let mexeu = null;
   // a tua parte é um gasto, e é ele que guarda o total que saiu da conta (para o poder corrigir ou apagar)
   if (eu.valor || c) {
     const mov = { id: uid(), valor: eu.valor, desc, data, partilha: id };
-    if (c) ligarNova(mov, c, total);
+    if (c) mexeu = ligarNova(mov, c, total);
     fichaGasto(c ? c.nome : 'Outros').movimentos.push(mov);
   }
+  const novas = new Map(); // nomes novos repetidos ficam na mesma pessoa
   for (const o of outros) {
-    let f = o.quem.startsWith('novo:') ? null : acharFicha(o.quem)[1];
+    let f = o.quem.startsWith('novo:') ? novas.get(norm(o.nome)) : acharFicha(o.quem)[1];
     if (!f) {
       const g = gruposDe('dividas').find(g => norm(g.nome) === 'amigos') || gruposDe('dividas')[0] || grupoChamado('Pessoas', 'dividas');
       g.fichas.push(f = { id: uid(), nome: o.nome, nota: '', movimentos: [] });
+      novas.set(norm(o.nome), f);
     }
     if (o.valor) f.movimentos.push({ id: uid(), valor: o.valor, desc, data, partilha: id });
   }
   if (c) gravarPref('contaPartilha', c.id);
   guardar(); fechar(); render();
-  toast(`Guardado${c ? ` · −${euro(total)} em ${c.nome}` : ''} · devem-te ${euro(total - eu.valor)}`, desfaz);
+  toast(`Guardado${mexeu ? ` · −${euro(total)} em ${c.nome}` : c ? ` · ${c.nome} já incluía este valor` : ''} · devem-te ${euro(total - eu.valor)}`, desfaz);
   return false;
 }
 /** Apaga todos os movimentos de uma despesa partilhada e devolve à conta o que saiu dela. */
@@ -1989,9 +2005,7 @@ document.addEventListener('click', e => {
     case 'partilha-nova-ok': {
       const nome = $('#f-nova').value.trim();
       if (!nome) { $('#f-nova').focus(); return; }
-      const f = gruposDe('dividas').flatMap(g => g.fichas).find(x => norm(x.nome) === norm(nome));
-      if (f) { $(`#f-quem [data-id="${f.id}"]`)?.remove(); if (!$(`#f-partes [data-quem="${f.id}"]`)) $('#f-partes').insertAdjacentHTML('beforeend', linhaParte(f.id, f.nome)); }
-      else $('#f-partes').insertAdjacentHTML('beforeend', linhaParte('novo:' + nome, nome));
+      juntarNome(nome);
       b.closest('.nova-pessoa').remove(); somaPartilha(); return;
     }
 
@@ -2060,6 +2074,19 @@ document.addEventListener('click', e => {
   guardar(); render();
 });
 
+// Despesa partilhada: ao tocar numa parte automática, o valor fica selecionado (escrever substitui-o em vez de se
+// juntar); uma parte que fica vazia ao sair volta a ser automática.
+document.addEventListener('focusin', e => {
+  const t = e.target;
+  if (!t.classList?.contains('parte') || t.dataset.manual) return;
+  t.select();
+  setTimeout(() => { if (document.activeElement === t) t.setSelectionRange(0, t.value.length); }); // o iPhone só aceita depois do foco
+});
+document.addEventListener('focusout', e => {
+  const t = e.target;
+  if (t.classList?.contains('parte') && t.dataset.manual && !t.value.trim()) { t.dataset.manual = ''; if ($('#f-soma')) somaPartilha(); }
+});
+
 // No iPhone, escolher noutra lista (select) avisa com "change".
 document.addEventListener('change', e => {
   if (e.target.id !== 'f-conta') return;
@@ -2073,7 +2100,7 @@ document.addEventListener('mousedown', e => { if (e.target.closest('.seg')) e.pr
 document.addEventListener('input', e => {
   const t = e.target;
   if (t.closest?.('#camada')) {
-    if (t.classList.contains('parte')) t.dataset.manual = t.value.trim() ? '1' : '';
+    if (t.classList.contains('parte')) t.dataset.manual = t.value.trim() || t === document.activeElement ? '1' : '';
     if ((t.matches('.parte, #f-pago') || t.id === 'f-conta') && $('#f-soma')) somaPartilha();
     if (t.matches('#f-valor, #f-conta') && $('#f-ajuda')) ajudaSinal();
     return;
