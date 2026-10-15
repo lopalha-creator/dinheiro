@@ -959,7 +959,7 @@ function cartaoGraf({ titulo, valor = '', cls = '', leg = '', graf = '', filtros
   return `<section class="cartao">${cabCartao(titulo, filtros)}
     <div class="leitura"><div class="valor-m ${cls}" data-ler="valor">${valor}</div><div class="leg" data-ler="leg">${leg}</div></div>${graf}</section>`;
 }
-const cartaoEvolucao = ev => cartaoGraf({ titulo: 'Evolução', valor: esc(ev.texto), cls: ev.cls, leg: esc(ev.quando), graf: ev.graf, filtros: ev.filtros });
+const cartaoEvolucao = (ev, titulo = 'Evolução') => cartaoGraf({ titulo, valor: esc(ev.texto), cls: ev.cls, leg: esc(ev.quando), graf: ev.graf, filtros: ev.filtros });
 
 function textoCopia() {
   const d = lerPref('copia', null);
@@ -1064,10 +1064,18 @@ function vContas() {
   const n = db.contas.length;
   let h = cabTab('Contas', 'menu-contas');
   if (!n) return h + vazio('Ainda não há contas', 'nova-conta', 'Nova conta');
-  h += `<div class="cab-valor"><div class="rot">Total nas contas</div><div class="valor-g">${euroG(totalContas())}</div></div>
+  const tc = totalContas(), comDividas = eventosDividas().length > 0;
+  h += `<div class="cab-valor"><div class="rot">Total nas contas</div><div class="valor-g">${euroG(tc)}</div>
+      ${comDividas ? `<div class="leg">${euro(tc + totalDividas())} com as dívidas</div>` : ''}</div>
     <section class="cartao">${ui.ordenar ? db.contas.map((c, i) => linhaOrdenar(c.nome, 'mover-conta', c.id, i, n, slotConta(c))).join('') : blocoContas()}</section>`;
-  const s = serieTotal(false), ev = !ui.ordenar && evolucao(s.pts, s.inicio, { rotulo: 'Evolução do total nas contas' });
-  if (ev) h += cartaoEvolucao(ev);
+  if (ui.ordenar) return h;
+  const s = serieTotal(false), ev = evolucao(s.pts, s.inicio, { rotulo: 'Evolução do total nas contas' });
+  if (ev) h += cartaoEvolucao(ev, comDividas ? 'Contas' : 'Evolução');
+  // contas mais o que te devem (menos o que deves): só faz sentido mostrar se houver dívidas
+  if (comDividas) {
+    const st = serieTotal(), et = evolucao(st.pts, st.inicio, { rotulo: 'Evolução das contas e dívidas' });
+    if (et) h += cartaoEvolucao(et, 'Contas e dívidas');
+  }
   return h;
 }
 
