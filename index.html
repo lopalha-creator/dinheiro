@@ -184,6 +184,7 @@ textarea.nota { display: block; padding: 4px 16px 14px; resize: none; min-height
 .tile.fora .val { color: var(--sec); }
 .mes-cab { display: flex; justify-content: space-between; padding: 14px 16px 4px; font-size: 13px; font-weight: 700; color: var(--sec); }
 .cartao-cab + .mes-cab { padding-top: 4px; }
+button.mes-cab { width: 100%; }
 .conta-nota { font-size: 13px; color: var(--sec); padding: 0 16px 6px; overflow-wrap: anywhere; }
 .nota-cartao { padding: 0; }
 .nota-cartao textarea.nota { padding: 14px 16px; min-height: 48px; overflow: hidden; }
@@ -1006,7 +1007,7 @@ const linhaRecente = ({ m, f, g, t }) => {
 /** Um movimento dentro de uma pessoa ou item: descrição, data (e a conta por onde passou) e valor. */
 function linhaMov(m, gasto, f) {
   const v = valorMov(m, gasto), c = m.conta ? db.contas.find(c => c.id === m.conta) : contaVia(m, f, gasto);
-  const sub = [dataCurta(m.data), m.pago ? 'pago' : '', m.partilha ? 'partilhado' : '', c ? ((m.descontado || m.valor) > 0 ? `pago com ${c.nome}` : `recebido em ${c.nome}`) : ''];
+  const sub = [dataCurta(m.data), m.pago ? 'pago' : '', m.partilha ? 'partilhado' : '', c ? (m.partilha || (m.descontado || m.valor) > 0 ? `pago com ${c.nome}` : `recebido em ${c.nome}`) : ''];
   return `<button class="linha mov${m.pago ? ' pago' : ''}" data-a="mov" data-id="${m.id}"><div class="txt"><div class="tit${m.desc ? '' : ' sec'}">${esc(m.desc || 'Sem descrição')}</div>` +
     `<div class="sub">${esc(sub.filter(Boolean).join(' · '))}</div></div><div class="val ${v.cls}">${v.texto}</div></button>`;
 }
@@ -1114,7 +1115,7 @@ function extratoConta(c) {
       if ((m.conta || contaVia(m, f, !div)?.id) !== c.id) continue;
       const desc = m.conta && m.descontado || 0;
       // o que saiu da conta: o que se descontou; se ela já o incluía, o valor (numa despesa partilhada, o total)
-      const sai = desc || (m.partilha ? totalPartilha(m.partilha) : m.valor);
+      const sai = desc || (m.partilha ? m.total ?? totalPartilha(m.partilha) : m.valor);
       const sub = [div ? m.desc : m.desc && norm(f.nome) !== nome ? f.nome : '', m.partilha ? 'despesa partilhada' : ''].filter(Boolean).join(' · ');
       juntar(desc ? m.dataConta : m.data, desc, -sai, m.quando, linha(div ? f.nome : m.desc || f.nome, euroSinal(-sai), {
         a: 'abrir', tipo: g.tipo, id: f.id, avatar: div ? avatar(f.nome) : avatarIcone(ic.gastos), sub, cls: sai < 0 ? 'pos' : '',
@@ -1128,13 +1129,15 @@ function extratoConta(c) {
   }
   c.hist.forEach((h, i) => {
     const x = dia(h.data);
+    x.hist = i;
     // o que o registo tem descontado e nenhum movimento ligado explica (ex.: um gasto apagado só em Gastos)
     const resto = (h.desconto || 0) - (descontadoEm.get(h.data) || 0);
-    if (resto) x.depois.push(['', -1, linha('Outros movimentos', euroSinal(-resto), { avatar: avatarIcone(ic.contas), cls: resto < 0 ? 'pos' : '' })]);
+    if (resto) x.depois.push(['', -1, linha('Outros movimentos', euroSinal(-resto), { a: 'hist', id: i, avatar: avatarIcone(ic.contas), cls: resto < 0 ? 'pos' : '' })]);
     if (h.auto) return;
-    const escrito = h.base ?? h.valor, ant = c.hist[i - 1];
-    // a diferença para o registo anterior que os movimentos já incluídos neste valor não explicam
-    const ja = ant ? incluidos.filter(([d]) => d > ant.data && d <= h.data) : [];
+    const escrito = h.base ?? h.valor, ant = c.hist[i - 1], desde = c.hist.slice(0, i).findLast(y => !y.auto) || ant;
+    // a diferença para o registo anterior que os movimentos já incluídos neste valor não explicam: os registos
+    // do atalho só têm os descontados, por isso os incluídos contam desde o último valor escrito à mão
+    const ja = ant ? incluidos.filter(([d]) => d > desde.data && d <= h.data) : [];
     const acerto = ant ? escrito - ant.valor - ja.reduce((t, [, e]) => t + e, 0) : 0;
     x.registo = linha(ant ? 'Valor atualizado' : 'Valor inicial', euro(escrito), {
       a: 'hist', id: i, avatar: avatarIcone(ic.atualizar),
@@ -1148,8 +1151,11 @@ function extratoConta(c) {
   const vistas = ui.extratoTudo === c.id ? datas : datas.slice(0, MAX);
   let h = '';
   for (const d of vistas) {
-    const x = dias.get(d), r = c.hist.findLast(y => y.data <= d); // antes do primeiro registo não se sabe o saldo
-    h += `<div class="mes-cab"><span>${dataCurta(d)}</span><span>${r ? 'saldo ' + euro(r.valor) : ''}</span></div>` +
+    // o saldo só nos dias em que mudou (antes do primeiro registo não se sabe); num registo do atalho, o
+    // cabeçalho abre-o, como os valores escritos à mão
+    const x = dias.get(d), r = (x.hist != null || x.depois.length) && c.hist.findLast(y => y.data <= d);
+    const cab = `<span>${esc(dataCurta(d))}</span><span>${r ? 'saldo ' + euro(r.valor) : ''}</span>`;
+    h += (x.hist != null && !x.registo ? `<button class="mes-cab" data-a="hist" data-id="${x.hist}">${cab}</button>` : `<div class="mes-cab">${cab}</div>`) +
       x.depois.sort(ordem).map(y => y[2]).join('') + x.registo + x.antes.sort(ordem).map(y => y[2]).join('');
   }
   if (vistas.length < datas.length) h += `<button class="linha acao" data-a="extrato-tudo" data-id="${c.id}">${avatarIcone(ic.mais3)}Ver mais antigos</button>`;
@@ -1378,7 +1384,7 @@ function folhaHist(i) {
       if (v === null) return erro('#f-valor');
       let alvo = h || c.hist.find(x => x.data === data);
       if (!alvo) c.hist.push(alvo = {});
-      desligarData(c, data);
+      desligarData(c, data, true);
       if (h) desligarData(c, h.data);
       // "em": quando o valor foi visto; um gasto do atalho feito antes disso já está incluído nele
       Object.assign(alvo, { data, valor: v, em: data === hoje() ? agora() : `${data}T23:59:59` });
@@ -1429,6 +1435,7 @@ function folhaMov(movId) {
         const mesma = c && (m.conta || via?.id) === c.id;
         if (m.conta && (!mesma || dados.valor !== m.valor || dados.data !== m.data)) mexeu = ajustarDesconto(m, mesma ? dados : null);
         if (!mesma) delete m.viaConta;
+        if (m.total != null) m.total += dados.valor - m.valor; // o total pago muda na mesma medida que a tua parte
         Object.assign(m, dados);
         if (c && !mesma) mexeu = ligarNova(m, c, quanto) || mexeu;
         if (!c && contaVia(m, f, !div)) m.semConta = true; // "Nenhuma" de propósito, num item com o nome de uma conta
@@ -1791,7 +1798,7 @@ function guardarPartilha() {
   // a tua parte é um gasto, e é ele que guarda o total que saiu da conta (para o poder corrigir ou apagar)
   if (eu.valor || c) {
     const mov = { id: uid(), valor: eu.valor, desc, data, partilha: id };
-    if (c) mexeu = ligarNova(mov, c, total);
+    if (c) { mov.total = total; mexeu = ligarNova(mov, c, total); } // o que saiu da conta (para o histórico dela)
     fichaGasto(c ? c.nome : 'Outros').movimentos.push(mov);
   }
   const novas = new Map(); // nomes novos repetidos ficam na mesma pessoa
@@ -1819,12 +1826,13 @@ function apagarPartilha(pid) {
 
 /**
  * Um valor escrito à mão passa a valer por si: os movimentos descontados nesse dia deixam de acertar a conta.
- * Fica a lembrança da conta por onde passaram (viaConta), só para aparecerem no histórico dela.
+ * Com "incluidos", o valor novo inclui-os: fica a lembrança da conta por onde passaram (viaConta), só para
+ * aparecerem no histórico dela. Ao apagar um registo, ou ao mudá-lo de dia, não há valor que os inclua.
  */
-function desligarData(c, data) {
+function desligarData(c, data, incluidos = false) {
   const lados = db.transferencias.flatMap(t => [t.saida, t.entrada]);
   for (const m of [...db.grupos.flatMap(g => g.fichas.flatMap(f => f.movimentos)), ...lados])
-    if (m?.conta === c.id && m.dataConta === data) { for (const k of LIGACAO) delete m[k]; m.viaConta = c.id; }
+    if (m?.conta === c.id && m.dataConta === data) { for (const k of LIGACAO) delete m[k]; if (incluidos) m.viaConta = c.id; }
 }
 
 /**
