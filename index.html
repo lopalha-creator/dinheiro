@@ -1003,10 +1003,10 @@ const linhaRecente = ({ m, f, g, t }) => {
   const v = valorMov(m, g.tipo === 'gastos');
   return linha(m.desc || f.nome, v.texto, { a: 'abrir', tipo: g.tipo, id: f.id, avatar: avatar(f.nome), sub: `${f.nome} · ${dataCurta(m.data)}`, cls: v.cls });
 };
-/** Um movimento dentro de uma pessoa ou item: descrição, data (e a conta, se foi descontado) e valor. */
-function linhaMov(m, gasto) {
-  const v = valorMov(m, gasto), c = m.descontado && db.contas.find(c => c.id === m.conta);
-  const sub = [dataCurta(m.data), m.pago ? 'pago' : '', m.partilha ? 'partilhado' : '', c ? (m.descontado > 0 ? `pago com ${c.nome}` : `recebido em ${c.nome}`) : ''];
+/** Um movimento dentro de uma pessoa ou item: descrição, data (e a conta por onde passou) e valor. */
+function linhaMov(m, gasto, f) {
+  const v = valorMov(m, gasto), c = m.conta ? db.contas.find(c => c.id === m.conta) : contaVia(m, f, gasto);
+  const sub = [dataCurta(m.data), m.pago ? 'pago' : '', m.partilha ? 'partilhado' : '', c ? ((m.descontado || m.valor) > 0 ? `pago com ${c.nome}` : `recebido em ${c.nome}`) : ''];
   return `<button class="linha mov${m.pago ? ' pago' : ''}" data-a="mov" data-id="${m.id}"><div class="txt"><div class="tit${m.desc ? '' : ' sec'}">${esc(m.desc || 'Sem descrição')}</div>` +
     `<div class="sub">${esc(sub.filter(Boolean).join(' · '))}</div></div><div class="val ${v.cls}">${v.texto}</div></button>`;
 }
@@ -1086,16 +1086,73 @@ function vConta() {
   let h = barra({ voltar: 'Contas' }) + `<div class="perfil">${avatar(c.nome, slotConta(c), 'grande')}<h1>${esc(c.nome)}</h1>
     <div class="valor-g">${euroG(c.valor)}</div>${ev ? `<span class="pilula ${ev.cls}">${esc(ev.texto)} ${esc(ev.quando)}</span>` : ''}${leg ? `<div class="leg">${esc(leg)}</div>` : ''}
     <div class="botoes-acao">${botaoAcao('novo-hist', ic.atualizar, 'Atualizar')}${db.contas.length > 1 ? botaoAcao('transferir', ic.trocar, 'Transferir') : ''}${botaoAcao('editar-conta', ic.editar, 'Editar')}</div></div>`;
-  h += `<section class="cartao">${cabCartao('Histórico')}` + c.hist.map((x, i) => {
-    const dif = i ? x.valor - c.hist[i - 1].valor : null;
-    return linha(dataCurta(x.data), euro(x.valor), {
-      a: 'hist', id: i, avatar: avatarIcone(dif === null ? ic.contas : dif > 0 ? ic.sobe : dif < 0 ? ic.desce : ic.igual),
-      sub: dif === null ? 'valor inicial' : !dif ? 'sem alteração' : euroSinal(dif) + (x.auto ? ' · movimentos' : ''),
-    });
-  }).reverse().join('') + '</section>';
-  const tr = db.transferencias.filter(t => t.de === c.id || t.para === c.id).sort((a, b) => a.data < b.data ? 1 : a.data > b.data ? -1 : 0);
-  if (tr.length) h += `<section class="cartao">${cabCartao('Transferências')}${tr.map(t => linhaTransf(t, c)).join('')}</section>`;
+  h += `<section class="cartao">${cabCartao('Histórico')}${extratoConta(c)}</section>`;
   if (ev) h += cartaoEvolucao(ev);
+  return h;
+}
+
+/**
+ * O histórico de uma conta como um extrato: por dia, do mais recente para o mais antigo, o saldo com que o dia
+ * acabou e o que passou pela conta (gastos, dívidas e transferências ligados a ela ou que passaram por ela, ver
+ * contaVia, e os valores escritos à mão).
+ */
+function extratoConta(c) {
+  const dias = new Map(), nome = norm(c.nome);
+  // por dia: o que mexeu no saldo (depois do valor escrito à mão, se houver), esse valor e o que ele já incluía
+  const dia = d => { if (!dias.has(d)) dias.set(d, { depois: [], registo: '', antes: [] }); return dias.get(d); };
+  const descontadoEm = new Map(); // data → soma do que os movimentos ligados descontaram nesse registo
+  const incluidos = []; // [data, quanto mudou a conta] dos que não descontaram (já estavam no valor escrito à mão)
+  let n = 0;
+  const juntar = (d, desc, efeito, quando, html) => {
+    if (desc) descontadoEm.set(d, (descontadoEm.get(d) || 0) + desc); else incluidos.push([d, efeito]);
+    (desc ? dia(d).depois : dia(d).antes).push([quando || '', n++, html]);
+  };
+  const totalPartilha = pid => db.grupos.flatMap(g => g.fichas.flatMap(f => f.movimentos)).filter(m => m.partilha === pid).reduce((t, m) => t + m.valor, 0);
+  for (const g of db.grupos) for (const f of g.fichas) {
+    const div = g.tipo === 'dividas';
+    for (const m of f.movimentos) {
+      if ((m.conta || contaVia(m, f, !div)?.id) !== c.id) continue;
+      const desc = m.conta && m.descontado || 0;
+      // o que saiu da conta: o que se descontou; se ela já o incluía, o valor (numa despesa partilhada, o total)
+      const sai = desc || (m.partilha ? totalPartilha(m.partilha) : m.valor);
+      const sub = [div ? m.desc : m.desc && norm(f.nome) !== nome ? f.nome : '', m.partilha ? 'despesa partilhada' : ''].filter(Boolean).join(' · ');
+      juntar(desc ? m.dataConta : m.data, desc, -sai, m.quando, linha(div ? f.nome : m.desc || f.nome, euroSinal(-sai), {
+        a: 'abrir', tipo: g.tipo, id: f.id, avatar: div ? avatar(f.nome) : avatarIcone(ic.gastos), sub, cls: sai < 0 ? 'pos' : '',
+      }));
+    }
+  }
+  for (const t of db.transferencias) {
+    if (t.de !== c.id && t.para !== c.id) continue;
+    const lado = t.de === c.id ? t.saida : t.entrada, desc = lado?.conta === c.id && lado.descontado || 0;
+    juntar(desc ? lado.dataConta : t.data, desc, t.de === c.id ? -t.valor : t.valor, lado?.quando, linhaTransf(t, c, true));
+  }
+  c.hist.forEach((h, i) => {
+    const x = dia(h.data);
+    // o que o registo tem descontado e nenhum movimento ligado explica (ex.: um gasto apagado só em Gastos)
+    const resto = (h.desconto || 0) - (descontadoEm.get(h.data) || 0);
+    if (resto) x.depois.push(['', -1, linha('Outros movimentos', euroSinal(-resto), { avatar: avatarIcone(ic.contas), cls: resto < 0 ? 'pos' : '' })]);
+    if (h.auto) return;
+    const escrito = h.base ?? h.valor, ant = c.hist[i - 1];
+    // a diferença para o registo anterior que os movimentos já incluídos neste valor não explicam
+    const ja = ant ? incluidos.filter(([d]) => d > ant.data && d <= h.data) : [];
+    const acerto = ant ? escrito - ant.valor - ja.reduce((t, [, e]) => t + e, 0) : 0;
+    x.registo = linha(ant ? 'Valor atualizado' : 'Valor inicial', euro(escrito), {
+      a: 'hist', id: i, avatar: avatarIcone(ic.atualizar),
+      sub: !ant ? 'escrito à mão' : ja.length ? (acerto ? `acerto de ${euroSinal(acerto)}` : 'bate certo com os movimentos')
+        : acerto ? `${euroSinal(acerto)} face ao anterior` : 'sem alteração',
+    });
+  });
+  // os mais recentes em cima: pela hora, se se sabe, e depois pela ordem em que foram registados
+  const ordem = (a, b) => a[0] < b[0] ? 1 : a[0] > b[0] ? -1 : b[1] - a[1];
+  const datas = [...dias.keys()].sort().reverse(), MAX = 40;
+  const vistas = ui.extratoTudo === c.id ? datas : datas.slice(0, MAX);
+  let h = '';
+  for (const d of vistas) {
+    const x = dias.get(d), r = c.hist.findLast(y => y.data <= d); // antes do primeiro registo não se sabe o saldo
+    h += `<div class="mes-cab"><span>${dataCurta(d)}</span><span>${r ? 'saldo ' + euro(r.valor) : ''}</span></div>` +
+      x.depois.sort(ordem).map(y => y[2]).join('') + x.registo + x.antes.sort(ordem).map(y => y[2]).join('');
+  }
+  if (vistas.length < datas.length) h += `<button class="linha acao" data-a="extrato-tudo" data-id="${c.id}">${avatarIcone(ic.mais3)}Ver mais antigos</button>`;
   return h;
 }
 
@@ -1163,7 +1220,7 @@ function vFicha(tipo) {
   // nas dívidas, a conta como na nota não se perde
   if (div && movs.length > 1) h += `<p class="conta-nota">${esc(expressao(f))} = ${esc(numSinal(t))}</p>`;
   if (!movs.length) h += btnAdicionar('novo-mov', 'Adicionar movimento');
-  else if (div) h += movs.map(m => linhaMov(m, false)).join('');
+  else if (div) h += movs.map(m => linhaMov(m, false, f)).join('');
   else {
     let mes = '';
     for (const m of movs) {
@@ -1172,7 +1229,7 @@ function vFicha(tipo) {
         mes = k;
         h += `<div class="mes-cab"><span>${MESES_LONGOS[+k.slice(5) - 1]} ${k.slice(0, 4)}</span><span>${euro(gastoMes(f, k))}</span></div>`;
       }
-      h += linhaMov(m, true);
+      h += linhaMov(m, true, f);
     }
   }
   h += '</section>';
@@ -1338,9 +1395,10 @@ function folhaMov(movId) {
   const m = f.movimentos.find(m => m.id === movId), div = g.tipo === 'dividas';
   const neg = m ? m.valor < 0 : false;
   // a conta onde o dinheiro saiu ou entrou: a do movimento; num gasto novo, a conta com o nome do item (ex.: Revolut)
-  const contaMov = m ? m.conta || '' : !div ? db.contas.find(c => norm(c.nome) === norm(f.nome))?.id || '' : '';
+  const via = m && contaVia(m, f, !div);
+  const contaMov = m ? m.conta || via?.id || '' : !div ? db.contas.find(c => norm(c.nome) === norm(f.nome))?.id || '' : '';
   abrir({
-    tipo: 'folha', titulo: m ? 'Editar movimento' : f.nome, sinal: neg, nome: f.nome, div, mov: m,
+    tipo: 'folha', titulo: m ? 'Editar movimento' : f.nome, sinal: neg, nome: f.nome, div, mov: m, via: via?.id,
     corpo: `<div class="seg" id="f-sinal">
         <button data-a="sinal" data-id="0" class="${neg ? '' : 'on'}">${div ? 'Deve-me  +' : 'Gasto'}</button>
         <button data-a="sinal" data-id="1" class="${neg ? 'on' : ''}">${div ? 'Devo eu  −' : 'Reembolso'}</button>
@@ -1367,13 +1425,17 @@ function folhaMov(movId) {
       const quanto = m?.partilha && m.descontado ? m.descontado + (dados.valor - m.valor) : dados.valor;
       let mexeu = null;
       if (m) {
-        const mesma = c && m.conta === c.id;
+        // um movimento que passou pela conta sem estar ligado (contaVia) continua sem mexer nela enquanto ela não mudar
+        const mesma = c && (m.conta || via?.id) === c.id;
         if (m.conta && (!mesma || dados.valor !== m.valor || dados.data !== m.data)) mexeu = ajustarDesconto(m, mesma ? dados : null);
+        if (!mesma) delete m.viaConta;
         Object.assign(m, dados);
         if (c && !mesma) mexeu = ligarNova(m, c, quanto) || mexeu;
+        if (!c && contaVia(m, f, !div)) m.semConta = true; // "Nenhuma" de propósito, num item com o nome de uma conta
       } else {
         const novo = { id: uid(), ...dados };
         if (c) mexeu = ligarNova(novo, c, dados.valor);
+        else if (contaVia(novo, f, !div)) novo.semConta = true;
         f.movimentos.push(novo);
       }
       if (mexeu) toast(`${mexeu.nome}: ${euro(mexeu.valor)}`);
@@ -1389,9 +1451,11 @@ function ajudaSinal() {
   // na tua parte de uma despesa partilhada, o que sai da conta é o total (que muda na mesma medida que a tua parte)
   const quanto = m?.partilha && m.descontado && c && v !== null ? m.descontado + ((camada.sinal ? -Math.abs(v) : Math.abs(v)) - m.valor) : null;
   const sai = quanto !== null ? quanto >= 0 : !camada.sinal, montante = quanto !== null ? quanto : v;
+  const incluido = c && m && !m.conta && camada.via === c.id;
   el.textContent = [
     camada.div ? (camada.sinal ? `Tira ao que ${camada.nome} te deve: pagou-te, ou és tu que lhe deves.` : `Soma ao que ${camada.nome} te deve.`) : '',
-    c ? `${sai ? 'Sai' : 'Entra'}${montante ? ' ' + euro(Math.abs(montante)) : ''} ${sai ? 'de' : 'em'} ${c.nome}${quanto !== null ? ' (despesa partilhada)' : ''}.` : '',
+    incluido ? `Já está incluído no valor de ${c.nome}.`
+      : c ? `${sai ? 'Sai' : 'Entra'}${montante ? ' ' + euro(Math.abs(montante)) : ''} ${sai ? 'de' : 'em'} ${c.nome}${quanto !== null ? ' (despesa partilhada)' : ''}.` : '',
   ].filter(Boolean).join(' ');
 }
 
@@ -1608,7 +1672,19 @@ function devolver(c, h, valor) {
  * a data e a hora. Corrigir ou apagar o gasto acerta a conta. Um registo escrito à mão nessa data desliga-o.
  */
 const LIGACAO = ['conta', 'descontado', 'dataConta', 'quando'];
-const ligarConta = (m, c, descontado, data, quando) => Object.assign(m, { conta: c.id, descontado, dataConta: data, quando });
+function ligarConta(m, c, descontado, data, quando) {
+  delete m.viaConta; delete m.semConta;
+  return Object.assign(m, { conta: c.id, descontado, dataConta: data, quando });
+}
+/**
+ * A conta por onde passou um movimento que não está ligado (e por isso não mexe nela): a lembrada quando um valor
+ * escrito à mão o incluiu (viaConta) ou, num gasto, a conta com o nome do item (como os do atalho de antes de as
+ * contas acertarem sozinhas). semConta: escolheu-se "Nenhuma" de propósito.
+ */
+function contaVia(m, f, gasto) {
+  if (m.conta || m.semConta) return null;
+  return db.contas.find(c => c.id === m.viaConta) || (gasto && db.contas.find(c => norm(c.nome) === norm(f.nome))) || null;
+}
 function contaLigada(m) {
   const c = m.conta && db.contas.find(c => c.id === m.conta);
   const h = c && m.descontado ? c.hist.find(x => x.data === m.dataConta) : null;
@@ -1741,11 +1817,14 @@ function apagarPartilha(pid) {
   }
 }
 
-/** Um valor escrito à mão passa a valer por si: os movimentos descontados nesse dia deixam de acertar a conta. */
+/**
+ * Um valor escrito à mão passa a valer por si: os movimentos descontados nesse dia deixam de acertar a conta.
+ * Fica a lembrança da conta por onde passaram (viaConta), só para aparecerem no histórico dela.
+ */
 function desligarData(c, data) {
   const lados = db.transferencias.flatMap(t => [t.saida, t.entrada]);
   for (const m of [...db.grupos.flatMap(g => g.fichas.flatMap(f => f.movimentos)), ...lados])
-    if (m?.conta === c.id && m.dataConta === data) for (const k of LIGACAO) delete m[k];
+    if (m?.conta === c.id && m.dataConta === data) { for (const k of LIGACAO) delete m[k]; m.viaConta = c.id; }
 }
 
 /**
@@ -1791,13 +1870,13 @@ function desfazerTransf(t) {
   for (const lado of [t.saida, t.entrada]) if (lado?.descontado) ajustarDesconto(lado, null);
 }
 /** Uma transferência numa lista. Com a conta c, o valor tem o sinal dela (− sai, + entra). */
-function linhaTransf(t, c) {
+function linhaTransf(t, c, semData = false) {
   const nome = id => db.contas.find(x => x.id === id)?.nome || '—', sai = c && t.de === c.id;
   const caminho = c ? (sai ? `para ${nome(t.para)}` : `de ${nome(t.de)}`) : `${nome(t.de)} → ${nome(t.para)}`;
   const tit = t.desc || (c ? caminho[0].toUpperCase() + caminho.slice(1) : 'Transferência');
-  const sub = [t.desc || !c ? caminho : '', dataCurta(t.data)].filter(Boolean).join(' · ');
+  const sub = [t.desc || !c ? caminho : '', semData ? '' : dataCurta(t.data)].filter(Boolean).join(' · ');
   return `<button class="linha" data-a="transf" data-id="${t.id}">${avatarIcone(ic.trocar)}<div class="txt"><div class="tit">${esc(tit)}</div>` +
-    `<div class="sub">${esc(sub)}</div></div><div class="val">${c ? euroSinal(sai ? -t.valor : t.valor) : euro(t.valor)}</div></button>`;
+    `${sub ? `<div class="sub">${esc(sub)}</div>` : ''}</div><div class="val${c && !sai ? ' pos' : ''}">${c ? euroSinal(sai ? -t.valor : t.valor) : euro(t.valor)}</div></button>`;
 }
 /** Apagar vários movimentos: se algum gasto do atalho foi descontado numa conta, pergunta se devolve o dinheiro. */
 function apagarComContas(titulo, movs, apagar) {
@@ -2062,6 +2141,7 @@ document.addEventListener('click', e => {
     }
     case 'novo-hist': folhaHist(null); return;
     case 'hist': folhaHist(+id); return;
+    case 'extrato-tudo': ui.extratoTudo = id; render(); return;
     case 'apagar-hist': {
       const c = db.contas.find(c => c.id === ui.ficha.contas), desfaz = pontoDeRetorno();
       desligarData(c, c.hist[+id].data);
