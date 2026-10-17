@@ -157,6 +157,10 @@ button.linha:active, .grupo-acoes button:active, .cancelar-acoes:active { backgr
 .perfil .avatar { margin: 0 auto 10px; }
 .perfil h1 { font-size: 22px; margin: 0; }
 .perfil .valor-g { font-size: 40px; margin: 4px 0 2px; }
+/* o valor da conta escreve-se logo no topo: toca, escreve e sai (ou Enter) */
+.valor-edit { display: flex; justify-content: center; align-items: baseline; gap: 6px; }
+.valor-edit input { min-width: 2ch; max-width: calc(100vw - 96px); text-align: right; padding: 0 2px; border-bottom: 2px dashed var(--sep); border-radius: 0; background: none; font-variant-numeric: tabular-nums; }
+.valor-edit input:focus { border-bottom-color: var(--acc); outline: none; }
 .perfil .pilula { background: var(--fill); margin: 6px 0 2px; }
 .perfil .leg + .botoes-acao, .perfil .pilula + .botoes-acao { margin-top: 14px; }
 .texto { font-size: 14px; color: var(--sec); padding: 0 16px 12px; overflow-wrap: anywhere; }
@@ -234,7 +238,7 @@ code { font: 700 14px/1.3 ui-monospace, Menlo, monospace; background: var(--fill
 .comp span { min-width: 3px; }
 
 /* ocultar valores (para mostrar o ecrã a alguém) */
-.oculto :is(.val, .valor-g, .valor-m, .leg, .sub, .pct, .pilula, .graf text, .cartao-cab .dir:not(:has(button)), .conta-nota, .mes-cab span + span, textarea.nota:not(:focus)) { filter: blur(8px); }
+.oculto :is(.val, .valor-g, #v-conta, .valor-m, .leg, .sub, .pct, .pilula, .graf text, .cartao-cab .dir:not(:has(button)), .conta-nota, .mes-cab span + span, textarea.nota:not(:focus)) { filter: blur(8px); }
 
 /* barra de separadores */
 .tabs {
@@ -1085,7 +1089,7 @@ function vConta() {
   const ev = evolucao(acumular(eventosConta(c)), diaDe(c.hist[0].data), { rotulo: 'Evolução de ' + c.nome });
   const leg = [c.nota, c.noTotal ? '' : 'fora do total'].filter(Boolean).join(' · ');
   let h = barra({ voltar: 'Contas' }) + `<div class="perfil">${avatar(c.nome, slotConta(c), 'grande')}<h1>${esc(c.nome)}</h1>
-    <div class="valor-g">${euroG(c.valor)}</div>${ev ? `<span class="pilula ${ev.cls}">${esc(ev.texto)} ${esc(ev.quando)}</span>` : ''}${leg ? `<div class="leg">${esc(leg)}</div>` : ''}
+    <label class="valor-edit" aria-label="Valor de ${esc(c.nome)}"><input id="v-conta" class="valor-g" inputmode="decimal" autocomplete="off" value="${numSinal(c.valor)}" style="width:${larguraValor(numSinal(c.valor))}"><span class="valor-g">€</span></label>${ev ? `<span class="pilula ${ev.cls}">${esc(ev.texto)} ${esc(ev.quando)}</span>` : ''}${leg ? `<div class="leg">${esc(leg)}</div>` : ''}
     <div class="botoes-acao">${botaoAcao('novo-hist', ic.atualizar, 'Atualizar')}${db.contas.length > 1 ? botaoAcao('transferir', ic.trocar, 'Transferir') : ''}${botaoAcao('editar-conta', ic.editar, 'Editar')}</div></div>`;
   h += `<section class="cartao">${cabCartao('Histórico')}${extratoConta(c)}</section>`;
   if (ev) h += cartaoEvolucao(ev);
@@ -1382,18 +1386,24 @@ function folhaHist(i) {
     guardar: () => {
       const v = lerValor($('#f-valor').value), data = $('#f-data').value || hoje();
       if (v === null) return erro('#f-valor');
-      let alvo = h || c.hist.find(x => x.data === data);
-      if (!alvo) c.hist.push(alvo = {});
-      desligarData(c, data, true);
-      if (h) desligarData(c, h.data);
-      // "em": quando o valor foi visto; um gasto do atalho feito antes disso já está incluído nele
-      Object.assign(alvo, { data, valor: v, em: data === hoje() ? agora() : `${data}T23:59:59` });
-      for (const k of ['auto', 'base', 'desconto']) delete alvo[k];
-      c.hist = c.hist.filter(x => x === alvo || x.data !== data);
-      ordenarHist(c);
+      registarValor(c, v, data, h);
       return true;
     },
   });
+}
+/** Largura do campo do valor da conta, à medida do que está escrito (os algarismos são mais apertados que 1ch). */
+const larguraValor = t => `${(Math.max(1, t.length) * .9 + .3).toFixed(1)}ch`;
+/** O valor da conta numa data (um registo por dia: o desse dia é substituído); h é o registo que se está a editar. */
+function registarValor(c, v, data, h = null) {
+  let alvo = h || c.hist.find(x => x.data === data);
+  if (!alvo) c.hist.push(alvo = {});
+  desligarData(c, data, true);
+  if (h) desligarData(c, h.data);
+  // "em": quando o valor foi visto; um gasto do atalho feito antes disso já está incluído nele
+  Object.assign(alvo, { data, valor: v, em: data === hoje() ? agora() : `${data}T23:59:59` });
+  for (const k of ['auto', 'base', 'desconto']) delete alvo[k];
+  c.hist = c.hist.filter(x => x === alvo || x.data !== data);
+  ordenarHist(c);
 }
 
 function folhaMov(movId) {
@@ -2374,6 +2384,18 @@ document.addEventListener('focusout', e => {
   if (t.classList?.contains('parte') && t.dataset.manual && !t.value.trim()) { t.dataset.manual = ''; if ($('#f-soma')) somaPartilha(); }
 });
 
+// O valor escrito no topo de uma conta: ao sair do campo, passa a ser o valor de hoje (o de hoje é substituído).
+document.addEventListener('change', e => {
+  if (e.target.id !== 'v-conta') return;
+  const c = db.contas.find(c => c.id === ui.ficha.contas), v = lerValor(e.target.value);
+  if (!c || v === null) { render(); return; }
+  if (v === c.valor) return;
+  const desfaz = pontoDeRetorno();
+  registarValor(c, v, hoje());
+  guardar(); render(); toast(`${c.nome}: ${euro(v)}`, desfaz);
+});
+document.addEventListener('keydown', e => { if (e.key === 'Enter' && e.target.id === 'v-conta') { e.preventDefault(); e.target.blur(); } });
+
 // No iPhone, escolher noutra lista (select) avisa com "change".
 document.addEventListener('change', e => {
   if (e.target.id !== 'f-conta') return;
@@ -2386,6 +2408,7 @@ document.addEventListener('mousedown', e => { if (e.target.closest('.seg')) e.pr
 
 document.addEventListener('input', e => {
   const t = e.target;
+  if (t.id === 'v-conta') { t.style.width = larguraValor(t.value); return; }
   if (t.closest?.('#camada')) {
     if (t.classList.contains('parte')) t.dataset.manual = t.value.trim() || t === document.activeElement ? '1' : '';
     if ((t.matches('.parte, #f-pago') || t.id === 'f-conta') && $('#f-soma')) somaPartilha();
