@@ -451,6 +451,7 @@ function migrar(d) {
     ordenarHist(c);
   }
   if (!Array.isArray(d.transferencias)) d.transferencias = []; // movimentos entre contas
+  if (!Array.isArray(d.entradas)) d.entradas = []; // dinheiro que entrou numa conta (ex.: o pai deu-te)
   d.versao = 2;
   return d;
 }
@@ -996,6 +997,7 @@ function recentes(n) {
   const L = [];
   for (const g of db.grupos) for (const f of g.fichas) f.movimentos.forEach((m, i) => L.push({ m, f, g, i, data: m.data }));
   db.transferencias.forEach((t, i) => L.push({ t, i, data: t.data }));
+  db.entradas.forEach((e, i) => L.push({ e, i, data: e.data }));
   return L.sort((a, b) => a.data < b.data ? 1 : a.data > b.data ? -1 : b.i - a.i).slice(0, n);
 }
 /**
@@ -1003,8 +1005,9 @@ function recentes(n) {
  * entra (+, a verde); nas dívidas, o sinal guardado (+ é o que te devem). O verde e o vermelho ficam para os saldos.
  */
 const valorMov = (m, gasto) => gasto ? { texto: euroSinal(-m.valor), cls: m.valor < 0 ? 'pos' : '' } : { texto: euroSinal(m.valor), cls: '' };
-const linhaRecente = ({ m, f, g, t }) => {
+const linhaRecente = ({ m, f, g, t, e }) => {
   if (t) return linhaTransf(t, null);
+  if (e) return linhaEntrada(e);
   const v = valorMov(m, g.tipo === 'gastos');
   return linha(m.desc || f.nome, v.texto, { a: 'abrir', tipo: g.tipo, id: f.id, avatar: avatar(f.nome), sub: `${f.nome} · ${dataCurta(m.data)}`, cls: v.cls });
 };
@@ -1090,7 +1093,7 @@ function vConta() {
   const leg = [c.nota, c.noTotal ? '' : 'fora do total'].filter(Boolean).join(' · ');
   let h = barra({ voltar: 'Contas' }) + `<div class="perfil">${avatar(c.nome, slotConta(c), 'grande')}<h1>${esc(c.nome)}</h1>
     <label class="valor-edit" aria-label="Valor de ${esc(c.nome)}"><input id="v-conta" class="valor-g" inputmode="decimal" autocomplete="off" value="${numSinal(c.valor)}" style="width:${larguraValor(numSinal(c.valor))}"><span class="valor-g">€</span></label>${ev ? `<span class="pilula ${ev.cls}">${esc(ev.texto)} ${esc(ev.quando)}</span>` : ''}${leg ? `<div class="leg">${esc(leg)}</div>` : ''}
-    <div class="botoes-acao">${botaoAcao('novo-hist', ic.atualizar, 'Atualizar')}${db.contas.length > 1 ? botaoAcao('transferir', ic.trocar, 'Transferir') : ''}${botaoAcao('editar-conta', ic.editar, 'Editar')}</div></div>`;
+    <div class="botoes-acao">${botaoAcao('novo-hist', ic.atualizar, 'Atualizar')}${botaoAcao('nova-entrada', ic.mais, 'Adicionar')}${db.contas.length > 1 ? botaoAcao('transferir', ic.trocar, 'Transferir') : ''}${botaoAcao('editar-conta', ic.editar, 'Editar')}</div></div>`;
   h += `<section class="cartao">${cabCartao('Histórico')}${extratoConta(c)}</section>`;
   if (ev) h += cartaoEvolucao(ev);
   return h;
@@ -1130,6 +1133,11 @@ function extratoConta(c) {
     if (t.de !== c.id && t.para !== c.id) continue;
     const lado = t.de === c.id ? t.saida : t.entrada, desc = lado?.conta === c.id && lado.descontado || 0;
     juntar(desc ? lado.dataConta : t.data, desc, t.de === c.id ? -t.valor : t.valor, lado?.quando, linhaTransf(t, c, true));
+  }
+  for (const e of db.entradas) {
+    if ((e.conta || e.viaConta) !== c.id) continue;
+    const desc = e.conta && e.descontado || 0;
+    juntar(desc ? e.dataConta : e.data, desc, e.valor, e.quando, linhaEntrada(e, true));
   }
   c.hist.forEach((h, i) => {
     const x = dia(h.data);
@@ -1841,7 +1849,7 @@ function apagarPartilha(pid) {
  */
 function desligarData(c, data, incluidos = false) {
   const lados = db.transferencias.flatMap(t => [t.saida, t.entrada]);
-  for (const m of [...db.grupos.flatMap(g => g.fichas.flatMap(f => f.movimentos)), ...lados])
+  for (const m of [...db.grupos.flatMap(g => g.fichas.flatMap(f => f.movimentos)), ...lados, ...db.entradas])
     if (m?.conta === c.id && m.dataConta === data) { for (const k of LIGACAO) delete m[k]; if (incluidos) m.viaConta = c.id; }
 }
 
@@ -1849,6 +1857,51 @@ function desligarData(c, data, incluidos = false) {
  * Transferência entre contas: { id, valor, data, desc, de, para, saida, entrada }. A saída e a entrada estão ligadas
  * cada uma à sua conta, como os movimentos (corrigir ou apagar devolve o dinheiro ao sítio). Não é gasto nem dívida.
  */
+/**
+ * Dinheiro que entrou numa conta sem ser gasto nem dívida (ex.: o pai deu-te 50 €): { id, valor, data, desc } mais a
+ * ligação à conta, como os movimentos (corrigir ou apagar acerta a conta).
+ */
+function folhaEntrada(id) {
+  if (!db.contas.length) { toast('Cria primeiro uma conta'); return; }
+  const e = id && db.entradas.find(x => x.id === id);
+  const atual = e ? e.conta || e.viaConta : (ui.tab === 'contas' && ui.ficha.contas) || lerPref('contaEntrada', '');
+  const def = db.contas.find(c => c.id === atual) || db.contas[0];
+  abrir({
+    tipo: 'folha', titulo: e ? 'Editar entrada' : 'Adicionar dinheiro',
+    corpo: `<div class="cartao">
+        <div class="linha campo-val"><input id="f-valor" class="valor-grande" inputmode="decimal" placeholder="0,00" value="${e ? numero(e.valor) : ''}" autocomplete="off" autofocus><span>€</span></div>
+        <div class="linha"><input id="f-desc" placeholder="De onde veio (ex.: pai)" value="${esc(e?.desc)}" autocomplete="off"></div>
+        <label class="linha"><span class="txt">Conta</span><select id="f-conta">${db.contas.map(c =>
+          `<option value="${c.id}"${c === def ? ' selected' : ''}>${esc(c.nome)}</option>`).join('')}</select></label>
+        <label class="linha"><span class="txt">Data</span><input type="date" id="f-data" value="${e?.data || hoje()}"></label>
+      </div>
+      <p class="rodape">Entra na conta e fica no histórico dela. Não conta como gasto nem como dívida.</p>`,
+    extra: e ? btnApagar('apagar-entrada', e.id, 'Apagar entrada') : '',
+    guardar: () => {
+      const v = lerValor($('#f-valor').value);
+      if (!v || v <= 0) return erro('#f-valor');
+      const c = db.contas.find(x => x.id === $('#f-conta').value);
+      if (!c) return false;
+      const desfaz = pontoDeRetorno(), data = $('#f-data').value || hoje(), n = e || { id: uid() };
+      // como num movimento: se já estava incluída num valor escrito à mão (viaConta) e a conta é a mesma, não mexe nela
+      const mesma = e && (e.conta || e.viaConta) === c.id;
+      if (e?.conta && (!mesma || v !== e.valor || data !== e.data)) ajustarDesconto(e, mesma ? { valor: -v, data } : null);
+      Object.assign(n, { valor: v, data, desc: $('#f-desc').value.trim() });
+      if (!mesma) { delete n.viaConta; ligarNova(n, c, -v); }
+      if (!e) db.entradas.push(n);
+      gravarPref('contaEntrada', c.id);
+      toast(`+${euro(v)} em ${c.nome}`, desfaz);
+      return true;
+    },
+  });
+}
+/** Uma entrada de dinheiro numa lista; no histórico da conta (semConta), sem a conta nem a data. */
+function linhaEntrada(e, semConta = false) {
+  const c = db.contas.find(x => x.id === (e.conta || e.viaConta));
+  const sub = semConta ? (e.desc ? 'entrada' : '') : [c?.nome, dataCurta(e.data)].filter(Boolean).join(' · ');
+  return linha(e.desc || 'Dinheiro recebido', euroSinal(e.valor), { a: 'entrada', id: e.id, avatar: avatarIcone(ic.mais), sub, cls: 'pos' });
+}
+
 function folhaTransferir(id) {
   if (db.contas.length < 2) { toast('Para transferir, precisas de duas contas'); return; }
   const t = id && db.transferencias.find(x => x.id === id);
@@ -2144,10 +2197,20 @@ document.addEventListener('click', e => {
     case 'nova-conta': folhaConta(null); return;
     case 'editar-conta': folhaConta(ui.ficha.contas); return;
     case 'menu-contas':
-      acoes('Contas', [{ texto: 'Nova conta', fn: () => folhaConta(null) },
+      acoes('Contas', [{ texto: 'Nova conta', fn: () => folhaConta(null) }, { texto: 'Adicionar dinheiro', fn: () => folhaEntrada(null) },
         ...(db.contas.length > 1 ? [{ texto: 'Transferir entre contas', fn: () => folhaTransferir(null) }, { texto: 'Ordenar', fn: () => { ui.ordenar = true; } }] : [])]);
       return;
     case 'transferir': folhaTransferir(null); return;
+    case 'nova-entrada': folhaEntrada(null); return;
+    case 'entrada': folhaEntrada(id); return;
+    case 'apagar-entrada': {
+      const e = db.entradas.find(x => x.id === id);
+      if (!e) return;
+      const desfaz = pontoDeRetorno();
+      if (e.descontado) ajustarDesconto(e, null);
+      db.entradas = db.entradas.filter(x => x !== e);
+      guardar(); fechar(); render(); toast('Entrada apagada', desfaz); return;
+    }
     case 'transf': folhaTransferir(id); return;
     case 'apagar-transf': {
       const t = db.transferencias.find(x => x.id === id);
