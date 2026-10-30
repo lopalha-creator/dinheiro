@@ -220,6 +220,15 @@ code { font: 700 14px/1.3 ui-monospace, Menlo, monospace; background: var(--fill
 .medidor { height: 6px; margin-top: 6px; border-radius: 3px; background: var(--acc-trilho); overflow: hidden; }
 .medidor span { display: block; height: 100%; min-width: 3px; border-radius: 0 3px 3px 0; background: var(--acc); }
 .medidor.outros span { background: var(--ter); }
+.medidor.passou span { background: var(--verm); }
+/* orçamento: "620 € de 800 €" e a barra, por cima do gráfico do mês ou no item */
+.orc { padding: 2px 16px 12px; }
+.orc-l { display: flex; justify-content: space-between; gap: 12px; font-size: 13px; font-weight: 700; color: var(--sec); font-variant-numeric: tabular-nums; }
+.orc-l .neg { color: var(--verm); }
+.seg.curto { flex: none; }
+.seg.curto button { white-space: nowrap; padding-left: 12px; padding-right: 12px; }
+input[type=month] { width: auto; text-align: right; color: var(--acc); font-weight: 700; }
+#f-res .rodape { margin-top: 4px; }
 .graf { position: relative; margin: 12px 16px 10px; touch-action: pan-y; -webkit-user-select: none; user-select: none; -webkit-touch-callout: none; outline: 0; border-radius: 8px; }
 .graf:focus-visible { box-shadow: 0 0 0 2px var(--acc); }
 .graf svg { display: block; overflow: visible; stroke: none; }
@@ -238,7 +247,7 @@ code { font: 700 14px/1.3 ui-monospace, Menlo, monospace; background: var(--fill
 .comp span { min-width: 3px; }
 
 /* ocultar valores (para mostrar o ecrã a alguém) */
-.oculto :is(.val, .valor-g, #v-conta, .valor-m, .leg, .sub, .pct, .pilula, .graf text, .cartao-cab .dir:not(:has(button)), .conta-nota, .mes-cab span + span, textarea.nota:not(:focus)) { filter: blur(8px); }
+.oculto :is(.val, .valor-g, #v-conta, .orc-l, .valor-m, .leg, .sub, .pct, .pilula, .graf text, .cartao-cab .dir:not(:has(button)), .conta-nota, .mes-cab span + span, textarea.nota:not(:focus)) { filter: blur(8px); }
 
 /* barra de separadores */
 .tabs {
@@ -452,6 +461,9 @@ function migrar(d) {
   }
   if (!Array.isArray(d.transferencias)) d.transferencias = []; // movimentos entre contas
   if (!Array.isArray(d.entradas)) d.entradas = []; // dinheiro que entrou numa conta (ex.: o pai deu-te)
+  if (!Array.isArray(d.fixas)) d.fixas = []; // despesas fixas, lançadas sozinhas todos os meses
+  if (!Array.isArray(d.objetivos)) d.objetivos = []; // objetivos de poupança
+  if (typeof d.orcamento !== 'number') d.orcamento = 0; // orçamento mensal dos gastos (0 = sem orçamento)
   d.versao = 2;
   return d;
 }
@@ -515,6 +527,10 @@ const ic = {
   portatil: ico('<rect x="4.5" y="5" width="15" height="10.5" rx="1.5"/><path d="M2.5 19h19"/>'),
   definicoes: ico('<circle cx="12" cy="12" r="3"/><path d="M19.4 13.5a7.6 7.6 0 0 0 0-3l2-1.6-2-3.4-2.4 1a7.5 7.5 0 0 0-2.6-1.5L14 2.5h-4l-.4 2.5A7.5 7.5 0 0 0 7 6.5l-2.4-1-2 3.4 2 1.6a7.6 7.6 0 0 0 0 3l-2 1.6 2 3.4 2.4-1a7.5 7.5 0 0 0 2.6 1.5l.4 2.5h4l.4-2.5a7.5 7.5 0 0 0 2.6-1.5l2.4 1 2-3.4z"/>'),
   dividir: ico('<path d="M12 20.5V13L6 7M12 13l6-6"/><path d="M6 11V7h4M18 11V7h-4"/>'),
+  lupa: ico('<circle cx="10.5" cy="10.5" r="6"/><path d="m15 15 5 5"/>'),
+  alvo: ico('<circle cx="12" cy="12" r="8"/><circle cx="12" cy="12" r="4.5"/><circle cx="12" cy="12" r="1" fill="currentColor"/>'),
+  repetir: ico('<path d="M4.5 11V9.5a3 3 0 0 1 3-3h11M15.5 3l3 3.5-3 3.5M19.5 13v1.5a3 3 0 0 1-3 3h-11M8.5 21l-3-3.5 3-3.5"/>'),
+  tabela: ico('<rect x="4" y="4.5" width="16" height="15" rx="2.5"/><path d="M4 9.5h16M4 14.5h16M10 9.5v10"/>'),
   sino: ico('<path d="M6 16.5V11a6 6 0 0 1 12 0v5.5l1.5 1.5h-15z"/><path d="M10 20.5a2 2 0 0 0 4 0"/>'),
   olho: ico('<path d="M2.5 12S6 5.5 12 5.5 21.5 12 21.5 12 18 18.5 12 18.5 2.5 12 2.5 12z"/><circle cx="12" cy="12" r="3"/>'),
   olhoFechado: ico('<path d="M2.5 12S6 5.5 12 5.5 21.5 12 21.5 12 18 18.5 12 18.5 2.5 12 2.5 12z"/><circle cx="12" cy="12" r="3"/><path d="M4 4l16 16"/>'),
@@ -677,7 +693,7 @@ function grafColunas(barras, o = {}) {
     svg += `<path class="coluna${on(i) ? ' on' : ''}" d="${d}"/>`;
     if (o.rotulos ? b.rot : (barras.length - 1 - i) % salto === 0) svg += `<text x="${r1(x + larg / 2)}" y="${H + 16}" text-anchor="middle">${esc(b.rot)}</text>`;
   });
-  const i = graficos.push({ tipo: 'colunas', barras, banda, on }) - 1;
+  const i = graficos.push({ tipo: 'colunas', barras, banda, on, cor: !!o.cor }) - 1;
   const desc = o.desc || `${o.rotulo}: ` + barras.map(b => `${b.nome} ${euro(b.valor)}`).join(', ');
   return `<div class="graf" data-g="${i}" tabindex="0" role="img" aria-label="${esc(desc)}"><svg width="${W}" height="${H + 22}" aria-hidden="true">${svg}</svg></div>`;
 }
@@ -1014,7 +1030,7 @@ const linhaRecente = ({ m, f, g, t, e }) => {
 /** Um movimento dentro de uma pessoa ou item: descrição, data (e a conta por onde passou) e valor. */
 function linhaMov(m, gasto, f) {
   const v = valorMov(m, gasto), c = m.conta ? db.contas.find(c => c.id === m.conta) : contaVia(m, f, gasto);
-  const sub = [dataCurta(m.data), m.pago ? 'pago' : '', m.partilha ? 'partilhado' : '', c ? (m.partilha || (m.descontado || m.valor) > 0 ? `pago com ${c.nome}` : `recebido em ${c.nome}`) : ''];
+  const sub = [dataCurta(m.data), m.fixa ? 'fixa' : '', m.pago ? 'pago' : '', m.partilha ? 'partilhado' : '', c ? (m.partilha || (m.descontado || m.valor) > 0 ? `pago com ${c.nome}` : `recebido em ${c.nome}`) : ''];
   return `<button class="linha mov${m.pago ? ' pago' : ''}" data-a="mov" data-id="${m.id}"><div class="txt"><div class="tit${m.desc ? '' : ' sec'}">${esc(m.desc || 'Sem descrição')}</div>` +
     `<div class="sub">${esc(sub.filter(Boolean).join(' · '))}</div></div><div class="val ${v.cls}">${v.texto}</div></button>`;
 }
@@ -1022,7 +1038,8 @@ function linhaMov(m, gasto, f) {
 function vResumo() {
   const tc = totalContas(), td = totalDividas();
   const vazio = !db.contas.length && db.grupos.every(g => !g.fichas.length);
-  const olho = `<button class="icbtn" data-a="ocultar" aria-label="${ui.oculto ? 'Mostrar valores' : 'Ocultar valores'}">${ui.oculto ? ic.olhoFechado : ic.olho}</button>`;
+  const olho = `<button class="icbtn" data-a="pesquisa" aria-label="Pesquisar">${ic.lupa}</button>` +
+    `<button class="icbtn" data-a="ocultar" aria-label="${ui.oculto ? 'Mostrar valores' : 'Ocultar valores'}">${ui.oculto ? ic.olhoFechado : ic.olho}</button>`;
   // dois totais lado a lado: primeiro só as contas; a deslizar para o lado, contas e dívidas
   const sc = serieTotal(false), st = serieTotal();
   const totais = [
@@ -1039,6 +1056,9 @@ function vResumo() {
     <button class="linha acao" data-a="colar">${avatarIcone(ic.colar)}Colar os meus dados</button>
     <button class="linha acao" data-a="repor">${avatarIcone(ic.repor)}Repor de um ficheiro</button></section>`;
 
+  // a cópia de segurança, à vista quando já passou o tempo escolhido em Definições (um toque guarda-a no iCloud)
+  if (faltaCopia()) h += `<section class="cartao">${cabCartao('Cópia de segurança')}<p class="texto">${textoCopia()} Na folha que abre, escolhe <b>Guardar em Ficheiros</b> → iCloud Drive.</p>
+    <button class="linha acao" data-a="backup">${avatarIcone(ic.guardar)}Guardar cópia agora</button></section>`;
   const rec = recentes(5);
   if (rec.length) h += `<section class="cartao">${cabCartao('Últimos movimentos')}${rec.map(linhaRecente).join('')}</section>`;
 
@@ -1077,6 +1097,7 @@ function vContas() {
       ${comDividas ? `<div class="leg">${euro(tc + totalDividas())} com as dívidas</div>` : ''}</div>
     <section class="cartao">${ui.ordenar ? db.contas.map((c, i) => linhaOrdenar(c.nome, 'mover-conta', c.id, i, n, slotConta(c))).join('') : blocoContas()}</section>`;
   if (ui.ordenar) return h;
+  h += `<section class="cartao">${cabCartao('Objetivos')}${db.objetivos.map(linhaObjetivo).join('')}${btnAdicionar('novo-objetivo', 'Novo objetivo de poupança')}</section>`;
   const s = serieTotal(false), ev = evolucao(s.pts, s.inicio, { rotulo: 'Evolução do total nas contas' });
   if (ev) h += cartaoEvolucao(ev, comDividas ? 'Contas' : 'Evolução');
   // contas mais o que te devem (menos o que deves): só faz sentido mostrar se houver dívidas
@@ -1177,9 +1198,214 @@ function extratoConta(c) {
 function linhaFicha(f, div) {
   const t = totalFicha(f), tem = f.movimentos.length > 0;
   return linha(f.nome, tem ? euro(t) : '—', {
-    a: 'abrir', tipo: div ? 'dividas' : 'gastos', id: f.id, avatar: avatar(f.nome), sub: f.nota || subUltimo(f),
+    a: 'abrir', tipo: div ? 'dividas' : 'gastos', id: f.id, avatar: avatar(f.nome),
+    sub: f.nota || (!div && f.orcamento ? `${euro(gastoMes(f))} de ${euro(f.orcamento)} este mês` : subUltimo(f)),
     cls: tem ? (div ? cor(t) : '') : 'ter', tituloCls: div && !t ? 'sec' : '',
   });
+}
+
+/* ---------- orçamento ---------- */
+/** "620 € de 800 €" e a barra (vermelha quando passa). */
+function medidorOrc(gasto, limite, quando = '') {
+  const q = Math.min(1, Math.max(0, gasto / limite)), passou = gasto > limite;
+  return `<div class="orc"><div class="orc-l"><span>${euro(gasto)} de ${euro(limite)}${quando}</span>` +
+    `<span class="${passou ? 'neg' : ''}">${passou ? `passaste ${euro(gasto - limite)}` : `faltam ${euro(limite - gasto)}`}</span></div>` +
+    `<div class="medidor${passou ? ' passou' : ''}" aria-hidden="true"><span style="width:${r1(q * 100)}%"></span></div></div>`;
+}
+/** O orçamento mensal de todos os gastos (fid vazio) ou de um item. */
+function folhaOrcamento(fid) {
+  const f = fid ? acharFicha(fid)[1] : null, atual = f ? f.orcamento || 0 : db.orcamento;
+  abrir({
+    tipo: 'folha', titulo: f ? `Orçamento de ${f.nome}` : 'Orçamento do mês',
+    corpo: `<div class="cartao"><div class="linha campo-val"><input id="f-valor" class="valor-grande" inputmode="decimal" placeholder="0,00" value="${atual ? numero(atual) : ''}" autocomplete="off" autofocus><span>€</span></div></div>
+      <p class="rodape">${f ? `Quanto queres gastar em ${esc(f.nome)} por mês.` : 'Quanto queres gastar por mês, no total.'} Aparece uma barra que fica vermelha quando passas.</p>`,
+    extra: atual ? btnApagar('tirar-orcamento', fid || '', 'Tirar orçamento') : '',
+    guardar: () => {
+      const v = lerValor($('#f-valor').value);
+      if (!v || v <= 0) return erro('#f-valor');
+      if (f) f.orcamento = v; else db.orcamento = v;
+      return true;
+    },
+  });
+}
+
+/* ---------- entrou e saiu ---------- */
+/** O que entrou (entradas) menos o que se gastou, por mês (até 12 meses). Null se nunca entrou nada. */
+function balancoMes() {
+  if (!db.entradas.length) return null;
+  const ent = new Map(), gas = new Map(), soma = (m, k, v) => m.set(k, (m.get(k) || 0) + v);
+  for (const e of db.entradas) soma(ent, e.data.slice(0, 7), e.valor);
+  for (const m of movGastos()) soma(gas, m.data.slice(0, 7), m.valor);
+  const chaves = [...ent.keys(), ...gas.keys()].sort();
+  let [a, m] = chaves[0].split('-').map(Number);
+  const [af, mf] = mesAtual().split('-').map(Number), barras = [];
+  while (a < af || (a === af && m <= mf)) {
+    const k = `${a}-${String(m).padStart(2, '0')}`;
+    barras.push({ rot: MESES[m - 1], nome: `${MESES_LONGOS[m - 1]} de ${a}`, valor: (ent.get(k) || 0) - (gas.get(k) || 0) });
+    if (++m > 12) { m = 1; a++; }
+  }
+  const k = mesAtual(), doze = barras.slice(-12);
+  return {
+    entrou: ent.get(k) || 0, gastou: gas.get(k) || 0, saldo: doze[doze.length - 1].valor,
+    graf: doze.length > 1 ? grafColunas(doze, { rotulo: 'Entrou menos gastou, por mês', cor: true }) : '',
+  };
+}
+
+/* ---------- despesas fixas ---------- */
+const mesSeguinte = k => { let [a, m] = k.split('-').map(Number); if (++m > 12) { m = 1; a++; } return `${a}-${String(m).padStart(2, '0')}`; };
+const diasNoMes = k => new Date(Date.UTC(+k.slice(0, 4), +k.slice(5, 7), 0)).getUTCDate();
+/**
+ * Lança as despesas fixas que já chegaram ao dia: uma por mês, desde o primeiro mês (desde) ou do mês a seguir ao
+ * último lançado (feito). Cada uma entra no seu item de gastos e, com conta, sai dela. Devolve quantas lançou.
+ */
+function lancarFixas() {
+  let n = 0;
+  for (const fx of db.fixas) {
+    let k = fx.feito && mesSeguinte(fx.feito) > fx.desde ? mesSeguinte(fx.feito) : fx.desde;
+    while (k <= mesAtual()) {
+      const data = `${k}-${String(Math.min(fx.dia, diasNoMes(k))).padStart(2, '0')}`;
+      if (data > hoje()) break;
+      let f = acharFicha(fx.ficha)[1];
+      if (!f) { grupoChamado('Despesas fixas', 'gastos').fichas.push(f = { id: uid(), nome: fx.desc, nota: '', movimentos: [] }); fx.ficha = f.id; }
+      const mov = { id: uid(), valor: fx.valor, desc: fx.desc, data, fixa: fx.id };
+      const c = db.contas.find(c => c.id === fx.conta);
+      if (c) ligarNova(mov, c, fx.valor);
+      f.movimentos.push(mov);
+      fx.feito = k; k = mesSeguinte(k); n++;
+    }
+  }
+  return n;
+}
+function linhaFixa(fx) {
+  const c = db.contas.find(c => c.id === fx.conta);
+  return linha(fx.desc, euro(fx.valor), { a: 'fixa', id: fx.id, avatar: avatarIcone(ic.repetir), sub: [`dia ${fx.dia}`, c?.nome].filter(Boolean).join(' · ') });
+}
+function folhaFixa(id) {
+  const fx = id && db.fixas.find(x => x.id === id), itens = gruposDe('gastos').flatMap(g => g.fichas);
+  abrir({
+    tipo: 'folha', titulo: fx ? 'Editar despesa fixa' : 'Despesa fixa',
+    corpo: `<div class="cartao">
+        <div class="linha campo-val"><input id="f-valor" class="valor-grande" inputmode="decimal" placeholder="0,00" value="${fx ? numero(fx.valor) : ''}" autocomplete="off" autofocus><span>€</span></div>
+        <div class="linha"><input id="f-desc" placeholder="O que é (ex.: renda, ginásio)" value="${esc(fx?.desc)}" autocomplete="off"></div>
+        <label class="linha"><span class="txt">Dia do mês</span><input id="f-dia" type="number" inputmode="numeric" min="1" max="31" value="${fx?.dia || +hoje().slice(8)}" style="width:5ch;text-align:right;font-weight:700;color:var(--acc)"></label>
+        <label class="linha"><span class="txt">Sai da conta</span><select id="f-conta"><option value="">Nenhuma</option>${db.contas.map(c =>
+          `<option value="${c.id}"${c.id === fx?.conta ? ' selected' : ''}>${esc(c.nome)}</option>`).join('')}</select></label>
+        <label class="linha"><span class="txt">Item de gastos</span><select id="f-item"><option value="">Um só para ela</option>${itens.map(f =>
+          `<option value="${f.id}"${f.id === fx?.ficha ? ' selected' : ''}>${esc(f.nome)}</option>`).join('')}</select></label>
+        <label class="linha"><span class="txt">A partir de</span><input type="month" id="f-desde" value="${fx?.desde || mesAtual()}"></label>
+      </div>
+      <p class="rodape">Entra sozinha em Gastos todos os meses, nesse dia (e sai da conta, se escolheres uma). Se o dia deste mês já passou, entra logo.</p>`,
+    extra: fx ? btnApagar('apagar-fixa', fx.id, 'Apagar despesa fixa') : '',
+    guardar: () => {
+      const v = lerValor($('#f-valor').value), desc = $('#f-desc').value.trim(), dia = Math.round(+$('#f-dia').value);
+      if (!v || v <= 0) return erro('#f-valor');
+      if (!desc) return erro('#f-desc');
+      if (!(dia >= 1 && dia <= 31)) return erro('#f-dia');
+      const n = fx || { id: uid(), feito: '' };
+      Object.assign(n, { valor: v, desc, dia, conta: $('#f-conta').value, ficha: $('#f-item').value, desde: $('#f-desde').value || mesAtual() });
+      if (!fx) db.fixas.push(n);
+      const lancadas = lancarFixas();
+      toast(lancadas ? `${desc}: ${lancadas === 1 ? 'lançada' : `${lancadas} lançadas`} em Gastos` : `${desc}: entra a ${dia} de cada mês`);
+      return true;
+    },
+  });
+}
+
+/* ---------- objetivos de poupança ---------- */
+const guardadoObj = o => { const c = db.contas.find(c => c.id === o.conta); return c ? c.valor : o.guardado || 0; };
+function linhaObjetivo(o) {
+  const v = guardadoObj(o), q = Math.min(1, Math.max(0, v / o.alvo)), falta = o.alvo - v;
+  let sub = `faltam ${euro(falta)} de ${euro(o.alvo)}`;
+  if (falta <= 0) sub = `Objetivo cumprido (${euro(o.alvo)})`;
+  else if (o.prazo) {
+    const meses = (+o.prazo.slice(0, 4) - +hoje().slice(0, 4)) * 12 + (+o.prazo.slice(5, 7) - +hoje().slice(5, 7)) + 1;
+    sub = meses > 0 ? `${euro(Math.ceil(falta / meses))}/mês até ${MESES[+o.prazo.slice(5, 7) - 1]} ${o.prazo.slice(2, 4)}` : `o prazo passou · faltam ${euro(falta)}`;
+  }
+  return `<button class="linha gasto-parte" data-a="objetivo" data-id="${o.id}">${avatarIcone(ic.alvo)}<div class="txt">
+    <div class="parte-l"><span class="tit">${esc(o.nome)}</span><span class="val">${euro(v)}</span></div>
+    <div class="parte-l"><span class="sub">${esc(sub)}</span><span class="pct">${fmtPct.format(q)}</span></div>
+    <div class="medidor" aria-hidden="true"><span style="width:${r1(q * 100)}%"></span></div></div></button>`;
+}
+function folhaObjetivo(id) {
+  const o = id && db.objetivos.find(x => x.id === id);
+  abrir({
+    tipo: 'folha', titulo: o ? 'Editar objetivo' : 'Novo objetivo',
+    corpo: `<div class="cartao">
+        <div class="linha"><input id="f-desc" placeholder="Para quê (ex.: viagem, carro)" value="${esc(o?.nome)}" autocomplete="off" autofocus></div>
+        <label class="linha"><span class="txt">Quanto queres juntar</span><input id="f-valor" inputmode="decimal" placeholder="0,00 €" value="${o ? numero(o.alvo) : ''}" autocomplete="off" style="width:9ch;text-align:right;font-weight:700"></label>
+        <label class="linha"><span class="txt">Conta onde guardas</span><select id="f-conta"><option value="">Nenhuma (escrevo à mão)</option>${db.contas.map(c =>
+          `<option value="${c.id}"${c.id === o?.conta ? ' selected' : ''}>${esc(c.nome)}</option>`).join('')}</select></label>
+        <label class="linha"><span class="txt">Já guardado (sem conta)</span><input id="f-guardado" inputmode="decimal" placeholder="0,00 €" value="${o?.guardado ? numero(o.guardado) : ''}" autocomplete="off" style="width:9ch;text-align:right;font-weight:700"></label>
+        <label class="linha"><span class="txt">Até (opcional)</span><input type="month" id="f-prazo" value="${o?.prazo || ''}"></label>
+      </div>
+      <p class="rodape">Com uma conta, o que já tens é o saldo dela (por exemplo, a conta Poupança). Com um prazo, diz quanto tens de guardar por mês.</p>`,
+    extra: o ? btnApagar('apagar-objetivo', o.id, 'Apagar objetivo') : '',
+    guardar: () => {
+      const nome = $('#f-desc').value.trim(), alvo = lerValor($('#f-valor').value), guardado = lerValor($('#f-guardado').value || '0');
+      if (!nome) return erro('#f-desc');
+      if (!alvo || alvo <= 0) return erro('#f-valor');
+      const n = o || { id: uid() };
+      Object.assign(n, { nome, alvo, conta: $('#f-conta').value, guardado: guardado || 0, prazo: $('#f-prazo').value || '' });
+      if (!o) db.objetivos.push(n);
+      return true;
+    },
+  });
+}
+
+/* ---------- pesquisa ---------- */
+function folhaPesquisa() {
+  abrir({
+    tipo: 'folha', titulo: 'Pesquisar', ok: false,
+    corpo: `<div class="cartao"><div class="linha"><input id="f-pesq" type="search" placeholder="Ex.: Continente, Coimbra, João" autocomplete="off" autofocus></div></div>
+      <div id="f-res"></div>`,
+  });
+}
+/** Os movimentos (gastos, dívidas, entradas e transferências) com todas as palavras escritas, com o total. */
+function resultadosPesquisa(q) {
+  const palavras = norm(q).split(' ').filter(Boolean);
+  if (!palavras.length) return '';
+  const tem = (...t) => { const x = norm(t.filter(Boolean).join(' ')); return palavras.every(p => x.includes(p)); };
+  const nomeConta = id => db.contas.find(c => c.id === id)?.nome || '';
+  const L = [];
+  for (const g of db.grupos) for (const f of g.fichas) f.movimentos.forEach((m, i) => {
+    if (tem(m.desc, f.nome, g.nome, nomeConta(m.conta || m.viaConta))) L.push({ m, f, g, i, data: m.data });
+  });
+  db.entradas.forEach((e, i) => { if (tem(e.desc, 'entrada', nomeConta(e.conta || e.viaConta))) L.push({ e, i, data: e.data }); });
+  db.transferencias.forEach((t, i) => { if (tem(t.desc, 'transferência', nomeConta(t.de), nomeConta(t.para))) L.push({ t, i, data: t.data }); });
+  if (!L.length) return '<p class="rodape centro">Nada encontrado.</p>';
+  L.sort((a, b) => a.data < b.data ? 1 : a.data > b.data ? -1 : b.i - a.i);
+  const gastos = L.filter(x => x.g?.tipo === 'gastos').reduce((t, x) => t + x.m.valor, 0);
+  const resumo = `${L.length} ${L.length === 1 ? 'movimento' : 'movimentos'}${gastos ? ` · gastos ${euro(gastos)}` : ''}`;
+  const MAX = 100;
+  return `<section class="cartao">${cabCartao(resumo)}${L.slice(0, MAX).map(linhaRecente).join('')}</section>` +
+    (L.length > MAX ? `<p class="rodape centro">Mostram-se os ${MAX} mais recentes.</p>` : '');
+}
+
+/* ---------- exportar para Excel ---------- */
+/** Todos os movimentos e os saldos das contas numa tabela CSV (separada por ";", como o Excel em português abre). */
+function textoCSV() {
+  const cel = v => /[";\n]/.test(String(v)) ? `"${String(v).replace(/"/g, '""')}"` : String(v);
+  const num = c => (c / 100).toFixed(2).replace('.', ',');
+  const nomeConta = id => db.contas.find(c => c.id === id)?.nome || '';
+  const L = [['Data', 'Tipo', 'Grupo', 'Item ou pessoa', 'Descrição', 'Valor', 'Conta']];
+  for (const g of db.grupos) for (const f of g.fichas) for (const m of f.movimentos)
+    L.push([m.data, g.tipo === 'gastos' ? 'Gasto' : 'Dívida', g.nome, f.nome, m.desc || '', num(m.valor), nomeConta(m.conta || m.viaConta)]);
+  for (const e of db.entradas) L.push([e.data, 'Entrada', '', '', e.desc || '', num(e.valor), nomeConta(e.conta || e.viaConta)]);
+  for (const t of db.transferencias) L.push([t.data, 'Transferência', '', '', t.desc || '', num(t.valor), `${nomeConta(t.de)} → ${nomeConta(t.para)}`]);
+  for (const c of db.contas) for (const h of c.hist) L.push([h.data, 'Saldo da conta', '', '', h.auto ? 'movimentos' : 'escrito à mão', num(h.valor), c.nome]);
+  const [cab, ...linhas] = L;
+  linhas.sort((a, b) => a[0] < b[0] ? -1 : a[0] > b[0] ? 1 : 0);
+  return '﻿' + [cab, ...linhas].map(l => l.map(cel).join(';')).join('\r\n');
+}
+async function exportarCSV() {
+  const nome = `dinheiro-${hoje()}.csv`, blob = new Blob([textoCSV()], { type: 'text/csv' });
+  const ficheiro = new File([blob], nome, { type: 'text/csv' });
+  if (navigator.canShare?.({ files: [ficheiro] })) {
+    try { await navigator.share({ files: [ficheiro] }); return; } catch (e) { if (e.name === 'AbortError') return; }
+  }
+  const a = document.createElement('a');
+  a.href = URL.createObjectURL(blob); a.download = nome; a.click();
+  setTimeout(() => URL.revokeObjectURL(a.href), 2000);
 }
 
 function vGrupos(tipo) {
@@ -1197,8 +1423,9 @@ function vGrupos(tipo) {
     h += `<div class="cab-valor"><div class="rot">Total gasto</div><div class="valor-g">${euroG(total)}</div>
       ${gm ? `<div class="leg">média de ${euro(gm.media)} por mês</div>` : ''}</div>`;
     if (!ui.ordenar) {
-      const em = esteMes();
-      if (em) h += cartaoGraf({ titulo: 'Este mês', valor: euroG(em.total), leg: em.leg, graf: em.graf });
+      const em = esteMes(), orc = db.orcamento ? medidorOrc(em ? em.total : 0, db.orcamento) : '';
+      const btnOrc = `<button class="lig" data-a="orcamento">${db.orcamento ? 'Orçamento' : 'Definir orçamento'}</button>`;
+      if (em) h += cartaoGraf({ titulo: 'Este mês', valor: euroG(em.total), leg: em.leg, graf: orc + em.graf, filtros: btnOrc });
       const pv = paraOndeVai();
       if (pv) h += cartaoGraf({ titulo: 'Para onde vai', valor: euroG(pv.total), leg: esc(pv.quando), graf: pv.corpo, filtros: chipsPeriodo() });
     }
@@ -1216,8 +1443,14 @@ function vGrupos(tipo) {
       const ev = evolucao(pts, pts.length ? pts[0][0] : null, { cor: true, semPct: true, rotulo: 'Evolução do que tens a receber' });
       if (ev) h += cartaoEvolucao(ev);
     } else {
+      const totalFixas = db.fixas.reduce((t, fx) => t + fx.valor, 0);
+      h += `<section class="cartao">${cabCartao('Todos os meses', totalFixas ? `<span class="dir">${euro(totalFixas)}/mês</span>` : '')}` +
+        db.fixas.map(linhaFixa).join('') + btnAdicionar('nova-fixa', 'Adicionar despesa fixa') + '</section>';
       const gm = grafGastosMes();
       if (gm) h += cartaoGraf({ titulo: 'Por mês', valor: euroG(gm.media), leg: 'média por mês', graf: gm.graf });
+      const b = balancoMes();
+      if (b) h += cartaoGraf({ titulo: 'Entrou e saiu', valor: euroG(b.saldo), cls: cor(b.saldo),
+        leg: esc(`entrou ${euro(b.entrou)} · gastaste ${euro(b.gastou)} em ${MESES_LONGOS[+mesAtual().slice(5) - 1]}`), graf: b.graf });
     }
   }
   return h;
@@ -1232,6 +1465,8 @@ function vFicha(tipo) {
     <div class="valor-g ${div ? cor(t) : ''}">${euroG(t)}</div><div class="leg">${esc(legenda)}</div>
     <div class="botoes-acao">${botaoAcao('novo-mov', ic.mais, 'Adicionar')}${saldar}${botaoAcao('menu-ficha', ic.mais3, 'Mais')}</div></div>`;
   h += `<section class="cartao nota-cartao"><textarea class="nota" data-campo="nota" rows="1" placeholder="Adicionar nota">${esc(f.nota)}</textarea></section>`;
+  if (!div && f.orcamento) h += `<section class="cartao">${cabCartao(`Orçamento de ${MESES_LONGOS[+mesAtual().slice(5) - 1]}`,
+    `<button class="lig" data-a="orcamento" data-id="${f.id}">Mudar</button>`)}${medidorOrc(gastoMes(f), f.orcamento)}</section>`;
   // os movimentos mais recentes em cima; nos gastos, separados por mês
   const movs = [...movOrdenados(f)].reverse();
   h += `<section class="cartao">${cabCartao('Movimentos')}`;
@@ -2064,7 +2299,7 @@ const COMANDO_MAC = `cd ~/Downloads && curl -fsSL -o Dinheiro.shortcut ${URL_ATA
 function faltaCopia() {
   if (!db.contas.length && db.grupos.every(g => !g.fichas.length)) return false;
   const d = lerPref('copia', null);
-  return !d || diaDe(hoje()) - diaDe(d) > 30;
+  return !d || diaDe(hoje()) - diaDe(d) >= +lerPref('diasCopia', '7');
 }
 
 /** Separador Definições: o tema, o atalho do iPhone e as cópias de segurança. */
@@ -2079,7 +2314,10 @@ function vDefinicoes() {
       <div class="seg tema">${[['', 'Automático'], ['claro', 'Claro'], ['escuro', 'Escuro']].map(([id, nome]) =>
         `<button data-a="tema" data-id="${id}" class="${tema === id ? 'on' : ''}">${nome}</button>`).join('')}</div></section>
     <section class="cartao">${cabCartao('Cópia de segurança')}<p class="texto">${textoCopia()}</p>
-      ${opcao('backup', ic.guardar, 'Guardar cópia de segurança')}
+      ${opcao('backup', ic.guardar, 'Guardar cópia de segurança', 'escolhe Guardar em Ficheiros → iCloud Drive')}
+      <div class="linha"><span class="txt">Lembrar a cada</span><div class="seg curto">${['7', '30'].map(d =>
+        `<button data-a="dias-copia" data-id="${d}" class="${lerPref('diasCopia', '7') === d ? 'on' : ''}">${d} dias</button>`).join('')}</div></div>
+      ${opcao('exportar-csv', ic.tabela, 'Exportar para Excel', 'todos os movimentos numa tabela (.csv)')}
       ${opcao('exportar', ic.partilhar, 'Exportar em texto')}
       ${opcao('repor', ic.repor, 'Repor de um ficheiro')}
       ${opcao('colar', ic.colar, 'Repor colando texto')}</section>
@@ -2175,6 +2413,7 @@ document.addEventListener('click', e => {
   if (!b || b.disabled) return;
   const a = b.dataset.a, id = b.dataset.id;
   const naFicha = () => acharFicha(ui.ficha[ui.tab]);
+  if (b.closest('#f-res')) { camada = null; $('#camada').innerHTML = ''; document.documentElement.classList.remove('travado'); }
 
   switch (a) {
     case 'tab':
@@ -2202,6 +2441,29 @@ document.addEventListener('click', e => {
       return;
     case 'transferir': folhaTransferir(null); return;
     case 'nova-entrada': folhaEntrada(null); return;
+    case 'orcamento': folhaOrcamento(id || ''); return;
+    case 'tirar-orcamento': {
+      const desfaz = pontoDeRetorno(), f = id && acharFicha(id)[1];
+      if (f) delete f.orcamento; else db.orcamento = 0;
+      guardar(); fechar(); render(); toast('Orçamento tirado', desfaz); return;
+    }
+    case 'nova-fixa': folhaFixa(null); return;
+    case 'fixa': folhaFixa(id); return;
+    case 'apagar-fixa': {
+      const desfaz = pontoDeRetorno();
+      db.fixas = db.fixas.filter(x => x.id !== id);
+      guardar(); fechar(); render(); toast('Despesa fixa apagada (os gastos já lançados ficam)', desfaz); return;
+    }
+    case 'novo-objetivo': folhaObjetivo(null); return;
+    case 'objetivo': folhaObjetivo(id); return;
+    case 'apagar-objetivo': {
+      const desfaz = pontoDeRetorno();
+      db.objetivos = db.objetivos.filter(x => x.id !== id);
+      guardar(); fechar(); render(); toast('Objetivo apagado', desfaz); return;
+    }
+    case 'pesquisa': folhaPesquisa(); return;
+    case 'exportar-csv': exportarCSV(); return;
+    case 'dias-copia': gravarPref('diasCopia', id); render(); return;
     case 'entrada': folhaEntrada(id); return;
     case 'apagar-entrada': {
       const e = db.entradas.find(x => x.id === id);
@@ -2243,7 +2505,7 @@ document.addEventListener('click', e => {
       const div = ui.tab === 'dividas';
       acoes(div ? 'Dívidas' : 'Gastos', [
         { texto: div ? 'Nova pessoa' : 'Novo item', fn: escolherGrupoNova },
-        ...(div ? [{ texto: 'Despesa partilhada', fn: folhaPartilha }] : []),
+        ...(div ? [{ texto: 'Despesa partilhada', fn: folhaPartilha }] : [{ texto: 'Orçamento do mês', fn: () => setTimeout(() => folhaOrcamento('')) }, { texto: 'Despesa fixa', fn: () => setTimeout(() => folhaFixa(null)) }]),
         { texto: 'Novo grupo', fn: () => pedirNome('Novo grupo', '', n => db.grupos.push({ id: uid(), nome: n, tipo: ui.tab, fichas: [] })) },
         ...(gruposDe(ui.tab).length > 1 || gruposDe(ui.tab).some(g => g.fichas.length > 1) ? [{ texto: 'Ordenar', fn: () => { ui.ordenar = true; } }] : []),
       ]);
@@ -2261,6 +2523,7 @@ document.addEventListener('click', e => {
     case 'menu-ficha': {
       const [g, f] = naFicha();
       const botoes = [{ texto: 'Mudar nome', fn: () => pedirNome('Mudar nome', f.nome, n => { f.nome = n; }) }];
+      if (g.tipo === 'gastos') botoes.push({ texto: f.orcamento ? 'Mudar orçamento mensal' : 'Orçamento mensal', fn: () => setTimeout(() => folhaOrcamento(f.id)) });
       // por exemplo, passar quem chegou pelo atalho a "Do atalho" para Pais ou Amigos
       const outros = gruposDe(g.tipo).filter(x => x !== g);
       if (outros.length) botoes.push({ texto: 'Mudar de grupo', fn: () => acoes(`Passar ${f.nome} para`, outros.map(x => ({
@@ -2473,6 +2736,7 @@ document.addEventListener('input', e => {
   const t = e.target;
   if (t.id === 'v-conta') { t.style.width = larguraValor(t.value); return; }
   if (t.closest?.('#camada')) {
+    if (t.id === 'f-pesq') { $('#f-res').innerHTML = resultadosPesquisa(t.value); return; }
     if (t.classList.contains('parte')) t.dataset.manual = t.value.trim() || t === document.activeElement ? '1' : '';
     if ((t.matches('.parte, #f-pago') || t.id === 'f-conta') && $('#f-soma')) somaPartilha();
     if (t.matches('#f-valor, #f-conta') && $('#f-ajuda')) ajudaSinal();
@@ -2530,7 +2794,10 @@ addEventListener('hashchange', lerLinkAtalho);
 
 document.documentElement.classList.toggle('oculto', ui.oculto);
 aplicarTema();
+const fixasAoAbrir = lancarFixas();
+if (fixasAoAbrir) guardar();
 render();
+if (fixasAoAbrir) toast(`${fixasAoAbrir === 1 ? 'Lançada 1 despesa fixa' : `Lançadas ${fixasAoAbrir} despesas fixas`} em Gastos`);
 if (!location.hash.startsWith('#atalho=')) setTimeout(perguntarAtalho, 400); // com um link, o movimento que entra fica à vista
 lerLinkAtalho();
 navigator.storage?.persist?.();
@@ -2545,7 +2812,11 @@ let versaoAberta = null, toques = 0;
 paginaNoServidor().then(v => { versaoAberta = v; });
 document.addEventListener('click', () => { toques++; }, true);
 document.addEventListener('visibilitychange', async () => {
-  if (document.visibilityState !== 'visible' || versaoAberta === null) return;
+  if (document.visibilityState !== 'visible') return;
+  // a app pode ficar aberta de um dia para o outro: as despesas fixas que chegaram ao dia entram ao voltar
+  const n = lancarFixas();
+  if (n) { guardar(); if (!camada) render(); toast(`${n === 1 ? 'Lançada 1 despesa fixa' : `Lançadas ${n} despesas fixas`} em Gastos`); }
+  if (versaoAberta === null) return;
   const antes = toques;
   const v = await paginaNoServidor();
   // se entretanto se tocou em algo (ex.: "Escolher atalho.txt" já abriu os Ficheiros), fica para a próxima vez
