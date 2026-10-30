@@ -455,6 +455,10 @@ function ordenarHist(c) {
   });
   c.valor = c.hist[c.hist.length - 1].valor;
 }
+/** Os tipos de gastos com que se começa (podem mudar-se em Definições). */
+const TIPOS_INICIAIS = [['supermercado', 'Supermercado'], ['restaurantes', 'Restaurantes e cafés'], ['combustivel', 'Combustível'],
+  ['transportes', 'Transportes'], ['casa', 'Casa e contas'], ['saude', 'Saúde'], ['lazer', 'Lazer e desporto'], ['compras', 'Compras'],
+  ['subscricoes', 'Subscrições'], ['viagens', 'Viagens'], ['outros', 'Outros']];
 /** Acrescenta a dados antigos o que as versões novas precisam (o histórico das contas começa hoje). */
 function migrar(d) {
   for (const c of d.contas) {
@@ -466,6 +470,8 @@ function migrar(d) {
   if (!Array.isArray(d.fixas)) d.fixas = []; // despesas fixas, lançadas sozinhas todos os meses
   if (!Array.isArray(d.objetivos)) d.objetivos = []; // objetivos de poupança
   if (typeof d.orcamento !== 'number') d.orcamento = 0; // orçamento mensal dos gastos (0 = sem orçamento)
+  if (!Array.isArray(d.categorias)) d.categorias = TIPOS_INICIAIS.map(([id, nome]) => ({ id, nome })); // tipos de gastos
+  if (!d.catDesc || typeof d.catDesc !== 'object') d.catDesc = {}; // descrição → tipo escolhido (aprende com as escolhas)
   d.versao = 2;
   return d;
 }
@@ -1032,7 +1038,7 @@ const linhaRecente = ({ m, f, g, t, e }) => {
 /** Um movimento dentro de uma pessoa ou item: descrição, data (e a conta por onde passou) e valor. */
 function linhaMov(m, gasto, f) {
   const v = valorMov(m, gasto), c = m.conta ? db.contas.find(c => c.id === m.conta) : contaVia(m, f, gasto);
-  const sub = [dataCurta(m.data), m.fixa ? 'fixa' : '', m.pago ? 'pago' : '', m.partilha ? 'partilhado' : '', c ? (m.partilha || (m.descontado || m.valor) > 0 ? `pago com ${c.nome}` : `recebido em ${c.nome}`) : ''];
+  const sub = [dataCurta(m.data), gasto ? nomeTipo(tipoDe(m, f)) : '', m.fixa ? 'fixa' : '', m.pago ? 'pago' : '', m.partilha ? 'partilhado' : '', c ? (m.partilha || (m.descontado || m.valor) > 0 ? `pago com ${c.nome}` : `recebido em ${c.nome}`) : ''];
   return `<button class="linha mov${m.pago ? ' pago' : ''}" data-a="mov" data-id="${m.id}"><div class="txt"><div class="tit${m.desc ? '' : ' sec'}">${esc(m.desc || 'Sem descrição')}</div>` +
     `<div class="sub">${esc(sub.filter(Boolean).join(' · '))}</div></div><div class="val ${v.cls}">${v.texto}</div></button>`;
 }
@@ -1206,6 +1212,94 @@ function linhaFicha(f, div) {
   });
 }
 
+/* ---------- tipos de gastos ---------- */
+// palavras (sem acentos nem maiúsculas) que dizem o tipo de um gasto pela descrição ou pelo nome do item
+const PALAVRAS_TIPO = {
+  supermercado: /\b(continente|pingo doce|lidl|aldi|mercadona|intermarche|minipreco|auchan|supermercado|mercearia|talho|padaria|compras casa)\b/,
+  restaurantes: /\b(restaurante|jantar|almoco|lanche|cafe|pequeno almoco|mcdonalds|mc donalds|burger|pizza|sushi|kebab|tasca|bar|cerveja|fino|finos|bebida|bebidas|uber eats|glovo|bolt food|comida|gelado)\b/,
+  combustivel: /\b(gasoleo|gasolina|combustivel|galp|repsol|bp|cepsa|prio|abastecer|abastecimento)\b/,
+  transportes: /\b(uber|bolt|taxi|cp|comboio|metro|autocarro|carris|portagem|portagens|via verde|estacionamento|passe|navegante|flixbus)\b/,
+  casa: /\b(renda|luz|agua|gas|eletricidade|edp|internet|meo|nos|vodafone|condominio|seguro)\b/,
+  saude: /\b(farmacia|medico|consulta|dentista|hospital|clinica|analises|oculos)\b/,
+  lazer: /\b(cinema|concerto|bilhete|bilhetes|festa|festival|discoteca|jogo|futebol|museu|ginasio|padel|livro|livros)\b/,
+  compras: /\b(roupa|sapatos|zara|primark|pull|fnac|worten|amazon|ikea|decathlon|presente|prenda|telemovel)\b/,
+  subscricoes: /\b(netflix|spotify|hbo|max|disney|youtube|icloud|prime|subscricao|mensalidade|chatgpt)\b/,
+  viagens: /\b(hotel|hostel|alojamento|airbnb|booking|voo|voos|aviao|ryanair|tap|easyjet|interrail|viagem|ferias)\b/,
+};
+const tipoExiste = id => !!id && db.categorias.some(c => c.id === id);
+const nomeTipo = id => db.categorias.find(c => c.id === id)?.nome || 'Outros';
+const slotTipo = id => Math.max(0, db.categorias.findIndex(c => c.id === id)) % 8;
+function adivinharTipo(texto) {
+  const t = norm(texto || '');
+  if (!t) return '';
+  for (const [id, re] of Object.entries(PALAVRAS_TIPO)) if (tipoExiste(id) && re.test(t)) return id;
+  return '';
+}
+/** O tipo de um gasto: o escolhido no movimento, o do item, o escolhido antes para essa descrição, ou adivinhado. */
+function tipoDe(m, f) {
+  if (tipoExiste(m.cat)) return m.cat;
+  if (tipoExiste(f?.cat)) return f.cat;
+  const d = m.desc && db.catDesc[norm(m.desc)];
+  if (tipoExiste(d)) return d;
+  return adivinharTipo(m.desc) || adivinharTipo(f?.nome) || 'outros';
+}
+/** «Por tipo»: quanto foi para cada tipo de gasto no período escolhido, com as descrições que mais pesam. */
+function porTipo() {
+  const movs = gruposDe('gastos').flatMap(g => g.fichas.flatMap(f => f.movimentos.map(m => [m, f])));
+  if (!movs.length) return null;
+  const [, texto, dias] = PERIODOS.find(p => p[0] === ui.periodo) || PERIODOS[3];
+  const desde = diaDe(hoje()) - dias, inicio = Math.min(...movs.map(([m]) => diaDe(m.data)));
+  const tipos = new Map();
+  let total = 0;
+  for (const [m, f] of movs) {
+    if (diaDe(m.data) <= desde) continue;
+    const id = tipoDe(m, f), x = tipos.get(id) || { id, valor: 0, n: 0, desc: new Map() };
+    x.valor += m.valor; x.n++; total += m.valor;
+    const k = norm(m.desc || f.nome), d = x.desc.get(k) || { texto: m.desc || f.nome, v: 0 };
+    d.v += m.valor; x.desc.set(k, d); tipos.set(id, x);
+  }
+  const partes = [...tipos.values()].filter(x => x.valor > 0).sort((a, b) => b.valor - a.valor);
+  const soma = partes.reduce((t, x) => t + x.valor, 0);
+  const linhaT = x => {
+    const q = x.valor / soma, top = [...x.desc.values()].filter(d => d.v > 0).sort((a, b) => b.v - a.v).slice(0, 3).map(d => d.texto).join(' · ');
+    return `<button class="linha gasto-parte" data-a="ver-tipo" data-id="${x.id}">${avatar(nomeTipo(x.id), slotTipo(x.id))}<div class="txt">
+      <div class="parte-l"><span class="tit">${esc(nomeTipo(x.id))}</span><span class="val">${euro(x.valor)}</span></div>
+      <div class="parte-l"><span class="sub">${esc(top || `${x.n} movimentos`)}</span><span class="pct">${fmtPct.format(q)}</span></div>
+      <div class="medidor" aria-hidden="true"><span style="width:${r1(q * 100)}%"></span></div></div></button>`;
+  };
+  return {
+    total, quando: inicio > desde ? 'desde ' + dataPT(isoDe(inicio)) : texto,
+    corpo: partes.length ? `<div class="partes">${partes.map(linhaT).join('')}</div>` : '<p class="texto">Sem gastos neste período.</p>',
+  };
+}
+/** Os gastos de um tipo no período escolhido; tocar num abre-o (para mudar o tipo, por exemplo). */
+function folhaTipo(id) {
+  const [, texto, dias] = PERIODOS.find(p => p[0] === ui.periodo) || PERIODOS[3], desde = diaDe(hoje()) - dias;
+  const L = [];
+  for (const g of gruposDe('gastos')) for (const f of g.fichas) f.movimentos.forEach((m, i) => {
+    if (diaDe(m.data) > desde && tipoDe(m, f) === id) L.push({ m, f, g, i, data: m.data });
+  });
+  L.sort((a, b) => a.data < b.data ? 1 : a.data > b.data ? -1 : b.i - a.i);
+  const total = L.reduce((t, x) => t + x.m.valor, 0);
+  const linhas = L.map(({ m, f }) => {
+    const v = valorMov(m, true);
+    return `<button class="linha" data-a="abrir-mov" data-tipo="gastos" data-id="${f.id}" data-mov="${m.id}">${avatar(f.nome)}<div class="txt">` +
+      `<div class="tit">${esc(m.desc || f.nome)}</div><div class="sub">${esc(`${f.nome} · ${dataCurta(m.data)}`)}</div></div><div class="val ${v.cls}">${v.texto}</div></button>`;
+  }).join('');
+  abrir({
+    tipo: 'folha', titulo: nomeTipo(id), ok: false,
+    corpo: `<div id="f-res"><section class="cartao">${cabCartao(`${L.length} ${L.length === 1 ? 'gasto' : 'gastos'}${texto ? ' ' + texto : ''}`, `<span class="dir">${euro(total)}</span>`)}${linhas}</section></div>
+      <p class="rodape">Toca num gasto para lhe mudar o tipo. Os outros com a mesma descrição mudam também.</p>`,
+  });
+}
+/** Escolher o tipo de todos os gastos de um item (ex.: uma viagem). */
+function escolherTipoItem(f) {
+  acoes(`Tipo dos gastos de ${f.nome}`, [
+    { texto: `Automático (pela descrição)`, fn: () => { delete f.cat; } },
+    ...db.categorias.map(c => ({ texto: c.nome + (f.cat === c.id ? ' ✓' : ''), fn: () => { f.cat = c.id; } })),
+  ]);
+}
+
 /* ---------- orçamento ---------- */
 /** "620 € de 800 €" e a barra (vermelha quando passa). */
 function medidorOrc(gasto, limite, quando = '') {
@@ -1370,7 +1464,7 @@ function resultadosPesquisa(q) {
   const nomeConta = id => db.contas.find(c => c.id === id)?.nome || '';
   const L = [];
   for (const g of db.grupos) for (const f of g.fichas) f.movimentos.forEach((m, i) => {
-    if (tem(m.desc, f.nome, g.nome, nomeConta(m.conta || m.viaConta))) L.push({ m, f, g, i, data: m.data });
+    if (tem(m.desc, f.nome, g.nome, nomeConta(m.conta || m.viaConta), g.tipo === 'gastos' ? nomeTipo(tipoDe(m, f)) : '')) L.push({ m, f, g, i, data: m.data });
   });
   db.entradas.forEach((e, i) => { if (tem(e.desc, 'entrada', nomeConta(e.conta || e.viaConta))) L.push({ e, i, data: e.data }); });
   db.transferencias.forEach((t, i) => { if (tem(t.desc, 'transferência', nomeConta(t.de), nomeConta(t.para))) L.push({ t, i, data: t.data }); });
@@ -1389,12 +1483,12 @@ function textoCSV() {
   const cel = v => /[";\n]/.test(String(v)) ? `"${String(v).replace(/"/g, '""')}"` : String(v);
   const num = c => (c / 100).toFixed(2).replace('.', ',');
   const nomeConta = id => db.contas.find(c => c.id === id)?.nome || '';
-  const L = [['Data', 'Tipo', 'Grupo', 'Item ou pessoa', 'Descrição', 'Valor', 'Conta']];
+  const L = [['Data', 'Tipo', 'Grupo', 'Item ou pessoa', 'Descrição', 'Valor', 'Conta', 'Tipo de gasto']];
   for (const g of db.grupos) for (const f of g.fichas) for (const m of f.movimentos)
-    L.push([m.data, g.tipo === 'gastos' ? 'Gasto' : 'Dívida', g.nome, f.nome, m.desc || '', num(m.valor), nomeConta(m.conta || m.viaConta)]);
-  for (const e of db.entradas) L.push([e.data, 'Entrada', '', '', e.desc || '', num(e.valor), nomeConta(e.conta || e.viaConta)]);
-  for (const t of db.transferencias) L.push([t.data, 'Transferência', '', '', t.desc || '', num(t.valor), `${nomeConta(t.de)} → ${nomeConta(t.para)}`]);
-  for (const c of db.contas) for (const h of c.hist) L.push([h.data, 'Saldo da conta', '', '', h.auto ? 'movimentos' : 'escrito à mão', num(h.valor), c.nome]);
+    L.push([m.data, g.tipo === 'gastos' ? 'Gasto' : 'Dívida', g.nome, f.nome, m.desc || '', num(m.valor), nomeConta(m.conta || m.viaConta), g.tipo === 'gastos' ? nomeTipo(tipoDe(m, f)) : '']);
+  for (const e of db.entradas) L.push([e.data, 'Entrada', '', '', e.desc || '', num(e.valor), nomeConta(e.conta || e.viaConta), '']);
+  for (const t of db.transferencias) L.push([t.data, 'Transferência', '', '', t.desc || '', num(t.valor), `${nomeConta(t.de)} → ${nomeConta(t.para)}`, '']);
+  for (const c of db.contas) for (const h of c.hist) L.push([h.data, 'Saldo da conta', '', '', h.auto ? 'movimentos' : 'escrito à mão', num(h.valor), c.nome, '']);
   const [cab, ...linhas] = L;
   linhas.sort((a, b) => a[0] < b[0] ? -1 : a[0] > b[0] ? 1 : 0);
   return '﻿' + [cab, ...linhas].map(l => l.map(cel).join(';')).join('\r\n');
@@ -1428,6 +1522,8 @@ function vGrupos(tipo) {
       const em = esteMes(), orc = db.orcamento ? medidorOrc(em ? em.total : 0, db.orcamento) : '';
       const btnOrc = `<button class="lig" data-a="orcamento">${db.orcamento ? 'Orçamento' : 'Definir orçamento'}</button>`;
       if (em) h += cartaoGraf({ titulo: 'Este mês', valor: euroG(em.total), leg: em.leg, graf: orc + em.graf, filtros: btnOrc });
+      const pt = porTipo();
+      if (pt) h += cartaoGraf({ titulo: 'Por tipo', valor: euroG(pt.total), leg: esc(pt.quando), graf: pt.corpo, filtros: chipsPeriodo() });
       const pv = paraOndeVai();
       if (pv) h += cartaoGraf({ titulo: 'Para onde vai', valor: euroG(pv.total), leg: esc(pv.quando), graf: pv.corpo, filtros: chipsPeriodo() });
     }
@@ -1697,6 +1793,8 @@ function folhaMov(movId) {
         <div class="linha campo-val"><input id="f-valor" class="valor-grande" inputmode="decimal" placeholder="0,00" value="${m ? numero(m.valor) : ''}" autocomplete="off" autofocus><span>€</span></div>
         <div class="linha"><input id="f-desc" placeholder="Descrição" value="${esc(m?.desc)}" autocomplete="off"></div>
         <label class="linha"><span class="txt">Data</span><input type="date" id="f-data" value="${m?.data || hoje()}"></label>
+        ${div ? '' : `<label class="linha"><span class="txt">Tipo</span><select id="f-tipo"><option value="">Automático${m ? ` (${esc(nomeTipo(tipoDe({ ...m, cat: '' }, f)))})` : ''}</option>${db.categorias.map(c =>
+          `<option value="${c.id}"${c.id === m?.cat ? ' selected' : ''}>${esc(c.nome)}</option>`).join('')}</select></label>`}
         ${db.contas.length ? `<label class="linha"><span class="txt">Conta</span><select id="f-conta"><option value="">Nenhuma</option>${db.contas.map(c =>
           `<option value="${c.id}"${c.id === contaMov ? ' selected' : ''}>${esc(c.nome)}</option>`).join('')}</select></label>` : ''}
       </div>
@@ -1710,6 +1808,9 @@ function folhaMov(movId) {
       const v = lerValor($('#f-valor').value);
       if (v === null) return erro('#f-valor');
       const dados = { valor: camada.sinal ? -Math.abs(v) : v, desc: $('#f-desc').value.trim(), data: $('#f-data').value || hoje() };
+      // o tipo escolhido fica para esta descrição: os outros gastos com ela (e os que vierem) passam a esse tipo
+      const tipo = $('#f-tipo')?.value || '';
+      if (tipo) { dados.cat = tipo; if (dados.desc) db.catDesc[norm(dados.desc)] = tipo; }
       const c = db.contas.find(x => x.id === $('#f-conta')?.value) || null;
       // numa despesa partilhada, a conta pagou o total: muda na mesma medida que a tua parte
       const quanto = m?.partilha && m.descontado ? m.descontado + (dados.valor - m.valor) : dados.valor;
@@ -1719,6 +1820,7 @@ function folhaMov(movId) {
         const mesma = c && (m.conta || via?.id) === c.id;
         if (m.conta && (!mesma || dados.valor !== m.valor || dados.data !== m.data)) mexeu = ajustarDesconto(m, mesma ? dados : null);
         if (!mesma) delete m.viaConta;
+        if (!tipo) delete m.cat;
         if (m.total != null) m.total += dados.valor - m.valor; // o total pago muda na mesma medida que a tua parte
         Object.assign(m, dados);
         if (c && !mesma) mexeu = ligarNova(m, c, quanto) || mexeu;
@@ -2352,6 +2454,8 @@ function vDefinicoes() {
       ${opcao('exportar', ic.partilhar, 'Exportar em texto')}
       ${opcao('repor', ic.repor, 'Repor de um ficheiro')}
       ${opcao('colar', ic.colar, 'Repor colando texto')}</section>
+    <section class="cartao">${cabCartao('Tipos de gastos')}${db.categorias.map(c => linha(c.nome, '', { a: 'tipo-def', id: c.id, avatar: avatar(c.nome, slotTipo(c.id)) })).join('')}
+      ${btnAdicionar('novo-tipo', 'Novo tipo')}</section>
     <section class="cartao">${cabCartao('Atalho do iPhone')}<p class="texto">Última importação: ${quando}.</p>
       ${opcao('ficheiro-atalho', ic.ficheiro, 'Escolher atalho.txt')}
       ${opcao('colar-atalho', ic.colar, 'Colar o que o atalho copiou')}
@@ -2493,6 +2597,19 @@ document.addEventListener('click', e => {
       guardar(); fechar(); render(); toast('Objetivo apagado', desfaz); return;
     }
     case 'pesquisa': folhaPesquisa(); return;
+    case 'ver-tipo': folhaTipo(id); return;
+    case 'abrir-mov': // abre o item e logo a folha do movimento
+      irPara(b.dataset.tipo); ui.ficha[ui.tab] = id; ui.anim = 'entra';
+      render(); scrollTo(0, 0); folhaMov(b.dataset.mov); return;
+    case 'novo-tipo': pedirNome('Novo tipo de gasto', '', n => db.categorias.push({ id: uid(), nome: n })); return;
+    case 'tipo-def': {
+      const c = db.categorias.find(x => x.id === id);
+      if (!c) return;
+      acoes(c.nome, [{ texto: 'Mudar nome', fn: () => setTimeout(() => pedirNome('Mudar nome', c.nome, n => { c.nome = n; })) },
+        ...(c.id === 'outros' ? [] : [{ texto: 'Apagar tipo (os gastos voltam a ser adivinhados)', perigo: true, desfazer: 'Tipo apagado',
+          fn: () => { db.categorias = db.categorias.filter(x => x !== c); } }])]);
+      return;
+    }
     case 'exportar-csv': exportarCSV(); return;
     case 'dias-copia': gravarPref('diasCopia', id); render(); return;
     case 'entrada': folhaEntrada(id); return;
@@ -2554,7 +2671,8 @@ document.addEventListener('click', e => {
     case 'menu-ficha': {
       const [g, f] = naFicha();
       const botoes = [{ texto: 'Mudar nome', fn: () => pedirNome('Mudar nome', f.nome, n => { f.nome = n; }) }];
-      if (g.tipo === 'gastos') botoes.push({ texto: f.orcamento ? 'Mudar orçamento mensal' : 'Orçamento mensal', fn: () => setTimeout(() => folhaOrcamento(f.id)) });
+      if (g.tipo === 'gastos') botoes.push({ texto: f.orcamento ? 'Mudar orçamento mensal' : 'Orçamento mensal', fn: () => setTimeout(() => folhaOrcamento(f.id)) },
+        { texto: `Tipo dos gastos: ${tipoExiste(f.cat) ? nomeTipo(f.cat) : 'automático'}`, fn: () => setTimeout(() => escolherTipoItem(f)) });
       // por exemplo, passar quem chegou pelo atalho a "Do atalho" para Pais ou Amigos
       const outros = gruposDe(g.tipo).filter(x => x !== g);
       if (outros.length) botoes.push({ texto: 'Mudar de grupo', fn: () => acoes(`Passar ${f.nome} para`, outros.map(x => ({
