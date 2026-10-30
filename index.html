@@ -271,7 +271,9 @@ input[type=month] { width: auto; text-align: right; color: var(--acc); font-weig
 /* folhas e menus */
 #camada .fundo { position: fixed; inset: 0; z-index: 10; background: rgba(0,0,0,.4); animation: aparece .25s; cursor: pointer; }
 .folha {
-  position: fixed; left: 0; right: 0; bottom: 0; top: calc(env(safe-area-inset-top) + 10px); z-index: 11;
+  /* do topo ao fundo da parte do ecrã que se vê (com o teclado aberto, fica por cima dele) */
+  position: fixed; left: 0; right: 0; top: calc(var(--vv-topo, 0px) + env(safe-area-inset-top) + 10px); z-index: 11;
+  height: calc(var(--vv-alt, 100dvh) - env(safe-area-inset-top) - 10px);
   max-width: 640px; margin: 0 auto; background: var(--bg); border-radius: 28px 28px 0 0;
   display: flex; flex-direction: column; animation: sobe .34s cubic-bezier(.2,.8,.2,1);
 }
@@ -1524,12 +1526,41 @@ function render() {
 }
 
 /* ---------- folhas e menus ---------- */
+/*
+ * No iPhone, o teclado de um campo numa folha fazia a página de trás deslizar e a folha ficava descaída (era preciso
+ * puxá-la para cima). Com uma folha aberta, a página fica presa onde estava (position: fixed, que o overflow não
+ * chega para isso no iPhone) e a folha acompanha a parte do ecrã que se vê por cima do teclado (visualViewport).
+ */
+let presoEm = null; // o scroll da página quando ficou presa
+function travar() {
+  if (presoEm !== null) return;
+  presoEm = scrollY;
+  Object.assign(document.body.style, { position: 'fixed', top: `-${presoEm}px`, left: '0', right: '0' });
+  document.documentElement.classList.add('travado');
+}
+function destravar() {
+  document.documentElement.classList.remove('travado');
+  if (presoEm === null) return;
+  const y = presoEm;
+  presoEm = null;
+  Object.assign(document.body.style, { position: '', top: '', left: '', right: '' });
+  scrollTo(0, y);
+}
+function ajustarAoEcra() {
+  const vv = window.visualViewport, r = document.documentElement.style;
+  if (!vv) return;
+  r.setProperty('--vv-topo', `${vv.offsetTop}px`);
+  r.setProperty('--vv-alt', `${vv.height}px`);
+}
+window.visualViewport?.addEventListener('resize', ajustarAoEcra);
+window.visualViewport?.addEventListener('scroll', ajustarAoEcra);
+ajustarAoEcra();
 function abrir(c) {
   camada = c;
   const el = $('#camada');
   el.className = '';
   el.innerHTML = '<div class="fundo" data-a="fechar"></div>' + (c.tipo === 'acoes' ? vAcoes(c) : vFolha(c));
-  document.documentElement.classList.add('travado');
+  travar();
   const foco = el.querySelector('[autofocus]');
   if (foco) { foco.focus(); if (foco.value) foco.select(); }
   c.depois?.();
@@ -1542,7 +1573,7 @@ function fechar() {
   setTimeout(() => {
     if (camada !== aFechar) return; // entretanto abriu-se outra
     camada = null; el.innerHTML = ''; el.className = '';
-    document.documentElement.classList.remove('travado');
+    destravar();
   }, 240);
 }
 // Folha que sobe de baixo: título grande, os campos, o botão principal e, no fim, o botão de apagar (extra).
@@ -1808,7 +1839,7 @@ function colar() {
     guardar: () => {
       const t = $('#f-dados').value;
       if (!t.trim()) return erro('#f-dados');
-      camada = null; $('#camada').innerHTML = ''; document.documentElement.classList.remove('travado');
+      camada = null; $('#camada').innerHTML = ''; destravar();
       if (t.trim().startsWith('{')) importar(t); else importarAtalho(t, 'colado');
       return false;
     },
@@ -2413,7 +2444,7 @@ document.addEventListener('click', e => {
   if (!b || b.disabled) return;
   const a = b.dataset.a, id = b.dataset.id;
   const naFicha = () => acharFicha(ui.ficha[ui.tab]);
-  if (b.closest('#f-res')) { camada = null; $('#camada').innerHTML = ''; document.documentElement.classList.remove('travado'); }
+  if (b.closest('#f-res')) { camada = null; $('#camada').innerHTML = ''; destravar(); }
 
   switch (a) {
     case 'tab':
@@ -2636,7 +2667,7 @@ document.addEventListener('click', e => {
     case 'guardar-folha': if (camada?.guardar() === true) { guardar(); fechar(); render(); } return;
     case 'acao': {
       const botao = camada.botoes[+id], desfaz = botao.desfazer && pontoDeRetorno();
-      camada = null; $('#camada').innerHTML = ''; document.documentElement.classList.remove('travado');
+      camada = null; $('#camada').innerHTML = ''; destravar();
       botao.fn(); guardar(); render();
       if (desfaz) toast(botao.desfazer, desfaz);
       return;
