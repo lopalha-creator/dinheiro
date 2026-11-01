@@ -225,6 +225,10 @@ code { font: 700 14px/1.3 ui-monospace, Menlo, monospace; background: var(--fill
 .orc { padding: 2px 16px 12px; }
 .orc-l { display: flex; justify-content: space-between; gap: 12px; font-size: 13px; font-weight: 700; color: var(--sec); font-variant-numeric: tabular-nums; }
 .orc-l .neg { color: var(--verm); }
+.orc-btn { display: block; width: 100%; }
+.setas { display: flex; gap: 6px; }
+.setas .icbtn { font-size: 22px; font-weight: 700; line-height: 1; color: var(--acc); }
+.setas .icbtn:disabled { color: var(--ter); }
 .seg.curto { flex: none; }
 .seg.curto button { white-space: nowrap; padding-left: 12px; padding-right: 12px; }
 input[type=month] { width: auto; text-align: right; color: var(--acc); font-weight: 700; }
@@ -823,13 +827,14 @@ const fmtDiaSemana = new Intl.DateTimeFormat('pt-PT', { weekday: 'long', day: 'n
  * «Este mês»: os gastos de cada dia do mês atual em colunas (o mês todo, para se ver quanto falta),
  * o total do mês e a comparação com o mês passado até ao mesmo dia. Devolve null se ainda não há gastos.
  */
-function esteMes() {
+function esteMes(chave = mesAtual()) {
   const movs = movGastos();
   if (!movs.length) return null;
-  const h = hoje(), [a, m, d] = h.split('-').map(Number);
+  const [a, m] = chave.split('-').map(Number), atual = chave === mesAtual();
   const [aa, ma] = m === 1 ? [a - 1, 12] : [a, m - 1];
   const nDias = new Date(Date.UTC(a, m, 0)).getUTCDate(), nAnt = new Date(Date.UTC(aa, ma, 0)).getUTCDate();
-  const chave = h.slice(0, 7), chaveAnt = `${aa}-${String(ma).padStart(2, '0')}`;
+  const d = atual ? +hoje().slice(8, 10) : nDias; // num mês que já acabou, conta o mês todo
+  const chaveAnt = `${aa}-${String(ma).padStart(2, '0')}`;
   const ate = Math.min(d, nAnt); // no mês passado conta até ao mesmo dia (ou o mês todo, se for mais curto)
   const porDia = Array(nDias).fill(0);
   let total = 0, ateHoje = 0, antes = 0, haAntes = false;
@@ -844,7 +849,7 @@ function esteMes() {
   let leg;
   if (haAntes && cobre) {
     const dv = ateHoje - antes;
-    leg = `<span class="${dv > 0 ? 'neg' : dv < 0 ? 'pos' : ''}">${dv > 0 ? '▲' : dv < 0 ? '▼' : '='} ${euro(Math.abs(dv))}</span> face a ${MESES_LONGOS[ma - 1]}${d < nAnt ? `, até ao dia ${d}` : ''}`;
+    leg = `<span class="${dv > 0 ? 'neg' : dv < 0 ? 'pos' : ''}">${dv > 0 ? '▲' : dv < 0 ? '▼' : '='} ${euro(Math.abs(dv))}</span> face a ${MESES_LONGOS[ma - 1]}${atual && d < nAnt ? `, até ao dia ${d}` : ''}`;
   } else leg = esc(`média de ${euro(Math.round(ateHoje / d))} por dia`);
   const barras = porDia.map((v, i) => ({
     rot: i === 0 || (i + 1) % 5 === 0 ? String(i + 1) : '',
@@ -856,8 +861,21 @@ function esteMes() {
   return {
     total, leg,
     graf: porDia.some(v => v) ? grafColunas(barras, { destaque: 'todos', rotulos: true, desc })
-      : `<p class="texto">Ainda não há gastos em ${mes}.</p>`,
+      : `<p class="texto">${atual ? 'Ainda não há' : 'Não houve'} gastos em ${mes}.</p>`,
   };
+}
+/** O primeiro mês com gastos (até onde se pode recuar no cartão do mês). */
+const primeiroMesGastos = () => movGastos().reduce((k, m) => m.data.slice(0, 7) < k ? m.data.slice(0, 7) : k, mesAtual());
+const mesAnterior = k => { let [a, m] = k.split('-').map(Number); if (--m < 1) { m = 12; a--; } return `${a}-${String(m).padStart(2, '0')}`; };
+/** Os tipos de gasto de um mês, do maior para o menor; tocar num mostra os gastos dele nesse mês. */
+function tiposDoMes(k) {
+  const t = new Map();
+  for (const g of gruposDe('gastos')) for (const f of g.fichas) for (const m of f.movimentos)
+    if (m.data.startsWith(k)) { const id = tipoDe(m, f); t.set(id, (t.get(id) || 0) + m.valor); }
+  const partes = [...t].filter(([, v]) => v > 0).sort((a, b) => b[1] - a[1]), soma = partes.reduce((s, [, v]) => s + v, 0);
+  return partes.map(([id, v]) => `<button class="linha gasto-parte" data-a="ver-tipo" data-id="${id}" data-mes="${k}">${avatar(nomeTipo(id), slotTipo(id))}<div class="txt">
+    <div class="parte-l"><span class="tit">${esc(nomeTipo(id))}</span><span class="val">${euro(v)}</span></div>
+    <div class="medidor" aria-hidden="true"><span style="width:${r1(v / soma * 100)}%"></span></div></div><span class="pct">${fmtPct.format(v / soma)}</span></button>`).join('');
 }
 
 /**
@@ -1272,12 +1290,16 @@ function porTipo() {
     corpo: partes.length ? `<div class="partes">${partes.map(linhaT).join('')}</div>` : '<p class="texto">Sem gastos neste período.</p>',
   };
 }
-/** Os gastos de um tipo no período escolhido; tocar num abre-o (para mudar o tipo, por exemplo). */
-function folhaTipo(id) {
-  const [, texto, dias] = PERIODOS.find(p => p[0] === ui.periodo) || PERIODOS[3], desde = diaDe(hoje()) - dias;
+/**
+ * Os gastos de um tipo (id) e/ou de um mês (mes); sem mês, no período escolhido. Tocar num abre-o (para mudar o
+ * tipo, por exemplo).
+ */
+function folhaTipo(id, mes = '') {
+  let [, texto, dias] = PERIODOS.find(p => p[0] === ui.periodo) || PERIODOS[3], desde = diaDe(hoje()) - dias;
+  if (mes) texto = `em ${MESES_LONGOS[+mes.slice(5) - 1]}${mes.slice(0, 4) === hoje().slice(0, 4) ? '' : ' de ' + mes.slice(0, 4)}`;
   const L = [];
   for (const g of gruposDe('gastos')) for (const f of g.fichas) f.movimentos.forEach((m, i) => {
-    if (diaDe(m.data) > desde && tipoDe(m, f) === id) L.push({ m, f, g, i, data: m.data });
+    if ((mes ? m.data.startsWith(mes) : diaDe(m.data) > desde) && (!id || tipoDe(m, f) === id)) L.push({ m, f, g, i, data: m.data });
   });
   L.sort((a, b) => a.data < b.data ? 1 : a.data > b.data ? -1 : b.i - a.i);
   const total = L.reduce((t, x) => t + x.m.valor, 0);
@@ -1287,9 +1309,9 @@ function folhaTipo(id) {
       `<div class="tit">${esc(m.desc || f.nome)}</div><div class="sub">${esc(`${f.nome} · ${dataCurta(m.data)}`)}</div></div><div class="val ${v.cls}">${v.texto}</div></button>`;
   }).join('');
   abrir({
-    tipo: 'folha', titulo: nomeTipo(id), ok: false,
+    tipo: 'folha', titulo: id ? nomeTipo(id) : 'Gastos', ok: false,
     corpo: `<div id="f-res"><section class="cartao">${cabCartao(`${L.length} ${L.length === 1 ? 'gasto' : 'gastos'}${texto ? ' ' + texto : ''}`, `<span class="dir">${euro(total)}</span>`)}${linhas}</section></div>
-      <p class="rodape">Toca num gasto para lhe mudar o tipo. Os outros com a mesma descrição mudam também.</p>`,
+      <p class="rodape">${L.length ? 'Toca num gasto para o abrir (e, se quiseres, mudar-lhe o tipo).' : ''}</p>`,
   });
 }
 /** Escolher o tipo de todos os gastos de um item (ex.: uma viagem). */
@@ -1519,9 +1541,24 @@ function vGrupos(tipo) {
     h += `<div class="cab-valor"><div class="rot">Total gasto</div><div class="valor-g">${euroG(total)}</div>
       ${gm ? `<div class="leg">média de ${euro(gm.media)} por mês</div>` : ''}</div>`;
     if (!ui.ordenar) {
-      const em = esteMes(), orc = db.orcamento ? medidorOrc(em ? em.total : 0, db.orcamento) : '';
-      const btnOrc = `<button class="lig" data-a="orcamento">${db.orcamento ? 'Orçamento' : 'Definir orçamento'}</button>`;
-      if (em) h += cartaoGraf({ titulo: 'Este mês', valor: euroG(em.total), leg: em.leg, graf: orc + em.graf, filtros: btnOrc });
+      // o mês à vista (setas para os anteriores): por dia, o orçamento, os tipos e a lista dos gastos
+      const primeiro = primeiroMesGastos();
+      if (!ui.mesGastos || ui.mesGastos > mesAtual() || ui.mesGastos < primeiro) ui.mesGastos = mesAtual();
+      const k = ui.mesGastos, em = esteMes(k), nomeMes = MESES_LONGOS[+k.slice(5) - 1];
+      if (em) {
+        const ant = mesAnterior(k), seg = mesSeguinte(k);
+        const setas = `<span class="dir setas"><button class="icbtn peq" data-a="mes-gastos" data-id="${ant}" aria-label="Mês anterior"${ant < primeiro ? ' disabled' : ''}>‹</button>` +
+          `<button class="icbtn peq" data-a="mes-gastos" data-id="${seg}" aria-label="Mês seguinte"${seg > mesAtual() ? ' disabled' : ''}>›</button></span>`;
+        const orc = db.orcamento ? `<button class="orc-btn" data-a="orcamento" aria-label="Mudar o orçamento">${medidorOrc(em.total, db.orcamento)}</button>` : '';
+        const tipos = tiposDoMes(k);
+        h += cartaoGraf({
+          titulo: k === mesAtual() ? 'Este mês' : nomeMes[0].toUpperCase() + nomeMes.slice(1) + (k.slice(0, 4) === hoje().slice(0, 4) ? '' : ' ' + k.slice(0, 4)),
+          valor: euroG(em.total), leg: em.leg, filtros: setas,
+          graf: orc + em.graf + (tipos ? `<div class="partes">${tipos}</div>` : '') +
+            (em.total ? `<button class="linha acao" data-a="ver-tipo" data-id="" data-mes="${k}">${avatarIcone(ic.gastos)}Ver os gastos de ${nomeMes}</button>` : '') +
+            (db.orcamento ? '' : `<button class="linha acao" data-a="orcamento">${avatarIcone(ic.alvo)}Definir orçamento do mês</button>`),
+        });
+      }
       const pt = porTipo();
       if (pt) h += cartaoGraf({ titulo: 'Por tipo', valor: euroG(pt.total), leg: esc(pt.quando), graf: pt.corpo, filtros: chipsPeriodo() });
       const pv = paraOndeVai();
@@ -2597,7 +2634,8 @@ document.addEventListener('click', e => {
       guardar(); fechar(); render(); toast('Objetivo apagado', desfaz); return;
     }
     case 'pesquisa': folhaPesquisa(); return;
-    case 'ver-tipo': folhaTipo(id); return;
+    case 'ver-tipo': folhaTipo(id, b.dataset.mes || ''); return;
+    case 'mes-gastos': ui.mesGastos = id; render(); return;
     case 'abrir-mov': // abre o item e logo a folha do movimento
       irPara(b.dataset.tipo); ui.ficha[ui.tab] = id; ui.anim = 'entra';
       render(); scrollTo(0, 0); folhaMov(b.dataset.mov); return;
