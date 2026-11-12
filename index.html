@@ -1789,7 +1789,9 @@ function folhaHist(i) {
         <label class="linha"><span class="txt">Data</span><input type="date" id="f-data" value="${h?.data || hoje()}"></label>
       </div>
 `,
-    extra: h && c.hist.length > 1 ? btnApagar('apagar-hist', i, 'Apagar registo') : '',
+    extra: (h && restoDoRegisto(c, h) ? `<section class="cartao"><button class="linha acao" data-a="tirar-resto" data-id="${i}">${avatarIcone(ic.lixo)}Tirar «Outros movimentos» (${euroSinal(-restoDoRegisto(c, h))})</button></section>
+      <p class="rodape">Tira só o que nenhum movimento explica neste dia; os outros movimentos ficam como estão.</p>` : '') +
+      (h && c.hist.length > 1 ? btnApagar('apagar-hist', i, 'Apagar registo (desfaz tudo o que este dia mexeu na conta)') : ''),
     guardar: () => {
       const v = lerValor($('#f-valor').value), data = $('#f-data').value || hoje();
       if (v === null) return erro('#f-valor');
@@ -1800,6 +1802,16 @@ function folhaHist(i) {
 }
 /** Largura do campo do valor da conta, à medida do que está escrito (os algarismos são mais apertados que 1ch). */
 const larguraValor = t => `${(Math.max(1, t.length) * .9 + .3).toFixed(1)}ch`;
+/**
+ * O que um registo tem descontado e nenhum movimento ligado explica (no histórico, «Outros movimentos»): fica quando
+ * se apaga um movimento só em Gastos ou Dívidas, deixando a conta como estava.
+ */
+function restoDoRegisto(c, h) {
+  const lados = db.transferencias.flatMap(t => [t.saida, t.entrada]);
+  const ligados = [...db.grupos.flatMap(g => g.fichas.flatMap(f => f.movimentos)), ...lados, ...db.entradas]
+    .filter(m => m?.conta === c.id && m.descontado && m.dataConta === h.data);
+  return (h.desconto || 0) - ligados.reduce((t, m) => t + m.descontado, 0);
+}
 /** O valor da conta numa data (um registo por dia: o desse dia é substituído); h é o registo que se está a editar. */
 function registarValor(c, v, data, h = null) {
   let alvo = h || c.hist.find(x => x.data === data);
@@ -2670,6 +2682,15 @@ document.addEventListener('click', e => {
     }
     case 'novo-hist': folhaHist(null); return;
     case 'hist': folhaHist(+id); return;
+    case 'tirar-resto': {
+      const c = db.contas.find(c => c.id === ui.ficha.contas), h = c?.hist[+id];
+      if (!h) return;
+      const desfaz = pontoDeRetorno(), resto = restoDoRegisto(c, h);
+      h.desconto = (h.desconto || 0) - resto;
+      if (h.auto && !h.desconto) c.hist = c.hist.filter(x => x !== h);
+      ordenarHist(c);
+      guardar(); fechar(); render(); toast(`${c.nome}: ${euro(c.valor)}`, desfaz); return;
+    }
     case 'extrato-tudo': ui.extratoTudo = id; render(); return;
     case 'apagar-hist': {
       const c = db.contas.find(c => c.id === ui.ficha.contas), desfaz = pontoDeRetorno();
